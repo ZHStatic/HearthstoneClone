@@ -26,7 +26,7 @@
 
 ## 技术架构（已确定）
 
-- **Unity 2022 LTS / 6000 LTS**，2D Built-In Render Pipeline
+- **Unity 2020.3.48f1c1**，2D Built-In Render Pipeline
 - **事件驱动的效果结算系统** — GameEventBus 模式，解耦卡牌/关键词/UI
 - **ScriptableObject** 存储卡牌模板数据
 - **UGUI** 做 UI

@@ -15,7 +15,7 @@
 
 | 技术 | 说明 |
 |------|------|
-| Unity 2022 LTS / 6000 LTS | 2D Built-In Render Pipeline |
+| Unity 2020.3.48f1c1 | 2D Built-In Render Pipeline |
 | C# | 游戏逻辑与架构 |
 | UGUI | UI 系统（手牌、战场、菜单） |
 | ScriptableObject | 卡牌数据管理 |
