@@ -27,8 +27,9 @@ public class GameManager : MonoBehaviour
     public int TurnNumber { get; private set; }
     public bool IsGameOver { get; private set; }
 
-    // Unity 生命周期方法：挂在场景物体上的脚本进入游戏时，Unity 会自动调用 Start。
-    private void Start()
+    // Unity 生命周期方法：Awake 会早于其他脚本的 Start 执行。
+    // 这样 UI 脚本在 Start 里刷新时，Player / Enemy / Board 已经创建好了。
+    private void Awake()
     {
         StartNewGame();
     }
