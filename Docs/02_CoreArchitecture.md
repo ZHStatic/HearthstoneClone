@@ -18,9 +18,11 @@
 | `Board` | `Assets/Scripts/Core/Board.cs` | 战场，管理双方场上的随从列表 |
 | `GameManager` | `Assets/Scripts/Core/GameManager.cs` | 对局流程，负责开局、回合、出牌、攻击、死亡清理、胜负判断 |
 
+当前 UI 表现层已有第一版原型，详见 `Docs/03_UIArchitecture.md`。
+
 当前还没有进入：
 
-- UI 表现层
+- 随从攻击 UI 交互
 - 法术牌
 - 武器牌
 - 英雄技能
@@ -362,11 +364,11 @@ Core 不应该反过来调用 UI。
 
 ## 开局流程
 
-对应 `GameManager.Start()` 和 `GameManager.StartNewGame()`。
+对应 `GameManager.Awake()` 和 `GameManager.StartNewGame()`。
 
 ```mermaid
 flowchart TD
-    A["Unity 调用 Start()"] --> B["StartNewGame()"]
+    A["Unity 调用 Awake()"] --> B["StartNewGame()"]
     B --> C["创建 Player"]
     B --> D["创建 Enemy"]
     C --> E["Player 内部创建 Hero 和 Deck"]
@@ -380,8 +382,8 @@ flowchart TD
 流程说明：
 
 ```text
-1. Unity 进入 Play 模式后自动调用 Start。
-2. Start 调用 StartNewGame。
+1. Unity 进入 Play 模式后自动调用 Awake。
+2. Awake 调用 StartNewGame。
 3. StartNewGame 创建双方 Player。
 4. Player 构造函数把 CardData 列表转换成 Card 牌库。
 5. 创建 Board，并告诉 Board 本局双方是谁。
@@ -538,7 +540,7 @@ flowchart TD
 倒序删除时，受影响的是已经检查过的后方元素，所以更安全。
 ```
 
-这个细节已记录在 `CODE_READING_NOTES.md`。
+这个细节已记录在 `Docs/Learning/CSharpNotes.md`。
 
 ## 胜负判断流程
 
@@ -688,9 +690,9 @@ AI 或服务器权威逻辑
 后续加入关键词和法术时，会通过事件总线和效果系统继续拆分结算逻辑。
 ```
 
-## 以后接入 UI 时的方向
+## UI 接入方向
 
-下一阶段 UI 不应该重新实现规则。
+当前 UI 已经接入第一版显示和出牌交互，设计原则仍然是：UI 不应该重新实现规则。
 
 UI 应该做：
 

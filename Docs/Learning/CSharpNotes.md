@@ -522,3 +522,176 @@ Board.RemoveMinion(minion);
 ```text
 战场列表由 Board 统一管理，外部代码不要随便改列表。
 ```
+
+## 构造函数
+
+构造函数是在 `new` 一个对象时自动执行的方法。
+
+例子：
+
+```csharp
+public Card(CardData data)
+{
+    CardData = data;
+    CurrentCost = data.Cost;
+}
+```
+
+读作：
+
+```text
+创建一张 Card 时，需要传入 CardData。
+这张 Card 会记住自己的模板，并把当前费用设置成模板费用。
+```
+
+调用方式：
+
+```csharp
+Card card = new Card(data);
+```
+
+本项目里常见的构造函数：
+
+```text
+new Card(data)
+new Hero(heroName, heroHealth)
+new Player(deckCards, "Player")
+new Minion(card.CardData, CurrentPlayer)
+new Board(Player, Enemy)
+```
+
+## 属性和 private set
+
+例子：
+
+```csharp
+public int CurrentHealth { get; private set; }
+```
+
+读作：
+
+```text
+外部可以读取 CurrentHealth。
+但只有这个类内部可以修改 CurrentHealth。
+```
+
+这样做的目的：
+
+```text
+避免外部代码随便改核心状态。
+```
+
+例如英雄血量不应该被 UI 直接改。
+
+正确方式是调用：
+
+```csharp
+hero.TakeDamage(amount);
+hero.Heal(amount);
+```
+
+## SerializeField
+
+例子：
+
+```csharp
+[SerializeField] private Text nameText;
+```
+
+读作：
+
+```text
+这个字段在代码里是 private。
+但 Unity Inspector 可以看到并配置它。
+```
+
+为什么不用 `public`：
+
+```text
+public 表示任何代码都可以访问和修改。
+SerializeField 可以让 Inspector 配置，同时保持代码层面的封装。
+```
+
+本项目例子：
+
+```text
+CardView 里的 Text 和 Button 引用
+HandView 里的 CardViewPrefab
+GameUIController 里的各种 UI 引用
+GameManager 里的 Player Deck Data / Enemy Deck Data
+```
+
+## null
+
+`null` 表示“这里没有对象”。
+
+例子：
+
+```csharp
+if (card == null) return false;
+```
+
+读作：
+
+```text
+如果没有传入有效卡牌，操作失败。
+```
+
+本项目遇到过一次真实问题：
+
+```text
+牌库列表里某个 CardData 是 None。
+代码把这个空对象传给 new Card(data)。
+Card 构造函数访问 data.Cost 时发生 NullReferenceException。
+```
+
+解决方式：
+
+```csharp
+if (data == null) continue;
+```
+
+读作：
+
+```text
+如果这个卡牌模板是空的，就跳过这一次循环。
+```
+
+## Action 回调
+
+`Action<T>` 可以理解为“保存一个以后要调用的方法”。
+
+本项目例子：
+
+```csharp
+private Action<Card> onClicked;
+```
+
+读作：
+
+```text
+onClicked 是一个方法引用。
+这个方法需要接收一张 Card。
+```
+
+在 `CardView` 中：
+
+```csharp
+onClicked?.Invoke(card);
+```
+
+读作：
+
+```text
+如果 onClicked 不为空，就调用它，并把当前这张 card 传出去。
+```
+
+为什么这样写：
+
+```text
+CardView 只负责显示和点击。
+它不应该知道点击后是出牌、查看详情，还是拖拽。
+所以它把“被点击的 Card”通知给上层，让上层决定做什么。
+```
+
+这就是 UI 分层中常见的回调写法。

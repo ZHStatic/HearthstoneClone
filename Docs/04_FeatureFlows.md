@@ -1,0 +1,226 @@
+# Feature Flows
+
+本文档记录当前项目中已经实现或即将实现的核心功能流程。
+
+目标是把代码流程翻译成人话，方便复盘、调试和面试讲解。
+
+## 开局流程
+
+入口：
+
+```csharp
+GameManager.Awake()
+```
+
+流程：
+
+```text
+1. Unity 进入 Play 模式。
+2. GameManager.Awake() 被调用。
+3. Awake() 调用 StartNewGame()。
+4. 创建 Player。
+5. 创建 Enemy。
+6. 创建 Board。
+7. 双方抽起手牌。
+8. 进入玩家第一个回合。
+```
+
+为什么用 `Awake`：
+
+```text
+Awake 会早于其他脚本的 Start 执行。
+这样 UI 脚本在 Start 里刷新时，GameManager 已经准备好 Player、Enemy 和 Board。
+```
+
+## 创建牌库流程
+
+入口：
+
+```csharp
+new Player(deckCards, heroName)
+```
+
+流程：
+
+```text
+1. 创建 Hero。
+2. 创建空 Deck。
+3. 遍历 Inspector 里配置的 CardData 列表。
+4. 如果某个 CardData 是空的，就跳过。
+5. 如果 CardData 有效，就创建 Card 实例并加入 Deck。
+6. 洗牌。
+7. 创建空 Hand。
+8. 法力初始化为 0。
+```
+
+这里处理过一次真实问题：
+
+```text
+如果牌库列表里有 None (Card Data)，以前会触发 NullReferenceException。
+现在 Player 会跳过空卡牌数据，避免开局直接崩溃。
+```
+
+## 回合开始流程
+
+入口：
+
+```csharp
+GameManager.StartTurn(targetPlayer)
+```
+
+流程：
+
+```text
+1. 如果 targetPlayer 是空，直接结束。
+2. 如果游戏已经结束，直接结束。
+3. 设置 CurrentPlayer。
+4. TurnNumber + 1。
+5. 调用 targetPlayer.StartTurn()。
+6. 玩家最大法力 +1，最多 10。
+7. 当前法力补满。
+8. 手牌费用重置。
+9. 抽一张牌。
+10. 当前玩家场上的随从变成可以攻击。
+```
+
+## 点击手牌出随从流程
+
+入口：
+
+```text
+玩家点击 CardView
+```
+
+流程：
+
+```text
+1. CardView 接收到 Button 点击。
+2. CardView 调用 onClicked(card)。
+3. GameUIController.HandleCardClicked(card) 被调用。
+4. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
+5. GameManager 检查卡牌、游戏状态、当前玩家和战场空位。
+6. CurrentPlayer.PlayCard(card) 检查手牌和法力。
+7. 如果成功，Player 扣除法力并从手牌移除卡牌。
+8. GameManager 创建 Minion。
+9. Board.SummonMinion(minion) 把随从加入战场。
+10. GameUIController.RefreshAll() 刷新手牌、战场和 HUD。
+```
+
+这条流程体现的分层：
+
+```text
+CardView 只知道自己被点了。
+GameUIController 负责把点击交给 GameManager。
+GameManager 负责规则流程。
+Player 负责手牌和法力。
+Board 负责战场随从列表。
+UI 最后重新读取 Core 状态并显示。
+```
+
+## 结束回合流程
+
+入口：
+
+```text
+玩家点击 EndTurnButton
+```
+
+流程：
+
+```text
+1. Button 调用 GameUIController.HandleEndTurnClicked()。
+2. GameUIController 调用 GameManager.EndTurn()。
+3. GameManager 找到当前玩家的对手。
+4. GameManager.StartTurn(nextPlayer)。
+5. 新的当前玩家开始回合。
+6. GameUIController.RefreshAll()。
+7. UI 显示新的当前玩家手牌、法力和战场状态。
+```
+
+当前临时调试规则：
+
+```text
+AI 还没做，所以 UI 暂时显示当前行动者的手牌。
+这样可以手动测试双方出牌和回合切换。
+```
+
+## 随从攻击随从流程
+
+入口：
+
+```csharp
+GameManager.TryAttackMinion(attacker, target)
+```
+
+流程：
+
+```text
+1. 检查 attacker 是否能攻击。
+2. 检查 target 是否有效。
+3. 检查不能攻击友方随从。
+4. attacker 承受 target.Attack 点伤害。
+5. target 承受 attacker.Attack 点伤害。
+6. attacker.CanAttack = false。
+7. 清理死亡随从。
+8. 检查胜负。
+```
+
+当前状态：
+
+```text
+底层攻击逻辑已完成。
+UI 点击攻击交互还没接入。
+```
+
+## 随从攻击英雄流程
+
+入口：
+
+```csharp
+GameManager.TryAttackHero(attacker, targetHero)
+```
+
+流程：
+
+```text
+1. 检查 attacker 是否能攻击。
+2. 检查 targetHero 是否有效。
+3. 找到 attacker.Owner 的对手。
+4. 确认目标英雄是对手英雄。
+5. 目标英雄受到 attacker.Attack 点伤害。
+6. attacker.CanAttack = false。
+7. 检查胜负。
+```
+
+当前状态：
+
+```text
+底层攻击英雄逻辑已完成。
+UI 目标选择还没接入。
+```
+
+## UI 刷新流程
+
+入口：
+
+```csharp
+GameUIController.RefreshAll()
+```
+
+流程：
+
+```text
+1. 如果没有 GameManager，就清空 UI。
+2. 刷新当前行动者手牌。
+3. 刷新玩家战场。
+4. 刷新敌方战场。
+5. 刷新当前玩家、回合数、法力、英雄血量、游戏结束文字。
+```
+
+为什么当前用手动刷新：
+
+```text
+阶段 1 的操作点很少。
+手动刷新更直观，方便学习和调试。
+阶段 2 加入事件系统后，可以逐步改成事件驱动刷新。
+```

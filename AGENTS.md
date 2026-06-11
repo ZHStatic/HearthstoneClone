@@ -30,7 +30,7 @@
 - **事件驱动的效果结算系统** — GameEventBus 模式，解耦卡牌/关键词/UI
 - **ScriptableObject** 存储卡牌模板数据
 - **UGUI** 做 UI
-- 目录结构见 `PROJECT_PLAN.md`
+- 目录结构见 `Docs/01_ProjectPlan.md`
 
 ## Git 规范
 
@@ -102,10 +102,14 @@ docs: 文档更新     → docs: 补充架构说明
 
 | 文件 | 用途 |
 |------|------|
-| `PROJECT_PLAN.md` | 完整开发计划（Markdown） |
-| `CORE_ARCHITECTURE.md` | 当前 Core 层架构说明（类职责/引用关系/核心流程） |
-| `CODE_READING_NOTES.md` | 代码阅读笔记（守卫语句、List 删除等常见写法） |
-| `CURRENT_STATUS.md` | 当前进度快照，方便下次接着做 |
+| `Docs/01_ProjectPlan.md` | 完整开发计划（Markdown） |
+| `Docs/02_CoreArchitecture.md` | 当前 Core 层架构说明（类职责/引用关系/核心流程） |
+| `Docs/03_UIArchitecture.md` | 当前 UI 层架构说明（CardView/HandView/BoardView/GameUIController） |
+| `Docs/04_FeatureFlows.md` | 核心功能流程拆解（开局/出牌/结束回合/攻击） |
+| `Docs/05_InterviewNotes.md` | 求职面试讲解要点 |
+| `Docs/Learning/CSharpNotes.md` | C# 和代码阅读笔记 |
+| `Docs/Learning/UnityNotes.md` | Unity 编辑器、UGUI、Prefab、Inspector 操作笔记 |
+| `Docs/00_CurrentStatus.md` | 当前进度快照，方便下次接着做 |
 | `PROJECT_PLAN.html` | 开发计划（浏览器查看，gitignore 已排除） |
 | `README.md` | 项目介绍（面试官第一眼看） |
 | `.gitignore` | 基于 GitHub 官方 Unity 模板 |
@@ -114,6 +118,7 @@ docs: 文档更新     → docs: 补充架构说明
 
 - [x] 项目初始化（Git、Unity 2D、GitHub）
 - [x] .gitignore、README、PROJECT_PLAN
+- [x] 文档目录整理 — `Docs/`
 - [ ] 阶段 1：最小可玩原型
   - [x] CardData.cs — ScriptableObject 卡牌模板（名称/费用/攻击/血量）
   - [x] Card.cs — 运行时卡牌实例（引用 CardData + 动态 CurrentCost）
@@ -122,21 +127,22 @@ docs: 文档更新     → docs: 补充架构说明
   - [x] Board.cs — 战场（管理双方随从站位）
   - [x] Minion.cs — 随从运行时实例
   - [x] GameManager.cs — 回合流程/出牌/攻击/死亡清理/胜负判定
-  - [x] 核心架构梳理 — `CORE_ARCHITECTURE.md`
-  - [x] 代码阅读笔记 — `CODE_READING_NOTES.md`
-  - [ ] 手牌区 UI
-  - [ ] 出牌交互
+  - [x] 核心架构梳理 — `Docs/02_CoreArchitecture.md`
+  - [x] 代码阅读笔记 — `Docs/Learning/CSharpNotes.md`
+  - [x] UI 架构梳理 — `Docs/03_UIArchitecture.md`
+  - [x] 手牌区 UI
+  - [x] 出牌交互
   - [ ] 随从攻击交互
-  - [ ] 法力水晶 UI
-  - [ ] 回合流程 UI（结束回合按钮）
+  - [x] 法力水晶 UI
+  - [x] 回合流程 UI（结束回合按钮）
 
 ## 当前停靠点
 
 - 阶段 1 的第一版底层核心逻辑骨架已完成。
-- `GameManager.cs` 已在 Unity 中确认无 Console 报错，并且可挂到场景物体上。
-- 用户已经梳理过 `GameManager.cs`，重点理解了守卫语句、`bool` 返回值、倒序遍历删除等写法。
-- 下一步进入 UI 和交互，建议从 `CardView.cs` 开始。
-- 写 `CardView.cs` 前，仍然先按“属性清单”流程列清单，等用户确认后再写代码。
+- 第一版 UGUI 已完成：手牌显示、点击出牌、战场显示、法力/血量/回合 UI、结束回合按钮。
+- Unity Play 模式已确认能运行。
+- 用户正在消化 UI、Prefab、Canvas、Inspector、Rect Transform 等知识点。
+- 下一步建议接入“随从攻击交互”，但开始前仍然先按“属性清单”流程列清单，等用户确认后再写代码。
 
 ## 开发阶段速览
 
