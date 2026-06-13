@@ -2,15 +2,23 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Builds one side of the board UI from runtime Minion objects.
+/// 单方战场 UI。
+/// 根据传入的 Minion 列表生成多个 MinionView。
+/// 玩家战场和敌方战场各使用一个 BoardView。
 /// </summary>
 public class BoardView : MonoBehaviour
 {
+    // minionContainer 是所有 MinionView 的父物体。
+    // minionViewPrefab 是单个随从 UI 的模板。
     [SerializeField] private Transform minionContainer;
     [SerializeField] private MinionView minionViewPrefab;
 
+    // 当前已经生成出来的随从 UI 列表，用于刷新时统一清理。
     private readonly List<MinionView> minionViews = new List<MinionView>();
 
+    /// <summary>
+    /// 重新生成这一方战场的随从 UI。
+    /// </summary>
     public void Refresh(IReadOnlyList<Minion> minions)
     {
         Clear();
@@ -27,6 +35,9 @@ public class BoardView : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 清理当前生成的所有 MinionView。
+    /// </summary>
     public void Clear()
     {
         foreach (MinionView minionView in minionViews)
