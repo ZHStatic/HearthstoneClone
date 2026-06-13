@@ -53,6 +53,13 @@ docs: 文档更新     → docs: 补充架构说明
 - 公开字段在 Inspector 中可配置的用 `[SerializeField]`，不直接 `public`
 - 逻辑层（Core/Events/Effects/Keywords/AI）不直接依赖 UI 层
 
+## Unity 资源协作规则
+
+- Claude 新增 C# 脚本时，只创建 `.cs` 文件，**不要手动生成 `.meta` 文件**。
+- 写完脚本后，提醒用户回到 Unity，让 Unity 自动导入脚本并生成对应 `.meta`。
+- Prefab、Scene、ScriptableObject、图片、音频等 Unity 资源，优先让用户在 Unity Editor 的 Project 面板中创建、移动或重命名。
+- 如果必须由 Claude 调整 Unity 资源文件，先说明风险并等待用户确认，避免破坏 `.meta` GUID 和场景/Prefab 引用。
+
 ## AI 协作原则
 
 > **每行代码都必须自己读懂。**
@@ -132,17 +139,17 @@ docs: 文档更新     → docs: 补充架构说明
   - [x] UI 架构梳理 — `Docs/03_UIArchitecture.md`
   - [x] 手牌区 UI
   - [x] 出牌交互
-  - [ ] 随从攻击交互
+  - [x] 随从攻击交互
   - [x] 法力水晶 UI
   - [x] 回合流程 UI（结束回合按钮）
 
 ## 当前停靠点
 
 - 阶段 1 的第一版底层核心逻辑骨架已完成。
-- 第一版 UGUI 已完成：手牌显示、点击出牌、战场显示、法力/血量/回合 UI、结束回合按钮。
+- 第一版 UGUI 已完成：手牌显示、点击出牌、战场显示、法力/血量/回合 UI、结束回合按钮、随从攻击随从、随从攻击英雄。
 - Unity Play 模式已确认能运行。
 - 用户正在消化 UI、Prefab、Canvas、Inspector、Rect Transform 等知识点。
-- 下一步建议接入“随从攻击交互”，但开始前仍然先按“属性清单”流程列清单，等用户确认后再写代码。
+- 下一步建议先在 Unity 中绑定 `Player Hero Button` / `Enemy Hero Button` 并验证阶段 1 最小闭环；之后再进入阶段 2 或做少量 UI 反馈打磨。
 
 ## 开发阶段速览
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,6 +22,14 @@ public class BoardView : MonoBehaviour
     /// </summary>
     public void Refresh(IReadOnlyList<Minion> minions)
     {
+        Refresh(minions, null);
+    }
+
+    /// <summary>
+    /// 重新生成这一方战场的随从 UI，并给每个随从绑定点击回调。
+    /// </summary>
+    public void Refresh(IReadOnlyList<Minion> minions, Action<Minion> onMinionClicked)
+    {
         Clear();
 
         if (minions == null) return;
@@ -30,7 +39,7 @@ public class BoardView : MonoBehaviour
         foreach (Minion minion in minions)
         {
             MinionView minionView = Instantiate(minionViewPrefab, minionContainer);
-            minionView.SetMinion(minion);
+            minionView.SetMinion(minion, onMinionClicked);
             minionViews.Add(minionView);
         }
     }

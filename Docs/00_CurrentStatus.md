@@ -1,6 +1,6 @@
 # Current Status
 
-最后更新：2026-06-11
+最后更新：2026-06-13
 
 ## 当前阶段
 
@@ -9,10 +9,11 @@
 当前状态：
 
 ```text
-底层 Core 逻辑骨架已完成。
-第一版 UGUI 显示和点击出牌流程已完成。
-下一步准备接入随从攻击 UI 交互。
+阶段 1 最小对战闭环已完成代码接入。
+当前可以完成：抽牌 → 出牌 → 召唤随从 → 随从攻击随从/英雄 → 胜负判定。
 ```
+
+Unity 中还需要确认英雄按钮引用是否已经绑定，详见“下一步验证”。
 
 ## 已完成
 
@@ -30,16 +31,16 @@
 
 - `CardView.cs`：显示单张手牌，点击后通知上层。
 - `HandView.cs`：显示当前行动者的手牌列表。
-- `MinionView.cs`：显示单个场上随从。
-- `BoardView.cs`：显示一方战场上的随从列表。
-- `GameUIController.cs`：连接 UI 和 `GameManager`，处理点击出牌、结束回合和刷新。
+- `MinionView.cs`：显示单个场上随从，点击后通知上层。
+- `BoardView.cs`：显示一方战场上的随从列表，并传递随从点击回调。
+- `GameUIController.cs`：连接 UI 和 `GameManager`，处理点击出牌、随从攻击随从、随从攻击英雄、结束回合和刷新。
 
 ### Unity 资源
 
 - `Assets/Prefabs/UI/CardViewPrefab.prefab`
 - `Assets/Prefabs/UI/MinionViewPrefab.prefab`
-- 测试卡牌：`Assets/Test_1Cost_1_1.asset`
-- 当前已有测试场景：`SampleScene`、`test1`、`step6`
+- 卡牌数据位于 `Assets/ScriptableObjects/Cards/`
+- 当前主测试场景：`Assets/Scenes/BattlePrototype.unity`
 
 ## 已确认
 
@@ -48,6 +49,7 @@
 - 点击手牌可以调用 `GameManager.TryPlayMinionCard(card)`。
 - 成功出牌后，手牌减少、法力减少、战场出现随从。
 - 点击结束回合后，当前行动者切换，UI 会刷新。
+- 随从攻击随从 UI 已测试通过。
 - 已定位并修复一次 `NullReferenceException`：牌库列表中存在空的 `CardData` 项时，`Player` 现在会跳过空项。
 
 ## 当前设计理解
@@ -82,15 +84,26 @@ Docs/
     └── UnityNotes.md
 ```
 
-## 下一步
+## 下一步验证
 
-先暂停继续堆功能，优先消化当前 UI 和文档。
+在 Unity 中完成以下检查：
 
-之后进入随从攻击 UI：
+1. 给 `PlayerHeroText` 和 `EnemyHeroText` 所在 UI 物体添加 `Button` 组件。
+2. 在 `GameUIController` 中绑定 `Player Hero Button` 和 `Enemy Hero Button`。
+3. Play 后双方各召唤至少一个随从。
+4. 选中己方 `Ready` 随从后点击敌方随从，确认随从互相造成伤害。
+5. 选中己方 `Ready` 随从后点击敌方英雄，确认英雄血量减少。
+6. 英雄血量降到 0 或以下时，确认显示 `Game Over`，结束回合按钮不可点击。
 
-1. 点击己方可攻击随从，记录为攻击者。
-2. 点击敌方随从，调用 `GameManager.TryAttackMinion(attacker, target)`。
-3. 点击敌方英雄，调用 `GameManager.TryAttackHero(attacker, targetHero)`。
-4. 攻击后刷新战场、英雄血量和可攻击状态。
+验证通过后，可以提交：
 
-按照协作规则，开始写新类或改交互前，先列属性和方法清单，确认后再写。
+```text
+feat: 完成阶段1最小对战闭环
+```
+
+## 阶段 1 后续可选打磨
+
+- 补充更多随从卡数据。
+- 做选中高亮和非法操作提示。
+- 做简单攻击动画或攻击线。
+- 进入阶段 2：法术牌、关键词和事件系统。

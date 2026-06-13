@@ -12,13 +12,12 @@
 |----|------|----------|
 | `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，点击后把 `Card` 通知给上层 |
 | `HandView` | `Assets/Scripts/UI/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
-| `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从 |
-| `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView` |
-| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、结束回合和刷新 |
+| `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层 |
+| `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调 |
+| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、攻击、结束回合和刷新 |
 
 当前还没有做：
 
-- 随从攻击点击交互
 - 拖拽出牌
 - 动画和音效
 - 敌方手牌隐藏
@@ -112,7 +111,9 @@ onClicked
 是否可以攻击
 ```
 
-当前阶段它只负责显示，不负责攻击点击。
+当前阶段它只负责显示和转发点击。
+它会把点击到的 `Minion` 通知给 `GameUIController`。
+真正的攻击规则仍然由 `GameManager` 判断。
 
 ### BoardView
 
@@ -140,9 +141,20 @@ EnemyBoardView
 刷新法力、回合、英雄血量
 处理结束回合按钮
 处理点击手牌
+处理点击随从
+处理点击英雄
 ```
 
 它是 UI 和 Core 之间的桥。
+
+当前攻击交互流程：
+
+```text
+点击己方 Ready 随从 -> 记录 selectedAttacker
+点击敌方随从 -> 调用 GameManager.TryAttackMinion(...)
+点击敌方英雄 -> 调用 GameManager.TryAttackHero(...)
+攻击后刷新 UI
+```
 
 ## 引用关系
 
@@ -205,6 +217,8 @@ HandView
 PlayerBoardView
 EnemyBoardView
 EndTurnButton
+PlayerHeroButton
+EnemyHeroButton
 若干 Text
 ```
 
@@ -219,6 +233,9 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 
 `MinionViewPrefab` 挂载 `MinionView`。
 
+英雄按钮当前不使用独立 `HeroView`。
+做法是在玩家/敌方英雄血量 UI 物体上添加 `Button`，再绑定到 `GameUIController` 的 `Player Hero Button` 和 `Enemy Hero Button` 字段。
+
 ## 面试表达
 
 可以这样说明当前 UI 设计：
@@ -227,6 +244,6 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 阶段 1 的 UI 层只负责表现和输入，不负责规则。
 单张卡牌由 CardView 显示，手牌区域由 HandView 批量生成。
 战场随从由 MinionView 显示，BoardView 负责显示一方战场。
-GameUIController 作为 UI 层入口，把点击操作转换成 GameManager 的规则方法调用。
+GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```

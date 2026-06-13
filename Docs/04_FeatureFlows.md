@@ -148,55 +148,63 @@ AI 还没做，所以 UI 暂时显示当前行动者的手牌。
 
 入口：
 
-```csharp
-GameManager.TryAttackMinion(attacker, target)
+```text
+玩家点击己方随从，再点击敌方随从
 ```
 
 流程：
 
 ```text
-1. 检查 attacker 是否能攻击。
-2. 检查 target 是否有效。
-3. 检查不能攻击友方随从。
-4. attacker 承受 target.Attack 点伤害。
-5. target 承受 attacker.Attack 点伤害。
-6. attacker.CanAttack = false。
-7. 清理死亡随从。
-8. 检查胜负。
+1. MinionView 接收到随从点击。
+2. BoardView 传递点击回调。
+3. GameUIController.HandleMinionClicked(clickedMinion) 被调用。
+4. 如果当前没有 selectedAttacker，尝试选择当前玩家的可攻击随从。
+5. 如果已经有 selectedAttacker，再点击敌方随从。
+6. GameUIController 调用 GameManager.TryAttackMinion(selectedAttacker, target)。
+7. GameManager 检查攻击者、目标、阵营和攻击权限。
+8. 双方随从互相造成攻击力数值的伤害。
+9. 攻击者 CanAttack = false。
+10. 清理死亡随从。
+11. 检查胜负。
+12. GameUIController 清空 selectedAttacker 并刷新 UI。
 ```
 
-当前状态：
+这条流程的分层：
 
 ```text
-底层攻击逻辑已完成。
-UI 点击攻击交互还没接入。
+MinionView 只负责告诉上层哪个随从被点了。
+GameUIController 负责记录攻击者和目标。
+GameManager 负责判断攻击是否合法并结算伤害。
 ```
 
 ## 随从攻击英雄流程
 
 入口：
 
-```csharp
-GameManager.TryAttackHero(attacker, targetHero)
+```text
+玩家点击己方随从，再点击敌方英雄按钮
 ```
 
 流程：
 
 ```text
-1. 检查 attacker 是否能攻击。
-2. 检查 targetHero 是否有效。
-3. 找到 attacker.Owner 的对手。
-4. 确认目标英雄是对手英雄。
-5. 目标英雄受到 attacker.Attack 点伤害。
-6. attacker.CanAttack = false。
-7. 检查胜负。
+1. 玩家先点击己方 Ready 随从。
+2. GameUIController 把该随从记录为 selectedAttacker。
+3. 玩家点击敌方英雄按钮。
+4. GameUIController 调用 TryAttackSelectedHero(targetHero)。
+5. TryAttackSelectedHero 调用 GameManager.TryAttackHero(selectedAttacker, targetHero)。
+6. GameManager 检查攻击者、目标英雄和阵营。
+7. 目标英雄受到攻击者攻击力数值的伤害。
+8. 攻击者 CanAttack = false。
+9. GameManager 检查胜负。
+10. GameUIController 清空 selectedAttacker 并刷新 UI。
 ```
 
-当前状态：
+补充规则：
 
 ```text
-底层攻击英雄逻辑已完成。
-UI 目标选择还没接入。
+如果点击的是自己的英雄，GameManager.TryAttackHero 会返回失败。
+UI 不自己判断这件事，规则仍然留在 Core 层。
 ```
 
 ## UI 刷新流程
