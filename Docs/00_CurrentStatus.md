@@ -1,5 +1,13 @@
 # Current Status
 
+## 阶段 1 复盘学习入口
+
+为了帮助重新理解阶段 1 的代码、Unity 关联和 UI 回调，新增以下学习文档：
+
+- `Docs/Learning/Stage1ReviewGuide.md`：阶段 1 推荐复盘顺序、核心链路和练习方式。
+- `Docs/Learning/UICallbacksAndButtonGuide.md`：专门解释 `Button.onClick`、`Action<T>`、`AddListener` 和点击回调链。
+- `Docs/Learning/CodeReadingChecklist.md`：逐行读代码时可反复使用的检查表。
+
 最后更新：2026-06-13
 
 ## 当前阶段

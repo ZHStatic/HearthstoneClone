@@ -1,0 +1,285 @@
+<mxfile host="app.diagrams.net" modified="2026-06-13T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="core-layer" name="01 Core 规则层">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="core-title" value="&lt;b&gt;阶段 1 Core 规则层类图&lt;/b&gt;&lt;br&gt;先看红色 GameManager，再看它调度的 Player / Board / Minion / Hero" style="text;html=1;strokeColor=none;fillColor=none;fontSize=22;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="250" y="20" width="700" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gm" value="&lt;b&gt;GameManager&lt;/b&gt;&lt;br&gt;&lt;i&gt;MonoBehaviour，对局总控&lt;/i&gt;&lt;br&gt;&lt;br&gt;Player / Enemy / Board&lt;br&gt;CurrentPlayer&lt;br&gt;Winner / IsGameOver&lt;br&gt;TurnNumber&lt;br&gt;&lt;br&gt;StartNewGame()&lt;br&gt;StartTurn() / EndTurn()&lt;br&gt;TryPlayMinionCard()&lt;br&gt;TryAttackMinion() / TryAttackHero()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="470" y="100" width="260" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="player" value="&lt;b&gt;Player&lt;/b&gt;&lt;br&gt;&lt;i&gt;玩家资源&lt;/i&gt;&lt;br&gt;&lt;br&gt;Hero&lt;br&gt;Hand: List&amp;lt;Card&amp;gt;&lt;br&gt;Deck: List&amp;lt;Card&amp;gt;&lt;br&gt;MaxMana / CurrentMana&lt;br&gt;&lt;br&gt;StartTurn()&lt;br&gt;DrawCard()&lt;br&gt;PlayCard()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="130" y="340" width="240" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="board" value="&lt;b&gt;Board&lt;/b&gt;&lt;br&gt;&lt;i&gt;战场随从列表&lt;/i&gt;&lt;br&gt;&lt;br&gt;playerMinions&lt;br&gt;enemyMinions&lt;br&gt;MaxMinionsPerSide&lt;br&gt;&lt;br&gt;CanSummon()&lt;br&gt;SummonMinion()&lt;br&gt;RemoveMinion()&lt;br&gt;GetMinions()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="830" y="340" width="240" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="hero" value="&lt;b&gt;Hero&lt;/b&gt;&lt;br&gt;&lt;i&gt;英雄生命主体&lt;/i&gt;&lt;br&gt;&lt;br&gt;Name&lt;br&gt;MaxHealth&lt;br&gt;CurrentHealth&lt;br&gt;IsDead&lt;br&gt;&lt;br&gt;TakeDamage()&lt;br&gt;Heal()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="210" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="card" value="&lt;b&gt;Card&lt;/b&gt;&lt;br&gt;&lt;i&gt;运行时卡牌实例&lt;/i&gt;&lt;br&gt;&lt;br&gt;CardData&lt;br&gt;CurrentCost&lt;br&gt;&lt;br&gt;ResetCost()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="300" y="650" width="210" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="minion" value="&lt;b&gt;Minion&lt;/b&gt;&lt;br&gt;&lt;i&gt;场上随从实例&lt;/i&gt;&lt;br&gt;&lt;br&gt;CardData&lt;br&gt;Owner: Player&lt;br&gt;Attack / CurrentHealth&lt;br&gt;CanAttack / IsDead&lt;br&gt;&lt;br&gt;TakeDamage()&lt;br&gt;SetCanAttack()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="840" y="640" width="240" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="carddata" value="&lt;b&gt;CardData&lt;/b&gt;&lt;br&gt;&lt;i&gt;ScriptableObject 卡牌模板&lt;/i&gt;&lt;br&gt;&lt;br&gt;CardName&lt;br&gt;Cost&lt;br&gt;Attack&lt;br&gt;Health&lt;br&gt;Description&lt;br&gt;&lt;br&gt;Project 面板中的 .asset 数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="555" y="650" width="230" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="core-note" value="&lt;b&gt;读图顺序&lt;/b&gt;&lt;br&gt;1. GameManager 调度整局游戏。&lt;br&gt;2. Player 管手牌、牌库、法力、英雄。&lt;br&gt;3. Board 只管场上随从列表。&lt;br&gt;4. CardData 是模板，Card / Minion 是运行时对象。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="780" y="100" width="330" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="gm-player" value="创建 / 切换回合" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="gm" target="player">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gm-board" value="创建 / 调用" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="gm" target="board">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gm-hero" value="检查胜负 / 攻击英雄" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="gm" target="hero">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gm-minion" value="召唤 / 攻击 / 清理" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="gm" target="minion">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="player-hero" value="拥有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1" source="player" target="hero">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="player-card" value="Hand / Deck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1" source="player" target="card">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="board-minion" value="管理列表" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d6b656;fontColor=#d6b656;" edge="1" parent="1" source="board" target="minion">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="board-player" value="按 Player 区分双方" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d6b656;fontColor=#d6b656;" edge="1" parent="1" source="board" target="player">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="card-data-edge" value="引用模板" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1" source="card" target="carddata">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="minion-data-edge" value="读取模板" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1" source="minion" target="carddata">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="minion-owner-edge" value="Owner" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d6b656;fontColor=#d6b656;" edge="1" parent="1" source="minion" target="player">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="ui-layer" name="02 UI 表现层">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ui-title" value="&lt;b&gt;阶段 1 UI 表现层类图&lt;/b&gt;&lt;br&gt;UI 不改规则，只显示状态，并把点击交给 GameUIController" style="text;html=1;strokeColor=none;fillColor=none;fontSize=22;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="240" y="20" width="720" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gui" value="&lt;b&gt;GameUIController&lt;/b&gt;&lt;br&gt;&lt;i&gt;UI 与 Core 的桥&lt;/i&gt;&lt;br&gt;&lt;br&gt;gameManager&lt;br&gt;handView&lt;br&gt;playerBoardView / enemyBoardView&lt;br&gt;Text / Button refs&lt;br&gt;selectedAttacker&lt;br&gt;&lt;br&gt;RefreshAll()&lt;br&gt;HandleCardClicked()&lt;br&gt;HandleMinionClicked()&lt;br&gt;HandleEndTurnClicked()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="470" y="110" width="270" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="handview" value="&lt;b&gt;HandView&lt;/b&gt;&lt;br&gt;&lt;i&gt;手牌区域 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;cardContainer&lt;br&gt;cardViewPrefab&lt;br&gt;cardViews&lt;br&gt;onCardClicked&lt;br&gt;&lt;br&gt;SetHand()&lt;br&gt;Refresh()&lt;br&gt;Clear()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="130" y="410" width="240" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="boardview" value="&lt;b&gt;BoardView&lt;/b&gt;&lt;br&gt;&lt;i&gt;单方战场 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;minionContainer&lt;br&gt;minionViewPrefab&lt;br&gt;minionViews&lt;br&gt;&lt;br&gt;Refresh()&lt;br&gt;Clear()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="830" y="420" width="240" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="cardview" value="&lt;b&gt;CardView&lt;/b&gt;&lt;br&gt;&lt;i&gt;单张手牌 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;Text refs&lt;br&gt;Button&lt;br&gt;card&lt;br&gt;onClicked: Action&amp;lt;Card&amp;gt;&lt;br&gt;&lt;br&gt;SetCard()&lt;br&gt;Refresh() / Clear()&lt;br&gt;HandleClick()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="120" y="680" width="250" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="minionview" value="&lt;b&gt;MinionView&lt;/b&gt;&lt;br&gt;&lt;i&gt;单个随从 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;Text refs&lt;br&gt;Button&lt;br&gt;minion&lt;br&gt;onClicked: Action&amp;lt;Minion&amp;gt;&lt;br&gt;&lt;br&gt;SetMinion()&lt;br&gt;Refresh() / Clear()&lt;br&gt;HandleClick()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="820" y="680" width="260" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="uigm" value="&lt;b&gt;GameManager&lt;/b&gt;&lt;br&gt;&lt;i&gt;Core 规则入口&lt;/i&gt;&lt;br&gt;&lt;br&gt;TryPlayMinionCard()&lt;br&gt;TryAttackMinion()&lt;br&gt;TryAttackHero()&lt;br&gt;EndTurn()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="480" y="650" width="250" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ui-note" value="&lt;b&gt;读图重点&lt;/b&gt;&lt;br&gt;1. GameUIController 是唯一直接调用 GameManager 的 UI 类。&lt;br&gt;2. HandView / BoardView 负责批量生成 View。&lt;br&gt;3. CardView / MinionView 只负责显示和点击通知。&lt;br&gt;4. 橙色虚线就是你卡住的回调链。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="800" y="110" width="340" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="gui-hand" value="刷新手牌" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="gui" target="handview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gui-board" value="刷新战场" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="gui" target="boardview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gui-gm" value="调用规则" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="gui" target="uigm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hand-cardview" value="Instantiate 多个 CardView" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;fontColor=#9673a6;" edge="1" parent="1" source="handview" target="cardview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="board-minionview" value="Instantiate 多个 MinionView" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;fontColor=#9673a6;" edge="1" parent="1" source="boardview" target="minionview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="card-callback" value="Action&amp;lt;Card&amp;gt; 回调" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="cardview" target="gui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="minion-callback" value="Action&amp;lt;Minion&amp;gt; 回调" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="minionview" target="gui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="click-flows" name="03 点击调用链">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="flow-title" value="&lt;b&gt;阶段 1 点击调用链&lt;/b&gt;&lt;br&gt;这一页不画字段，只画一次玩家操作会怎样一路传下去" style="text;html=1;strokeColor=none;fillColor=none;fontSize=22;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="220" y="20" width="760" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="play-band" value="点击手牌出随从" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f7fbff;strokeColor=#6c8ebf;fontStyle=1;fontSize=18;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1120" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="attack-band" value="点击随从攻击" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fffaf2;strokeColor=#d6b656;fontStyle=1;fontSize=18;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="1120" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" value="玩家点击&lt;br&gt;CardView Button" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="180" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="CardView&lt;br&gt;HandleClick()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="260" y="180" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="onClicked.Invoke(card)&lt;br&gt;Action&amp;lt;Card&amp;gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="440" y="180" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="GameUIController&lt;br&gt;HandleCardClicked(card)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="640" y="170" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" value="GameManager&lt;br&gt;TryPlayMinionCard(card)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="860" y="170" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" value="Player.PlayCard&lt;br&gt;扣法力 / 移除手牌" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="260" y="300" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p7" value="new Minion&lt;br&gt;Board.SummonMinion" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="500" y="300" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p8" value="RefreshAll()&lt;br&gt;重读 Core 状态刷新 UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="750" y="300" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="第一次点击&lt;br&gt;己方 Ready 随从" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="560" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="MinionView&lt;br&gt;HandleClick()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="280" y="560" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="GameUIController&lt;br&gt;HandleMinionClicked()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="470" y="550" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="SelectAttacker()&lt;br&gt;记录 selectedAttacker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="700" y="560" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" value="第二次点击&lt;br&gt;敌方随从 / 英雄" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="690" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" value="TryAttackSelectedTarget()&lt;br&gt;或 TryAttackSelectedHero()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="300" y="680" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="a7" value="GameManager&lt;br&gt;TryAttackMinion / TryAttackHero" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="570" y="680" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="a8" value="TakeDamage&lt;br&gt;CanAttack = false&lt;br&gt;Cleanup / CheckGameOver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="840" y="670" width="190" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="a9" value="ClearSelectedAttacker&lt;br&gt;RefreshAll()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="840" y="540" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p-e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;" edge="1" parent="1" source="p1" target="p2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p-e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;" edge="1" parent="1" source="p2" target="p3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p-e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;" edge="1" parent="1" source="p3" target="p4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p-e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;" edge="1" parent="1" source="p4" target="p5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p-e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;" edge="1" parent="1" source="p5" target="p6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p-e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;" edge="1" parent="1" source="p6" target="p7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p-e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#999999;" edge="1" parent="1" source="p7" target="p8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;" edge="1" parent="1" source="a1" target="a2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;" edge="1" parent="1" source="a2" target="a3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;" edge="1" parent="1" source="a3" target="a4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;" edge="1" parent="1" source="a5" target="a6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;" edge="1" parent="1" source="a6" target="a7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;" edge="1" parent="1" source="a7" target="a8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#999999;" edge="1" parent="1" source="a8" target="a9"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="full-overview" name="04 完整版总览">
+    <mxGraphModel dx="1800" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="full-title" value="&lt;b&gt;阶段 1 完整版总览&lt;/b&gt;&lt;br&gt;左侧是 Core 规则状态，右侧是 UI 显示与输入；中间只保留两个核心入口，减少交叉线" style="text;html=1;strokeColor=none;fillColor=none;fontSize=24;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="20" width="940" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="full-core-band" value="Core 规则层：保存和改变游戏状态" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#666666;fontStyle=1;fontSize=18;verticalAlign=top;spacingTop=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="850" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="full-ui-band" value="UI 表现层：显示状态，把点击转成方法调用" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f7fbff;strokeColor=#6c8ebf;fontStyle=1;fontSize=18;verticalAlign=top;spacingTop=12;" vertex="1" parent="1">
+          <mxGeometry x="940" y="100" width="820" height="930" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f-carddata" value="&lt;b&gt;CardData&lt;/b&gt;&lt;br&gt;&lt;i&gt;卡牌模板 .asset&lt;/i&gt;&lt;br&gt;&lt;br&gt;CardName&lt;br&gt;Cost / Attack / Health&lt;br&gt;Description&lt;br&gt;&lt;br&gt;静态配置，不存对局变化" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="90" y="190" width="230" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="f-card" value="&lt;b&gt;Card&lt;/b&gt;&lt;br&gt;&lt;i&gt;手牌 / 牌库里的运行时卡牌&lt;/i&gt;&lt;br&gt;&lt;br&gt;CardData&lt;br&gt;CurrentCost&lt;br&gt;&lt;br&gt;ResetCost()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="380" y="200" width="230" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="f-hero" value="&lt;b&gt;Hero&lt;/b&gt;&lt;br&gt;&lt;i&gt;英雄生命主体&lt;/i&gt;&lt;br&gt;&lt;br&gt;Name&lt;br&gt;MaxHealth&lt;br&gt;CurrentHealth&lt;br&gt;IsDead&lt;br&gt;&lt;br&gt;TakeDamage() / Heal()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="90" y="470" width="230" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="f-player" value="&lt;b&gt;Player&lt;/b&gt;&lt;br&gt;&lt;i&gt;玩家资源&lt;/i&gt;&lt;br&gt;&lt;br&gt;Hero&lt;br&gt;Hand / Deck&lt;br&gt;MaxMana / CurrentMana&lt;br&gt;&lt;br&gt;StartTurn()&lt;br&gt;DrawCard()&lt;br&gt;PlayCard()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="380" y="450" width="240" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="f-minion" value="&lt;b&gt;Minion&lt;/b&gt;&lt;br&gt;&lt;i&gt;场上随从实例&lt;/i&gt;&lt;br&gt;&lt;br&gt;CardData&lt;br&gt;Owner: Player&lt;br&gt;Attack / CurrentHealth&lt;br&gt;CanAttack / IsDead&lt;br&gt;&lt;br&gt;TakeDamage()&lt;br&gt;SetCanAttack()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="90" y="760" width="240" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="f-board" value="&lt;b&gt;Board&lt;/b&gt;&lt;br&gt;&lt;i&gt;双方战场随从列表&lt;/i&gt;&lt;br&gt;&lt;br&gt;playerMinions&lt;br&gt;enemyMinions&lt;br&gt;MaxMinionsPerSide&lt;br&gt;&lt;br&gt;CanSummon()&lt;br&gt;SummonMinion()&lt;br&gt;RemoveMinion()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="380" y="750" width="240" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="f-gm" value="&lt;b&gt;GameManager&lt;/b&gt;&lt;br&gt;&lt;i&gt;Core 对局总控&lt;/i&gt;&lt;br&gt;&lt;br&gt;Player / Enemy / Board&lt;br&gt;CurrentPlayer&lt;br&gt;Winner / IsGameOver&lt;br&gt;&lt;br&gt;StartNewGame()&lt;br&gt;StartTurn() / EndTurn()&lt;br&gt;TryPlayMinionCard()&lt;br&gt;TryAttackMinion()&lt;br&gt;TryAttackHero()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="660" y="390" width="250" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f-gui" value="&lt;b&gt;GameUIController&lt;/b&gt;&lt;br&gt;&lt;i&gt;UI 层总入口&lt;/i&gt;&lt;br&gt;&lt;br&gt;gameManager&lt;br&gt;handView&lt;br&gt;playerBoardView / enemyBoardView&lt;br&gt;Text / Button refs&lt;br&gt;selectedAttacker&lt;br&gt;&lt;br&gt;RefreshAll()&lt;br&gt;HandleCardClicked()&lt;br&gt;HandleMinionClicked()&lt;br&gt;HandleEndTurnClicked()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="970" y="390" width="270" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="f-handview" value="&lt;b&gt;HandView&lt;/b&gt;&lt;br&gt;&lt;i&gt;手牌区域 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;cardContainer&lt;br&gt;cardViewPrefab&lt;br&gt;cardViews&lt;br&gt;&lt;br&gt;SetHand()&lt;br&gt;Refresh()&lt;br&gt;Clear()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="190" width="220" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="f-cardview" value="&lt;b&gt;CardView&lt;/b&gt;&lt;br&gt;&lt;i&gt;单张手牌 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;Text refs&lt;br&gt;Button&lt;br&gt;card&lt;br&gt;onClicked: Action&amp;lt;Card&amp;gt;&lt;br&gt;&lt;br&gt;SetCard()&lt;br&gt;HandleClick()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1530" y="190" width="210" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="f-boardview" value="&lt;b&gt;BoardView&lt;/b&gt;&lt;br&gt;&lt;i&gt;单方战场 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;minionContainer&lt;br&gt;minionViewPrefab&lt;br&gt;minionViews&lt;br&gt;&lt;br&gt;Refresh()&lt;br&gt;Clear()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="740" width="220" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="f-minionview" value="&lt;b&gt;MinionView&lt;/b&gt;&lt;br&gt;&lt;i&gt;单个随从 UI&lt;/i&gt;&lt;br&gt;&lt;br&gt;Text refs&lt;br&gt;Button&lt;br&gt;minion&lt;br&gt;onClicked: Action&amp;lt;Minion&amp;gt;&lt;br&gt;&lt;br&gt;SetMinion()&lt;br&gt;HandleClick()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1530" y="730" width="210" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="f-note" value="&lt;b&gt;推荐读图路线&lt;/b&gt;&lt;br&gt;1. 左上 CardData -> Card，看模板和实例。&lt;br&gt;2. 左中 Player / Hero，看玩家资源。&lt;br&gt;3. 左下 Minion / Board，看战场。&lt;br&gt;4. 中间 GameManager 负责规则调度。&lt;br&gt;5. 右侧 UI 只显示和转发点击。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="970" y="130" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="f-legend" value="&lt;b&gt;线条含义&lt;/b&gt;&lt;br&gt;红色：规则调度&lt;br&gt;绿色：玩家拥有资源&lt;br&gt;黄色：战场 / 随从关系&lt;br&gt;紫色：UI 生成子 View&lt;br&gt;橙色虚线：点击回调&lt;br&gt;蓝色：模板数据引用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;align=left;spacingLeft=12;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="970" y="720" width="270" height="190" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f-e-gm-player" value="创建 / 当前回合" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="f-gm" target="f-player"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-gm-board" value="召唤 / 清理 / 查询" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="f-gm" target="f-board"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-gm-minion" value="攻击结算" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="f-gm" target="f-minion"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-gm-hero" value="攻击英雄 / 胜负" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="f-gm" target="f-hero"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-player-hero" value="拥有" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1" source="f-player" target="f-hero"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-player-card" value="Hand / Deck" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#82b366;fontColor=#82b366;" edge="1" parent="1" source="f-player" target="f-card"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-board-minion" value="管理随从列表" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d6b656;fontColor=#d6b656;" edge="1" parent="1" source="f-board" target="f-minion"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-board-player" value="按玩家分边" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d6b656;fontColor=#d6b656;" edge="1" parent="1" source="f-board" target="f-player"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-card-data" value="引用模板" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1" source="f-card" target="f-carddata"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-minion-data" value="读取模板" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#6c8ebf;fontColor=#6c8ebf;" edge="1" parent="1" source="f-minion" target="f-carddata"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-minion-owner" value="Owner" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d6b656;fontColor=#d6b656;" edge="1" parent="1" source="f-minion" target="f-player"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-gui-gm" value="调用规则入口" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#b85450;fontColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="f-gui" target="f-gm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-gui-hand" value="RefreshHand()" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="f-gui" target="f-handview"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-gui-board" value="RefreshBoards()" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="f-gui" target="f-boardview"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-hand-cardview" value="Instantiate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;fontColor=#9673a6;" edge="1" parent="1" source="f-handview" target="f-cardview"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-board-minionview" value="Instantiate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#9673a6;fontColor=#9673a6;" edge="1" parent="1" source="f-boardview" target="f-minionview"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-cardview-callback" value="Action&amp;lt;Card&amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="f-cardview" target="f-gui"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f-e-minionview-callback" value="Action&amp;lt;Minion&amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#d79b00;fontColor=#d79b00;" edge="1" parent="1" source="f-minionview" target="f-gui"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

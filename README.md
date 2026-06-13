@@ -94,6 +94,13 @@ Docs/
 - UI 点击只调用 `GameManager` 方法，不直接修改规则数据。
 - 后续法术和关键词会通过事件系统扩展。
 
+## 学习复盘文档
+
+- [阶段 1 类图](Docs/Diagrams/Stage1_ClassDiagram.drawio)
+- [阶段 1 复盘路线](Docs/Learning/Stage1ReviewGuide.md)
+- [UI 回调和 Button 理解指南](Docs/Learning/UICallbacksAndButtonGuide.md)
+- [逐行读代码检查表](Docs/Learning/CodeReadingChecklist.md)
+
 ## License
 
 MIT
