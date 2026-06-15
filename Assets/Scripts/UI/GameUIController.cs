@@ -33,6 +33,7 @@ public class GameUIController : MonoBehaviour
     // 当前被选中的攻击者。
     // 第一次点击己方可攻击随从时设置，攻击或结束回合后清空。
     private Minion selectedAttacker;
+    private string feedbackMessage = "";
 
     // Unity 生命周期方法：UI 创建后查找 GameManager、注册按钮事件并刷新一次界面。
     private void Start()
@@ -105,7 +106,59 @@ public class GameUIController : MonoBehaviour
         if (gameManager == null) return;
 
         ClearSelectedAttacker();
-        gameManager.TryPlayMinionCard(card);
+
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续出牌。");
+            RefreshAll();
+            return;
+        }
+
+        if (card == null || card.CardData == null)
+        {
+            SetFeedback("这张卡的数据无效。");
+            RefreshAll();
+            return;
+        }
+
+        Player currentPlayer = gameManager.CurrentPlayer;
+        if (currentPlayer == null)
+        {
+            SetFeedback("当前没有行动玩家。");
+            RefreshAll();
+            return;
+        }
+
+        if (!currentPlayer.Hand.Contains(card))
+        {
+            SetFeedback("这张卡不在当前玩家手牌里。");
+            RefreshAll();
+            return;
+        }
+
+        if (gameManager.Board == null)
+        {
+            SetFeedback("战场还没有准备好。");
+            RefreshAll();
+            return;
+        }
+
+        if (!gameManager.Board.CanSummon(currentPlayer))
+        {
+            SetFeedback("战场已满，不能召唤更多随从。");
+            RefreshAll();
+            return;
+        }
+
+        if (card.CurrentCost > currentPlayer.CurrentMana)
+        {
+            SetFeedback($"{card.CardData.CardName} 需要 {card.CurrentCost} 点法力，当前只有 {currentPlayer.CurrentMana} 点。");
+            RefreshAll();
+            return;
+        }
+
+        bool played = gameManager.TryPlayMinionCard(card);
+        SetFeedback(played ? $"打出 {card.CardData.CardName}。" : "出牌失败。");
         RefreshAll();
     }
 
@@ -116,8 +169,16 @@ public class GameUIController : MonoBehaviour
     {
         if (gameManager == null) return;
 
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能结束回合。");
+            RefreshAll();
+            return;
+        }
+
         ClearSelectedAttacker();
         gameManager.EndTurn();
+        SetFeedback($"{GetPlayerLabel(gameManager.CurrentPlayer)} 回合开始。");
         RefreshAll();
     }
 
@@ -128,7 +189,12 @@ public class GameUIController : MonoBehaviour
     private void HandlePlayerHeroClicked()
     {
         if (gameManager == null) return;
-        if (gameManager.Player == null) return;
+        if (gameManager.Player == null)
+        {
+            SetFeedback("玩家英雄不存在。");
+            RefreshAll();
+            return;
+        }
 
         TryAttackSelectedHero(gameManager.Player.Hero);
         RefreshAll();
@@ -141,7 +207,12 @@ public class GameUIController : MonoBehaviour
     private void HandleEnemyHeroClicked()
     {
         if (gameManager == null) return;
-        if (gameManager.Enemy == null) return;
+        if (gameManager.Enemy == null)
+        {
+            SetFeedback("敌方英雄不存在。");
+            RefreshAll();
+            return;
+        }
 
         TryAttackSelectedHero(gameManager.Enemy.Hero);
         RefreshAll();
@@ -155,8 +226,19 @@ public class GameUIController : MonoBehaviour
     private void HandleMinionClicked(Minion clickedMinion)
     {
         if (gameManager == null) return;
-        if (clickedMinion == null) return;
-        if (gameManager.IsGameOver) return;
+        if (clickedMinion == null)
+        {
+            SetFeedback("没有点击到有效随从。");
+            RefreshAll();
+            return;
+        }
+
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续操作。");
+            RefreshAll();
+            return;
+        }
 
         if (selectedAttacker == null)
         {
@@ -167,6 +249,7 @@ public class GameUIController : MonoBehaviour
 
         if (clickedMinion == selectedAttacker)
         {
+            SetFeedback($"取消选中 {GetMinionName(clickedMinion)}。");
             ClearSelectedAttacker();
             RefreshAll();
             return;
@@ -192,22 +275,40 @@ public class GameUIController : MonoBehaviour
         if (minion == null)
         {
             ClearSelectedAttacker();
+            SetFeedback("没有选中有效随从。");
+            return;
+        }
+
+        if (gameManager.CurrentPlayer == null)
+        {
+            ClearSelectedAttacker();
+            SetFeedback("当前没有行动玩家。");
             return;
         }
 
         if (minion.Owner != gameManager.CurrentPlayer)
         {
             ClearSelectedAttacker();
+            SetFeedback("只能选择当前玩家自己的随从。");
             return;
         }
 
-        if (!minion.CanAttack || minion.IsDead)
+        if (minion.IsDead)
         {
             ClearSelectedAttacker();
+            SetFeedback($"{GetMinionName(minion)} 已经死亡，不能攻击。");
+            return;
+        }
+
+        if (!minion.CanAttack)
+        {
+            ClearSelectedAttacker();
+            SetFeedback($"{GetMinionName(minion)} 现在不能攻击。");
             return;
         }
 
         selectedAttacker = minion;
+        SetFeedback($"已选中 {GetMinionName(minion)}，请选择攻击目标。");
     }
 
     /// <summary>
@@ -216,10 +317,22 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void TryAttackSelectedTarget(Minion target)
     {
-        if (selectedAttacker == null) return;
-        if (target == null) return;
+        if (selectedAttacker == null)
+        {
+            SetFeedback("请先选择一个可以攻击的随从。");
+            return;
+        }
 
-        gameManager.TryAttackMinion(selectedAttacker, target);
+        if (target == null)
+        {
+            SetFeedback("攻击目标无效。");
+            return;
+        }
+
+        string attackerName = GetMinionName(selectedAttacker);
+        string targetName = GetMinionName(target);
+        bool attacked = gameManager.TryAttackMinion(selectedAttacker, target);
+        SetFeedback(attacked ? $"{attackerName} 攻击 {targetName}。" : "目标非法，攻击失败。");
         ClearSelectedAttacker();
     }
 
@@ -229,10 +342,29 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void TryAttackSelectedHero(Hero targetHero)
     {
-        if (selectedAttacker == null) return;
-        if (targetHero == null) return;
+        if (gameManager == null) return;
 
-        gameManager.TryAttackHero(selectedAttacker, targetHero);
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续攻击。");
+            return;
+        }
+
+        if (selectedAttacker == null)
+        {
+            SetFeedback("请先选择一个可以攻击的随从。");
+            return;
+        }
+
+        if (targetHero == null)
+        {
+            SetFeedback("攻击目标英雄无效。");
+            return;
+        }
+
+        string attackerName = GetMinionName(selectedAttacker);
+        bool attacked = gameManager.TryAttackHero(selectedAttacker, targetHero);
+        SetFeedback(attacked ? $"{attackerName} 攻击 {targetHero.Name}。" : "目标英雄非法，攻击失败。");
         ClearSelectedAttacker();
     }
 
@@ -271,12 +403,12 @@ public class GameUIController : MonoBehaviour
 
         if (playerBoardView != null)
         {
-            playerBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Player), HandleMinionClicked);
+            playerBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Player), HandleMinionClicked, selectedAttacker);
         }
 
         if (enemyBoardView != null)
         {
-            enemyBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Enemy), HandleMinionClicked);
+            enemyBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Enemy), HandleMinionClicked, selectedAttacker);
         }
     }
 
@@ -324,6 +456,8 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void ClearAll()
     {
+        ClearFeedback();
+
         if (handView != null)
         {
             handView.Clear();
@@ -364,6 +498,19 @@ public class GameUIController : MonoBehaviour
     }
 
     /// <summary>
+    /// 安全获取随从名称，避免提示文本因为空数据报错。
+    /// </summary>
+    private string GetMinionName(Minion minion)
+    {
+        if (minion == null || minion.CardData == null)
+        {
+            return "未知随从";
+        }
+
+        return minion.CardData.CardName;
+    }
+
+    /// <summary>
     /// 刷新单个英雄血量文本。
     /// </summary>
     private void SetHeroText(Text targetText, string label, Player player)
@@ -386,8 +533,15 @@ public class GameUIController : MonoBehaviour
 
         if (!gameManager.IsGameOver)
         {
-            gameOverText.text = "";
-            gameOverText.gameObject.SetActive(false);
+            if (string.IsNullOrWhiteSpace(feedbackMessage))
+            {
+                gameOverText.text = "";
+                gameOverText.gameObject.SetActive(false);
+                return;
+            }
+
+            gameOverText.gameObject.SetActive(true);
+            gameOverText.text = feedbackMessage;
             return;
         }
 
@@ -411,6 +565,22 @@ public class GameUIController : MonoBehaviour
         if (player == gameManager.Enemy) return "Enemy";
 
         return "-";
+    }
+
+    /// <summary>
+    /// 设置最近一次操作反馈。
+    /// </summary>
+    private void SetFeedback(string message)
+    {
+        feedbackMessage = message ?? "";
+    }
+
+    /// <summary>
+    /// 清空操作反馈。
+    /// </summary>
+    private void ClearFeedback()
+    {
+        feedbackMessage = "";
     }
 
     /// <summary>

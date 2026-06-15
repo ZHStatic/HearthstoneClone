@@ -21,4 +21,16 @@ public class CardData : ScriptableObject
     public int Attack => attack;
     public int Health => health;
     public string Description => description;
+
+    private void OnValidate()
+    {
+        if (string.IsNullOrWhiteSpace(cardName))
+        {
+            cardName = "未命名卡牌";
+        }
+
+        cost = Mathf.Max(0, cost);
+        attack = Mathf.Max(0, attack);
+        health = Mathf.Max(1, health);
+    }
 }

@@ -16,6 +16,11 @@ public class MinionView : MonoBehaviour
     [SerializeField] private Text healthText;
     [SerializeField] private Text canAttackText;
 
+    // 用背景颜色显示选中状态。没有绑定时会自动尝试从当前物体上获取 Image。
+    [SerializeField] private Image backgroundImage;
+    [SerializeField] private Color normalColor = Color.white;
+    [SerializeField] private Color selectedColor = new Color(1f, 0.9f, 0.35f, 1f);
+
     // 接收点击的按钮组件。
     // 如果 Inspector 没有绑定，Awake 会尝试从当前物体上自动获取。
     [SerializeField] private Button button;
@@ -25,6 +30,7 @@ public class MinionView : MonoBehaviour
 
     // 点击回调：MinionView 不自己处理攻击，只把被点击的 Minion 交给上层。
     private Action<Minion> onClicked;
+    private bool isSelected;
 
     // Unity 生命周期方法：对象创建后注册按钮点击事件。
     private void Awake()
@@ -32,6 +38,11 @@ public class MinionView : MonoBehaviour
         if (button == null)
         {
             button = GetComponent<Button>();
+        }
+
+        if (backgroundImage == null)
+        {
+            backgroundImage = GetComponent<Image>();
         }
 
         if (button != null)
@@ -83,11 +94,21 @@ public class MinionView : MonoBehaviour
         SetText(attackText, minion.Attack.ToString());
         SetText(healthText, minion.CurrentHealth.ToString());
         SetText(canAttackText, minion.CanAttack ? "Ready" : "");
+        ApplySelectedState();
 
         if (button != null)
         {
             button.interactable = true;
         }
+    }
+
+    /// <summary>
+    /// 设置这个随从 UI 是否处于选中状态。
+    /// </summary>
+    public void SetSelected(bool isSelected)
+    {
+        this.isSelected = isSelected;
+        ApplySelectedState();
     }
 
     /// <summary>
@@ -97,11 +118,13 @@ public class MinionView : MonoBehaviour
     {
         minion = null;
         onClicked = null;
+        isSelected = false;
 
         SetText(nameText, "");
         SetText(attackText, "");
         SetText(healthText, "");
         SetText(canAttackText, "");
+        ApplySelectedState();
 
         if (button != null)
         {
@@ -118,6 +141,17 @@ public class MinionView : MonoBehaviour
         if (minion == null) return;
 
         onClicked?.Invoke(minion);
+    }
+
+    /// <summary>
+    /// 根据选中状态刷新背景颜色。
+    /// </summary>
+    private void ApplySelectedState()
+    {
+        if (backgroundImage != null)
+        {
+            backgroundImage.color = isSelected ? selectedColor : normalColor;
+        }
     }
 
     /// <summary>

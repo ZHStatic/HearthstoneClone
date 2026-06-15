@@ -12,16 +12,16 @@
 |----|------|----------|
 | `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，点击后把 `Card` 通知给上层 |
 | `HandView` | `Assets/Scripts/UI/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
-| `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层 |
-| `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调 |
-| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、攻击、结束回合和刷新 |
+| `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
+| `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
+| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、攻击、结束回合、反馈提示和刷新 |
 
 当前还没有做：
 
 - 拖拽出牌
 - 动画和音效
 - 敌方手牌隐藏
-- 最终视觉样式
+- 最终视觉样式和完整美术资源
 
 ## 总体思路
 
@@ -109,11 +109,13 @@ onClicked
 攻击
 当前生命
 是否可以攻击
+是否被选中
 ```
 
 当前阶段它只负责显示和转发点击。
 它会把点击到的 `Minion` 通知给 `GameUIController`。
 真正的攻击规则仍然由 `GameManager` 判断。
+选中高亮只表现 UI 状态，不参与规则判断。
 
 ### BoardView
 
@@ -127,6 +129,7 @@ EnemyBoardView
 ```
 
 它们分别显示玩家和敌方场上的随从列表。
+刷新时 `GameUIController` 会把 `selectedAttacker` 传进来，`BoardView` 再告诉每个 `MinionView` 自己是否需要高亮。
 
 ### GameUIController
 
@@ -143,6 +146,7 @@ EnemyBoardView
 处理点击手牌
 处理点击随从
 处理点击英雄
+显示操作反馈
 ```
 
 它是 UI 和 Core 之间的桥。
@@ -151,9 +155,10 @@ EnemyBoardView
 
 ```text
 点击己方 Ready 随从 -> 记录 selectedAttacker
+刷新战场 -> 被选中的 MinionView 高亮
 点击敌方随从 -> 调用 GameManager.TryAttackMinion(...)
 点击敌方英雄 -> 调用 GameManager.TryAttackHero(...)
-攻击后刷新 UI
+攻击后清空 selectedAttacker，显示反馈并刷新 UI
 ```
 
 ## 引用关系
@@ -180,6 +185,7 @@ GameUIController 读取 GameManager 当前状态
 HandView 根据 Player.Hand 创建 CardView
 BoardView 根据 Board.GetMinions(...) 创建 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
+GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 ```
 
 ## 当前刷新方式
@@ -222,6 +228,8 @@ EnemyHeroButton
 若干 Text
 ```
 
+阶段 1.5 中，`GameOverText` 在游戏未结束时复用为操作反馈文本；游戏结束后仍然显示胜负结果。
+
 Prefab：
 
 ```text
@@ -245,5 +253,6 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 单张卡牌由 CardView 显示，手牌区域由 HandView 批量生成。
 战场随从由 MinionView 显示，BoardView 负责显示一方战场。
 GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
+阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；具体规则仍由 GameManager 判断。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```

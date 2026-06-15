@@ -97,13 +97,14 @@ GameManager.StartTurn(targetPlayer)
 1. CardView 接收到 Button 点击。
 2. CardView 调用 onClicked(card)。
 3. GameUIController.HandleCardClicked(card) 被调用。
-4. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
-5. GameManager 检查卡牌、游戏状态、当前玩家和战场空位。
-6. CurrentPlayer.PlayCard(card) 检查手牌和法力。
-7. 如果成功，Player 扣除法力并从手牌移除卡牌。
-8. GameManager 创建 Minion。
-9. Board.SummonMinion(minion) 把随从加入战场。
-10. GameUIController.RefreshAll() 刷新手牌、战场和 HUD。
+4. GameUIController 先做轻量 UI 检查，用于显示费用不足、战场已满等提示。
+5. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
+6. GameManager 检查卡牌、游戏状态、当前玩家和战场空位。
+7. CurrentPlayer.PlayCard(card) 检查手牌和法力。
+8. 如果成功，Player 扣除法力并从手牌移除卡牌。
+9. GameManager 创建 Minion。
+10. Board.SummonMinion(minion) 把随从加入战场。
+11. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -114,7 +115,7 @@ GameUIController 负责把点击交给 GameManager。
 GameManager 负责规则流程。
 Player 负责手牌和法力。
 Board 负责战场随从列表。
-UI 最后重新读取 Core 状态并显示。
+UI 最后重新读取 Core 状态并显示操作结果。
 ```
 
 ## 结束回合流程
@@ -159,21 +160,22 @@ AI 还没做，所以 UI 暂时显示当前行动者的手牌。
 2. BoardView 传递点击回调。
 3. GameUIController.HandleMinionClicked(clickedMinion) 被调用。
 4. 如果当前没有 selectedAttacker，尝试选择当前玩家的可攻击随从。
-5. 如果已经有 selectedAttacker，再点击敌方随从。
-6. GameUIController 调用 GameManager.TryAttackMinion(selectedAttacker, target)。
-7. GameManager 检查攻击者、目标、阵营和攻击权限。
-8. 双方随从互相造成攻击力数值的伤害。
-9. 攻击者 CanAttack = false。
-10. 清理死亡随从。
-11. 检查胜负。
-12. GameUIController 清空 selectedAttacker 并刷新 UI。
+5. 选择成功后，GameUIController 记录 selectedAttacker，BoardView 刷新时让对应 MinionView 高亮。
+6. 如果已经有 selectedAttacker，再点击敌方随从。
+7. GameUIController 调用 GameManager.TryAttackMinion(selectedAttacker, target)。
+8. GameManager 检查攻击者、目标、阵营和攻击权限。
+9. 双方随从互相造成攻击力数值的伤害。
+10. 攻击者 CanAttack = false。
+11. 清理死亡随从。
+12. 检查胜负。
+13. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
 ```
 
 这条流程的分层：
 
 ```text
 MinionView 只负责告诉上层哪个随从被点了。
-GameUIController 负责记录攻击者和目标。
+GameUIController 负责记录攻击者和目标，并显示选中高亮和操作反馈。
 GameManager 负责判断攻击是否合法并结算伤害。
 ```
 
@@ -189,7 +191,7 @@ GameManager 负责判断攻击是否合法并结算伤害。
 
 ```text
 1. 玩家先点击己方 Ready 随从。
-2. GameUIController 把该随从记录为 selectedAttacker。
+2. GameUIController 把该随从记录为 selectedAttacker，并刷新选中高亮。
 3. 玩家点击敌方英雄按钮。
 4. GameUIController 调用 TryAttackSelectedHero(targetHero)。
 5. TryAttackSelectedHero 调用 GameManager.TryAttackHero(selectedAttacker, targetHero)。
@@ -197,7 +199,7 @@ GameManager 负责判断攻击是否合法并结算伤害。
 7. 目标英雄受到攻击者攻击力数值的伤害。
 8. 攻击者 CanAttack = false。
 9. GameManager 检查胜负。
-10. GameUIController 清空 selectedAttacker 并刷新 UI。
+10. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
 ```
 
 补充规则：
@@ -222,7 +224,7 @@ GameUIController.RefreshAll()
 2. 刷新当前行动者手牌。
 3. 刷新玩家战场。
 4. 刷新敌方战场。
-5. 刷新当前玩家、回合数、法力、英雄血量、游戏结束文字。
+5. 刷新当前玩家、回合数、法力、英雄血量、操作反馈和游戏结束文字。
 ```
 
 为什么当前用手动刷新：

@@ -30,6 +30,14 @@ public class BoardView : MonoBehaviour
     /// </summary>
     public void Refresh(IReadOnlyList<Minion> minions, Action<Minion> onMinionClicked)
     {
+        Refresh(minions, onMinionClicked, null);
+    }
+
+    /// <summary>
+    /// 重新生成这一方战场的随从 UI，并根据 selectedMinion 显示选中高亮。
+    /// </summary>
+    public void Refresh(IReadOnlyList<Minion> minions, Action<Minion> onMinionClicked, Minion selectedMinion)
+    {
         Clear();
 
         if (minions == null) return;
@@ -40,6 +48,7 @@ public class BoardView : MonoBehaviour
         {
             MinionView minionView = Instantiate(minionViewPrefab, minionContainer);
             minionView.SetMinion(minion, onMinionClicked);
+            minionView.SetSelected(minion == selectedMinion);
             minionViews.Add(minionView);
         }
     }

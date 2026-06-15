@@ -35,11 +35,17 @@ public class Player
     {
         Hero = new Hero(heroName, heroHealth);
 
-        // 从模板创建卡牌实例，放入牌库
-        Deck = new List<Card>(deckCards.Count);
-        foreach (CardData data in deckCards)
+        // 从模板创建卡牌实例，放入牌库。
+        // Inspector 里可能会误留空槽位，所以这里要跳过空数据，避免开局崩溃。
+        Deck = new List<Card>();
+        if (deckCards != null)
         {
-            Deck.Add(new Card(data));
+            foreach (CardData data in deckCards)
+            {
+                if (data == null) continue;
+
+                Deck.Add(new Card(data));
+            }
         }
 
         // 牌库洗牌
