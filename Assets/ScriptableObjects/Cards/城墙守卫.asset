@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: "\u57CE\u5899\u5B88\u536B"
   m_EditorClassIdentifier: 
   cardName: "\u57CE\u5899\u5B88\u536B"
+  cardType: 0
   cost: 3
   attack: 2
   health: 5
+  spellDamage: 0
+  spellTargetType: 0
   description: "\u751F\u547D\u8F83\u9AD8\uFF0C\u9002\u5408\u6D4B\u8BD5\u5B58\u6D3B\u548C\u53CD\u51FB\u3002"

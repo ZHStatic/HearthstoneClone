@@ -33,6 +33,11 @@ public class GameUIController : MonoBehaviour
     // 当前被选中的攻击者。
     // 第一次点击己方可攻击随从时设置，攻击或结束回合后清空。
     private Minion selectedAttacker;
+
+    // 当前被选中的法术牌。
+    // 点击法术牌时设置，点击目标、结束回合或改打其他牌后清空。
+    private Card selectedSpellCard;
+
     private string feedbackMessage = "";
 
     // Unity 生命周期方法：UI 创建后查找 GameManager、注册按钮事件并刷新一次界面。
@@ -106,6 +111,7 @@ public class GameUIController : MonoBehaviour
         if (gameManager == null) return;
 
         ClearSelectedAttacker();
+        ClearSelectedSpell();
 
         if (gameManager.IsGameOver)
         {
@@ -136,6 +142,28 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
+        if (card.CurrentCost > currentPlayer.CurrentMana)
+        {
+            SetFeedback($"{card.CardData.CardName} 需要 {card.CurrentCost} 点法力，当前只有 {currentPlayer.CurrentMana} 点。");
+            RefreshAll();
+            return;
+        }
+
+        if (card.CardData.CardType == CardType.Spell)
+        {
+            selectedSpellCard = card;
+            SetFeedback($"已选择 {card.CardData.CardName}，请选择法术目标。");
+            RefreshAll();
+            return;
+        }
+
+        if (card.CardData.CardType != CardType.Minion)
+        {
+            SetFeedback("当前阶段暂不支持这种卡牌类型。");
+            RefreshAll();
+            return;
+        }
+
         if (gameManager.Board == null)
         {
             SetFeedback("战场还没有准备好。");
@@ -146,13 +174,6 @@ public class GameUIController : MonoBehaviour
         if (!gameManager.Board.CanSummon(currentPlayer))
         {
             SetFeedback("战场已满，不能召唤更多随从。");
-            RefreshAll();
-            return;
-        }
-
-        if (card.CurrentCost > currentPlayer.CurrentMana)
-        {
-            SetFeedback($"{card.CardData.CardName} 需要 {card.CurrentCost} 点法力，当前只有 {currentPlayer.CurrentMana} 点。");
             RefreshAll();
             return;
         }
@@ -177,6 +198,7 @@ public class GameUIController : MonoBehaviour
         }
 
         ClearSelectedAttacker();
+        ClearSelectedSpell();
         gameManager.EndTurn();
         SetFeedback($"{GetPlayerLabel(gameManager.CurrentPlayer)} 回合开始。");
         RefreshAll();
@@ -196,7 +218,15 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        TryAttackSelectedHero(gameManager.Player.Hero);
+        if (selectedSpellCard != null)
+        {
+            TryPlaySelectedSpellOnHero(gameManager.Player.Hero);
+        }
+        else
+        {
+            TryAttackSelectedHero(gameManager.Player.Hero);
+        }
+
         RefreshAll();
     }
 
@@ -214,7 +244,15 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        TryAttackSelectedHero(gameManager.Enemy.Hero);
+        if (selectedSpellCard != null)
+        {
+            TryPlaySelectedSpellOnHero(gameManager.Enemy.Hero);
+        }
+        else
+        {
+            TryAttackSelectedHero(gameManager.Enemy.Hero);
+        }
+
         RefreshAll();
     }
 
@@ -236,6 +274,13 @@ public class GameUIController : MonoBehaviour
         if (gameManager.IsGameOver)
         {
             SetFeedback("游戏已经结束，不能继续操作。");
+            RefreshAll();
+            return;
+        }
+
+        if (selectedSpellCard != null)
+        {
+            TryPlaySelectedSpellOnMinion(clickedMinion);
             RefreshAll();
             return;
         }
@@ -369,11 +414,87 @@ public class GameUIController : MonoBehaviour
     }
 
     /// <summary>
+    /// 使用当前选中的法术牌，尝试对目标随从释放法术。
+    /// </summary>
+    private void TryPlaySelectedSpellOnMinion(Minion target)
+    {
+        if (selectedSpellCard == null)
+        {
+            SetFeedback("请先选择一张法术牌。");
+            return;
+        }
+
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续施放法术。");
+            ClearSelectedSpell();
+            return;
+        }
+
+        if (target == null)
+        {
+            SetFeedback("法术目标无效。");
+            return;
+        }
+
+        string spellName = GetCardName(selectedSpellCard);
+        string targetName = GetMinionName(target);
+        int damage = selectedSpellCard.CardData != null ? selectedSpellCard.CardData.SpellDamage : 0;
+
+        bool played = gameManager.TryPlaySpellCardOnMinion(selectedSpellCard, target);
+        SetFeedback(played ? $"{spellName} 对 {targetName} 造成 {damage} 点伤害。" : "法术目标非法，释放失败。");
+        ClearSelectedSpell();
+        ClearSelectedAttacker();
+    }
+
+    /// <summary>
+    /// 使用当前选中的法术牌，尝试对目标英雄释放法术。
+    /// </summary>
+    private void TryPlaySelectedSpellOnHero(Hero targetHero)
+    {
+        if (selectedSpellCard == null)
+        {
+            SetFeedback("请先选择一张法术牌。");
+            return;
+        }
+
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续施放法术。");
+            ClearSelectedSpell();
+            return;
+        }
+
+        if (targetHero == null)
+        {
+            SetFeedback("法术目标英雄无效。");
+            return;
+        }
+
+        string spellName = GetCardName(selectedSpellCard);
+        string targetName = targetHero.Name;
+        int damage = selectedSpellCard.CardData != null ? selectedSpellCard.CardData.SpellDamage : 0;
+
+        bool played = gameManager.TryPlaySpellCardOnHero(selectedSpellCard, targetHero);
+        SetFeedback(played ? $"{spellName} 对 {targetName} 造成 {damage} 点伤害。" : "法术目标英雄非法，释放失败。");
+        ClearSelectedSpell();
+        ClearSelectedAttacker();
+    }
+
+    /// <summary>
     /// 清空当前选中的攻击者。
     /// </summary>
     private void ClearSelectedAttacker()
     {
         selectedAttacker = null;
+    }
+
+    /// <summary>
+    /// 清空当前选中的法术牌。
+    /// </summary>
+    private void ClearSelectedSpell()
+    {
+        selectedSpellCard = null;
     }
 
     /// <summary>
@@ -456,6 +577,8 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void ClearAll()
     {
+        ClearSelectedAttacker();
+        ClearSelectedSpell();
         ClearFeedback();
 
         if (handView != null)
@@ -494,6 +617,11 @@ public class GameUIController : MonoBehaviour
             text += $" | Selected: {selectedAttacker.CardData.CardName}";
         }
 
+        if (selectedSpellCard != null && selectedSpellCard.CardData != null)
+        {
+            text += $" | Spell: {selectedSpellCard.CardData.CardName}";
+        }
+
         return text;
     }
 
@@ -508,6 +636,19 @@ public class GameUIController : MonoBehaviour
         }
 
         return minion.CardData.CardName;
+    }
+
+    /// <summary>
+    /// 安全获取卡牌名称，避免提示文本因为空数据报错。
+    /// </summary>
+    private string GetCardName(Card card)
+    {
+        if (card == null || card.CardData == null)
+        {
+            return "未知卡牌";
+        }
+
+        return card.CardData.CardName;
     }
 
     /// <summary>

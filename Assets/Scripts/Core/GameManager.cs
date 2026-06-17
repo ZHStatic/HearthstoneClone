@@ -120,9 +120,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public bool TryPlayMinionCard(Card card)
     {
-        if (card == null) return false;
-        if (IsGameOver) return false;
-        if (CurrentPlayer == null) return false;
+        if (!CanPlayCard(card)) return false;
+        if (card.CardData.CardType != CardType.Minion) return false;
+        if (Board == null) return false;
         if (!Board.CanSummon(CurrentPlayer)) return false;
 
         bool played = CurrentPlayer.PlayCard(card);
@@ -130,6 +130,46 @@ public class GameManager : MonoBehaviour
 
         Minion minion = new Minion(card.CardData, CurrentPlayer);
         return Board.SummonMinion(minion);
+    }
+
+    /// <summary>
+    /// 尝试把当前玩家手牌中的单目标伤害法术打到一个随从身上。
+    /// 阶段 2.1 先只支持 SpellDamage，不处理治疗、Buff 和事件系统。
+    /// </summary>
+    public bool TryPlaySpellCardOnMinion(Card card, Minion target)
+    {
+        if (!CanPlayCard(card)) return false;
+        if (card.CardData.CardType != CardType.Spell) return false;
+        if (!CanTargetMinion(card.CardData, target)) return false;
+
+        bool played = CurrentPlayer.PlayCard(card);
+        if (!played) return false;
+
+        target.TakeDamage(card.CardData.SpellDamage);
+
+        CleanupDeadMinions();
+        CheckGameOver();
+        return true;
+    }
+
+    /// <summary>
+    /// 尝试把当前玩家手牌中的单目标伤害法术打到一个英雄身上。
+    /// 阶段 2.1 先只支持 SpellDamage，不处理治疗、Buff 和事件系统。
+    /// </summary>
+    public bool TryPlaySpellCardOnHero(Card card, Hero targetHero)
+    {
+        if (!CanPlayCard(card)) return false;
+        if (card.CardData.CardType != CardType.Spell) return false;
+        if (!CanTargetHero(card.CardData, targetHero)) return false;
+
+        bool played = CurrentPlayer.PlayCard(card);
+        if (!played) return false;
+
+        targetHero.TakeDamage(card.CardData.SpellDamage);
+
+        CleanupDeadMinions();
+        CheckGameOver();
+        return true;
     }
 
     /// <summary>
@@ -217,6 +257,90 @@ public class GameManager : MonoBehaviour
         if (attacker.IsDead) return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// 通用出牌检查：只判断一张手牌能不能被当前玩家支付并打出。
+    /// 具体是召唤随从还是结算法术，由各自的 TryPlay 方法继续判断。
+    /// </summary>
+    private bool CanPlayCard(Card card)
+    {
+        if (card == null) return false;
+        if (card.CardData == null) return false;
+        if (IsGameOver) return false;
+        if (CurrentPlayer == null) return false;
+        if (!CurrentPlayer.Hand.Contains(card)) return false;
+        if (card.CurrentCost > CurrentPlayer.CurrentMana) return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 根据法术目标类型判断目标随从是否合法。
+    /// </summary>
+    private bool CanTargetMinion(CardData spellData, Minion target)
+    {
+        if (spellData == null) return false;
+        if (spellData.CardType != CardType.Spell) return false;
+        if (target == null) return false;
+        if (target.IsDead) return false;
+
+        Player targetOwner = target.Owner;
+        if (targetOwner != Player && targetOwner != Enemy) return false;
+
+        Player opponent = GetOpponent(CurrentPlayer);
+
+        switch (spellData.SpellTargetType)
+        {
+            case SpellTargetType.AnyCharacter:
+            case SpellTargetType.Minion:
+                return true;
+            case SpellTargetType.EnemyCharacter:
+            case SpellTargetType.EnemyMinion:
+                return targetOwner == opponent;
+            case SpellTargetType.FriendlyCharacter:
+            case SpellTargetType.FriendlyMinion:
+                return targetOwner == CurrentPlayer;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// 根据法术目标类型判断目标英雄是否合法。
+    /// </summary>
+    private bool CanTargetHero(CardData spellData, Hero targetHero)
+    {
+        if (spellData == null) return false;
+        if (spellData.CardType != CardType.Spell) return false;
+        if (targetHero == null) return false;
+        if (targetHero.IsDead) return false;
+
+        Player targetOwner = null;
+        if (Player != null && targetHero == Player.Hero)
+        {
+            targetOwner = Player;
+        }
+        else if (Enemy != null && targetHero == Enemy.Hero)
+        {
+            targetOwner = Enemy;
+        }
+
+        if (targetOwner == null) return false;
+
+        Player opponent = GetOpponent(CurrentPlayer);
+
+        switch (spellData.SpellTargetType)
+        {
+            case SpellTargetType.AnyCharacter:
+                return true;
+            case SpellTargetType.EnemyCharacter:
+                return targetOwner == opponent;
+            case SpellTargetType.FriendlyCharacter:
+                return targetOwner == CurrentPlayer;
+            default:
+                return false;
+        }
     }
 
     /// <summary>

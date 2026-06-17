@@ -10,10 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60f030409b9e31043936fd5c8e8e7070, type: 3}
-  m_Name: "\u6CB3\u6E7E\u730E\u624B"
+  m_Name: "\u706B\u82B1"
   m_EditorClassIdentifier: 
-  cardName: "\u6CB3\u6E7E\u730E\u624B"
-  cost: 2
-  attack: 3
-  health: 2
-  description: "\u653B\u51FB\u8F83\u9AD8\uFF0C\u9002\u5408\u6D4B\u8BD5\u968F\u4ECE\u4EA4\u6362\u3002"
+  cardName: "\u706B\u82B1"
+  cardType: 1
+  cost: 1
+  attack: 2
+  health: 0
+  spellDamage: 2
+  spellTargetType: 1
+  description: "\u9020\u6210 2 \u70B9\u4F24\u5BB3\u3002"

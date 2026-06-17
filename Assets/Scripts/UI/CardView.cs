@@ -66,8 +66,7 @@ public class CardView : MonoBehaviour
 
         SetText(nameText, card.CardData.CardName);
         SetText(costText, card.CurrentCost.ToString());
-        SetText(attackText, card.CardData.Attack.ToString());
-        SetText(healthText, card.CardData.Health.ToString());
+        SetCardStatsText(card.CardData);
         SetText(descriptionText, card.CardData.Description);
 
         if (button != null)
@@ -105,6 +104,30 @@ public class CardView : MonoBehaviour
         if (card == null) return;
 
         onClicked?.Invoke(card);
+    }
+
+    /// <summary>
+    /// 根据卡牌类型显示数值。
+    /// 随从显示攻击/生命，法术暂时用攻击位置显示伤害值。
+    /// </summary>
+    private void SetCardStatsText(CardData cardData)
+    {
+        if (cardData == null)
+        {
+            SetText(attackText, "");
+            SetText(healthText, "");
+            return;
+        }
+
+        if (cardData.CardType == CardType.Spell)
+        {
+            SetText(attackText, cardData.SpellDamage.ToString());
+            SetText(healthText, "");
+            return;
+        }
+
+        SetText(attackText, cardData.Attack.ToString());
+        SetText(healthText, cardData.Health.ToString());
     }
 
     /// <summary>
