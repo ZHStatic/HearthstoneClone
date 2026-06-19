@@ -10,7 +10,7 @@
 
 | 类 | 文件 | 主要职责 |
 |----|------|----------|
-| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，点击后把 `Card` 通知给上层 |
+| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，显示关键词文字，点击后把 `Card` 通知给上层 |
 | `HandView` | `Assets/Scripts/UI/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
@@ -78,6 +78,7 @@ gameManager.TryPlaySpellCardOnHero(card, targetHero);
 费用
 随从牌：攻击 / 生命
 法术牌：法术伤害 / 空生命位
+关键词
 描述
 ```
 
@@ -107,6 +108,15 @@ Spell：显示 SpellDamage，Health 位置留空
 
 这是阶段性简化。
 成熟项目会给法术牌单独的版式、图标或字段标签。
+
+阶段 2.2 中，`CardView` 会把 `CardData.Keywords` 转成中文文字，并复用 `descriptionText` 显示：
+
+```text
+Charge -> 冲锋
+```
+
+这是阶段性简化。
+当前没有新增关键词 Text，也没有改 `CardViewPrefab` 布局；后续正式 UI 可以改成独立标签或图标。
 
 ### HandView
 
@@ -226,6 +236,7 @@ BoardView 根据 Board.GetMinions(...) 创建 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 阶段 2.1 中，GameUIController 也使用同一个反馈文本显示法术选择、法术命中或目标非法
+阶段 2.2 中，CardView 会在手牌描述区显示冲锋关键词，GameUIController 不参与这件事
 ```
 
 ## 当前刷新方式
@@ -270,6 +281,7 @@ EnemyHeroButton
 
 阶段 1.5 中，`GameOverText` 在游戏未结束时复用为操作反馈文本；游戏结束后仍然显示胜负结果。
 阶段 2.1 继续复用这块文本显示法术选择和法术结算反馈。
+阶段 2.2 的手牌关键词文字复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
 
 Prefab：
 
@@ -295,6 +307,7 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 战场随从由 MinionView 显示，BoardView 负责显示一方战场。
 GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
 阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；阶段 2.1 中，法术选目标也属于 UI 层操作状态。
+阶段 2.2 中，手牌关键词显示属于纯表现层逻辑，CardView 只读取 CardData.Keywords，不判断关键词规则。
 具体规则仍由 GameManager 判断。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```

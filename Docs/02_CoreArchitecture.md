@@ -180,6 +180,7 @@ Minion 创建时复制 CardData.Keywords
 GameManager.TryPlayMinionCard() 召唤 Minion
 ApplySummonKeywords(minion) 识别 Charge
 minion.SetCanAttack(true)
+CardView 显示“冲锋”
 ```
 
 这个实现暂时不需要完整事件系统，因为冲锋只影响随从上场后的 `CanAttack` 初始状态。
@@ -205,7 +206,7 @@ GameEventBus
 CombatResolver
 ```
 
-本项目现在已经把第一个关键词跑通。下一步如果只是为了演示清楚，可以先让 UI 显示“冲锋”；如果继续扩展规则，再进入嘲讽。
+本项目现在已经把第一个关键词跑通，并让手牌 UI 显示“冲锋”。如果继续做展示收尾，可以让 `MinionView` 也显示场上随从关键词；如果继续扩展规则，再进入嘲讽。
 
 ## 后续拆分点
 

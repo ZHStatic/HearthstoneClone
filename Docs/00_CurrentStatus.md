@@ -12,7 +12,7 @@
 阶段 2.2 已完成：第一个关键词“冲锋”
 ```
 
-冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击。
+冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
 
 ## 当前可玩内容
 
@@ -23,6 +23,7 @@
 出牌
 召唤随从
 召唤冲锋随从并立即攻击
+手牌显示冲锋关键词
 施放单目标伤害法术
 费用不足和非法操作提示
 随从攻击随从
@@ -58,7 +59,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `CardView.cs` | 显示一张手牌并转发点击 |
+| `CardView.cs` | 显示一张手牌、关键词文字并转发点击 |
 | `HandView.cs` | 根据手牌列表生成多个 `CardView` |
 | `MinionView.cs` | 显示一个场上随从、点击和选中高亮 |
 | `BoardView.cs` | 根据一方战场列表生成多个 `MinionView` |
@@ -85,6 +86,7 @@
 - 空的 `CardData` 会被 `Player` 跳过，避免开局空引用。
 - 随从牌可以通过 `GameManager.TryPlayMinionCard(card)` 召唤。
 - 配置了 `Charge` 的随从召唤后会立刻进入可攻击状态。
+- 手牌中的冲锋卡会在描述区显示“冲锋”。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -101,6 +103,7 @@ CardData 配置 Charge
 -> Minion 复制关键词
 -> GameManager 召唤后识别 Charge
 -> 新随从 CanAttack = true
+-> CardView 显示“冲锋”
 -> UI 显示 Ready
 ```
 
@@ -114,17 +117,17 @@ CardData 配置 Charge
 下一步判断：
 
 ```text
-UI 可以补充关键词文字显示，让演示更直观。
+CardView 已显示手牌关键词，MinionView 暂时还没有显示场上随从关键词。
 嘲讽开始会影响攻击目标选择。
 战吼和亡语开始需要更认真地引入事件或效果系统。
 ```
 
 ## 下一步
 
-优先做一个小收尾：
+可选小收尾：
 
 ```text
-让 CardView / MinionView 显示关键词文字，例如“冲锋”。
+让 MinionView 也显示场上随从关键词文字。
 ```
 
-之后进入阶段 2.3：嘲讽。
+也可以直接进入阶段 2.3：嘲讽。

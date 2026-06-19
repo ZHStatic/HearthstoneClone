@@ -93,7 +93,7 @@ public class MinionView : MonoBehaviour
         SetText(nameText, minion.CardData.CardName);
         SetText(attackText, minion.Attack.ToString());
         SetText(healthText, minion.CurrentHealth.ToString());
-        SetText(canAttackText, minion.CanAttack ? "Ready" : "");
+        SetText(canAttackText, GetStatusText(minion));
         ApplySelectedState();
 
         if (button != null)
@@ -151,6 +151,62 @@ public class MinionView : MonoBehaviour
         if (backgroundImage != null)
         {
             backgroundImage.color = isSelected ? selectedColor : normalColor;
+        }
+    }
+
+    /// <summary>
+    /// 生成随从状态文字。
+    /// 当前复用 canAttackText，同时显示 Ready 和关键词，避免改 Prefab。
+    /// </summary>
+    private string GetStatusText(Minion minion)
+    {
+        if (minion == null) return "";
+
+        string statusText = minion.CanAttack ? "Ready" : "";
+        string keywordsText = GetKeywordsText(minion);
+
+        if (string.IsNullOrWhiteSpace(statusText)) return keywordsText;
+        if (string.IsNullOrWhiteSpace(keywordsText)) return statusText;
+
+        return $"{statusText} {keywordsText}";
+    }
+
+    /// <summary>
+    /// 把随从当前关键词列表转成 UI 文本。
+    /// </summary>
+    private string GetKeywordsText(Minion minion)
+    {
+        if (minion == null || minion.Keywords == null) return "";
+
+        string text = "";
+
+        foreach (KeywordType keyword in minion.Keywords)
+        {
+            string keywordText = GetKeywordText(keyword);
+            if (string.IsNullOrWhiteSpace(keywordText)) continue;
+
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                text += " ";
+            }
+
+            text += keywordText;
+        }
+
+        return text;
+    }
+
+    /// <summary>
+    /// 把关键词枚举转成玩家能看懂的中文。
+    /// </summary>
+    private string GetKeywordText(KeywordType keyword)
+    {
+        switch (keyword)
+        {
+            case KeywordType.Charge:
+                return "冲锋";
+            default:
+                return "";
         }
     }
 

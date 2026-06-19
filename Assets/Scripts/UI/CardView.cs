@@ -67,7 +67,7 @@ public class CardView : MonoBehaviour
         SetText(nameText, card.CardData.CardName);
         SetText(costText, card.CurrentCost.ToString());
         SetCardStatsText(card.CardData);
-        SetText(descriptionText, card.CardData.Description);
+        SetText(descriptionText, GetDescriptionText(card.CardData));
 
         if (button != null)
         {
@@ -128,6 +128,66 @@ public class CardView : MonoBehaviour
 
         SetText(attackText, cardData.Attack.ToString());
         SetText(healthText, cardData.Health.ToString());
+    }
+
+    /// <summary>
+    /// 生成卡牌描述区显示的文字。
+    /// 当前先复用 descriptionText，同时显示关键词和卡牌描述，避免改 Prefab。
+    /// </summary>
+    private string GetDescriptionText(CardData cardData)
+    {
+        if (cardData == null) return "";
+
+        string keywordsText = GetKeywordsText(cardData);
+        string description = cardData.Description;
+
+        if (string.IsNullOrWhiteSpace(keywordsText)) return description;
+        if (string.IsNullOrWhiteSpace(description)) return keywordsText;
+
+        // 如果手写描述里已经包含关键词，就不重复拼一遍。
+        if (description.Contains(keywordsText)) return description;
+
+        return $"{keywordsText}\n{description}";
+    }
+
+    /// <summary>
+    /// 把卡牌模板上的关键词列表转成 UI 文本。
+    /// 多个关键词之间先用空格分隔，之后做正式 UI 时可以换成图标或独立标签。
+    /// </summary>
+    private string GetKeywordsText(CardData cardData)
+    {
+        if (cardData == null || cardData.Keywords == null) return "";
+
+        string text = "";
+
+        foreach (KeywordType keyword in cardData.Keywords)
+        {
+            string keywordText = GetKeywordText(keyword);
+            if (string.IsNullOrWhiteSpace(keywordText)) continue;
+
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                text += " ";
+            }
+
+            text += keywordText;
+        }
+
+        return text;
+    }
+
+    /// <summary>
+    /// 把关键词枚举转成玩家能看懂的中文。
+    /// </summary>
+    private string GetKeywordText(KeywordType keyword)
+    {
+        switch (keyword)
+        {
+            case KeywordType.Charge:
+                return "冲锋";
+            default:
+                return "";
+        }
     }
 
     /// <summary>
