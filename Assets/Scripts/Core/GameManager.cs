@@ -129,7 +129,11 @@ public class GameManager : MonoBehaviour
         if (!played) return false;
 
         Minion minion = new Minion(card.CardData, CurrentPlayer);
-        return Board.SummonMinion(minion);
+        bool summoned = Board.SummonMinion(minion);
+        if (!summoned) return false;
+
+        ApplySummonKeywords(minion);
+        return true;
     }
 
     /// <summary>
@@ -257,6 +261,20 @@ public class GameManager : MonoBehaviour
         if (attacker.IsDead) return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// 处理随从被召唤时立刻生效的关键词。
+    /// 当前只处理冲锋：新召唤的随从本回合可以立即攻击。
+    /// </summary>
+    private void ApplySummonKeywords(Minion minion)
+    {
+        if (minion == null) return;
+
+        if (minion.HasKeyword(KeywordType.Charge))
+        {
+            minion.SetCanAttack(true);
+        }
     }
 
     /// <summary>

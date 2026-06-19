@@ -125,7 +125,8 @@ GameManager.StartTurn(targetPlayer)
 7. 如果成功，Player 扣除法力并从手牌移除卡牌。
 8. GameManager 创建 Minion。
 9. Board.SummonMinion(minion) 把随从加入战场。
-10. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
+10. 如果随从拥有 `Charge`，GameManager 让它立刻可以攻击。
+11. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -137,6 +138,34 @@ GameManager 负责规则流程。
 Player 负责手牌和法力。
 Board 负责战场随从列表。
 UI 最后重新读取 Core 状态并显示操作结果。
+```
+
+### 冲锋随从补充流程
+
+入口：
+
+```text
+玩家点击一张带有 Charge 关键词的随从牌
+```
+
+流程：
+
+```text
+1. CardData 中的 Keywords 配置了 Charge。
+2. GameManager 创建 Minion。
+3. Minion 从 CardData 复制关键词。
+4. Board.SummonMinion(minion) 召唤成功。
+5. GameManager.ApplySummonKeywords(minion) 检查 minion.HasKeyword(KeywordType.Charge)。
+6. 如果有冲锋，调用 minion.SetCanAttack(true)。
+7. UI 刷新后，新随从会直接显示 Ready。
+8. 玩家可以在召唤当回合用它攻击敌方随从或英雄。
+```
+
+当前阶段性简化：
+
+```text
+冲锋不使用事件系统。
+冲锋只改变召唤后的攻击权限，不影响攻击目标和伤害结算。
 ```
 
 ## 法术牌施放流程

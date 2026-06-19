@@ -49,10 +49,11 @@ Core 不依赖 UI
 | `CardData` | `Assets/Scripts/Core/CardData.cs` | 卡牌模板数据，Unity Inspector 中配置 |
 | `CardType` | `Assets/Scripts/Core/CardType.cs` | 区分随从牌和法术牌 |
 | `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
+| `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
-| `Minion` | `Assets/Scripts/Core/Minion.cs` | 场上随从实例：攻击、生命、所属玩家、能否攻击 |
+| `Minion` | `Assets/Scripts/Core/Minion.cs` | 场上随从实例：攻击、生命、所属玩家、能否攻击、关键词 |
 | `Board` | `Assets/Scripts/Core/Board.cs` | 双方战场随从列表、召唤上限、移除随从 |
 | `GameManager` | `Assets/Scripts/Core/GameManager.cs` | 当前阶段的对局流程调度入口 |
 
@@ -80,6 +81,8 @@ flowchart TD
 
     CardData --> CardType
     CardData --> SpellTargetType
+    CardData --> KeywordType
+    Minion --> KeywordType
 ```
 
 这张图里的重点不是箭头多少，而是方向：
@@ -133,6 +136,9 @@ Minion = 战场上的运行时随从
 | `CleanupDeadMinions()` | 清理死亡随从 |
 | `CheckGameOver()` | 检查胜负 |
 
+`TryPlayMinionCard()` 当前还会在召唤成功后调用 `ApplySummonKeywords(minion)`。
+这个方法只处理召唤时立刻生效的关键词，目前只有冲锋。
+
 这些方法返回 `bool` 的含义通常是：
 
 ```text
@@ -150,6 +156,7 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 |----------|----------------|--------------|
 | `GameManager` 直接结算基础伤害法术 | 当前只有一张单目标伤害法术 | 法术类型变多时抽出 `EffectSystem` |
 | `GameManager` 直接处理攻击和反击 | 攻击规则还简单 | 嘲讽、圣盾、剧毒等机制出现时抽出 `CombatResolver` |
+| `GameManager` 直接处理冲锋 | 冲锋只改召唤后的攻击权限 | 召唤触发效果变多时抽出召唤/事件处理 |
 | `GameManager` 直接清理死亡随从 | 当前死亡只需要移除 | 亡语出现时抽出 `DeathProcessor` |
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
 | 反馈文本由 `GameUIController` 拼接 | 当前只服务演示和调试 | 需要日志、动画、音效时再抽操作结果对象 |
@@ -161,27 +168,29 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 在进入关键词后，我会根据复杂度逐步拆出战斗结算、死亡处理、效果系统和事件总线。
 ```
 
-## 关键词前架构判断
+## 冲锋实现结论
 
-阶段 2.2 的第一个关键词建议做“冲锋”。
+阶段 2.2 已完成第一个关键词“冲锋”。
 
-原因：
+当前链路：
 
 ```text
-冲锋只影响随从上场后的 CanAttack 初始状态。
-它可以验证“卡牌数据 -> 随从实例 -> 规则生效”的链路。
-它暂时不要求完整事件系统。
+CardData.Keywords 配置 Charge
+Minion 创建时复制 CardData.Keywords
+GameManager.TryPlayMinionCard() 召唤 Minion
+ApplySummonKeywords(minion) 识别 Charge
+minion.SetCanAttack(true)
 ```
 
-不要一开始就为冲锋做过大的系统。
+这个实现暂时不需要完整事件系统，因为冲锋只影响随从上场后的 `CanAttack` 初始状态。
 
-建议的最小链路：
+当前编辑器取舍：
 
 ```text
-CardData 增加关键词数据
-Minion 生成时从 CardData 读取关键词
-GameManager 召唤随从后根据关键词设置 CanAttack
-UI 显示关键词或至少显示 Ready 状态
+CardData 使用 List<KeywordType> 让 Unity Inspector 方便配置。
+CleanKeywords() 用 HashSet<KeywordType> 去重。
+KeywordType.None 保留为编辑期占位，避免 Inspector 点 + 后元素立刻被清掉。
+HasKeyword(KeywordType.None) 仍然返回 false，所以 None 不会成为有效关键词。
 ```
 
 这是阶段性简化，不是成熟项目最终做法。
@@ -196,7 +205,7 @@ GameEventBus
 CombatResolver
 ```
 
-但本项目现在最重要的是先把第一个关键词跑通，并让你能解释每一行代码。
+本项目现在已经把第一个关键词跑通。下一步如果只是为了演示清楚，可以先让 UI 显示“冲锋”；如果继续扩展规则，再进入嘲讽。
 
 ## 后续拆分点
 
@@ -223,4 +232,4 @@ CombatResolver
 - 新功能先让最小链路跑通，再抽象。
 - 每次只增加能解释清楚的复杂度。
 
-下一步进入“冲锋”前，先写属性清单，再动代码。
+下一步继续写代码前，仍然先写属性清单，再动代码。

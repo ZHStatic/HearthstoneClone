@@ -1,9 +1,15 @@
+using System.Collections.Generic;
+
 /// <summary>
 /// 随从 - 已经被召唤到战场上的运行时单位。
 /// 它从 CardData 读取初始属性，但上场后的血量、攻击状态由自己维护。
 /// </summary>
 public class Minion
 {
+    // 随从自己的关键词列表。
+    // 不直接一直读取 CardData，是为了以后支持沉默、获得关键词、失去关键词等运行时变化。
+    private readonly List<KeywordType> keywords = new List<KeywordType>();
+
     public CardData CardData { get; private set; }
     public Player Owner { get; private set; }
     public int Attack { get; private set; }
@@ -11,6 +17,9 @@ public class Minion
     public int CurrentHealth { get; private set; }
     public bool CanAttack { get; private set; }
     public bool IsDead => CurrentHealth <= 0;
+
+    // 外部可以查看随从当前有哪些关键词，但不能替换关键词列表。
+    public IReadOnlyList<KeywordType> Keywords => keywords;
 
     public Minion(CardData cardData, Player owner)
     {
@@ -20,6 +29,18 @@ public class Minion
         MaxHealth = cardData.Health;
         CurrentHealth = MaxHealth;
         CanAttack = false;
+
+        CopyKeywordsFromCardData(cardData);
+    }
+
+    /// <summary>
+    /// 查询这个场上随从当前是否拥有指定关键词。
+    /// </summary>
+    public bool HasKeyword(KeywordType keyword)
+    {
+        if (keyword == KeywordType.None) return false;
+
+        return keywords.Contains(keyword);
     }
 
     /// <summary>
@@ -60,5 +81,21 @@ public class Minion
     public override string ToString()
     {
         return $"{CardData.CardName} {Attack}/{CurrentHealth}";
+    }
+
+    /// <summary>
+    /// 随从被创建时，从卡牌模板复制初始关键词。
+    /// </summary>
+    private void CopyKeywordsFromCardData(CardData cardData)
+    {
+        if (cardData == null || cardData.Keywords == null) return;
+
+        foreach (KeywordType keyword in cardData.Keywords)
+        {
+            if (keyword == KeywordType.None) continue;
+            if (keywords.Contains(keyword)) continue;
+
+            keywords.Add(keyword);
+        }
     }
 }

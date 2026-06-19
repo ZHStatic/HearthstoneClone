@@ -695,3 +695,132 @@ CardView 只负责显示和点击。
 ```
 
 这就是 UI 分层中常见的回调写法。
+
+## HashSet
+
+`HashSet<T>` 是一种集合，特点是：
+
+```text
+只保存唯一值。
+同一个值不能重复出现。
+适合判断“这个东西之前有没有出现过”。
+```
+
+它和 `List<T>` 的区别：
+
+| 类型 | 特点 | 适合场景 |
+|------|------|----------|
+| `List<T>` | 有顺序，可以重复 | 手牌、牌库、战场随从、Inspector 配置列表 |
+| `HashSet<T>` | 不关心顺序，不允许重复 | 去重、快速判断某个值是否已经出现 |
+
+本项目中，关键词字段仍然使用：
+
+```csharp
+[SerializeField] private List<KeywordType> keywords = new List<KeywordType>();
+```
+
+原因是 Unity Inspector 对 `List<T>` 的显示和编辑更直观。
+
+但是清理关键词时，会临时使用：
+
+```csharp
+HashSet<KeywordType> seenKeywords = new HashSet<KeywordType>();
+```
+
+原因是关键词不能重复。例如：
+
+```text
+Charge
+Charge
+```
+
+只应该被保留成：
+
+```text
+Charge
+```
+
+关键代码：
+
+```csharp
+bool isNewKeyword = seenKeywords.Add(keyword);
+```
+
+`HashSet.Add()` 的返回值表示：
+
+```text
+true  = 之前没有这个值，这次成功加入
+false = 之前已经有这个值，这次没有加入
+```
+
+所以这句代码同时做了两件事：
+
+```text
+记录这个 keyword 已经出现过。
+判断这个 keyword 是不是重复项。
+```
+
+本项目当前写法：
+
+```csharp
+private void CleanKeywords()
+{
+    if (keywords == null)
+    {
+        keywords = new List<KeywordType>();
+        return;
+    }
+
+    HashSet<KeywordType> seenKeywords = new HashSet<KeywordType>();
+    List<KeywordType> cleanedKeywords = new List<KeywordType>();
+
+    foreach (KeywordType keyword in keywords)
+    {
+        if (keyword == KeywordType.None)
+        {
+            cleanedKeywords.Add(keyword);
+            continue;
+        }
+
+        bool isNewKeyword = seenKeywords.Add(keyword);
+        if (!isNewKeyword) continue;
+
+        cleanedKeywords.Add(keyword);
+    }
+
+    keywords = cleanedKeywords;
+}
+```
+
+读法：
+
+```text
+1. 如果关键词列表为空，就创建一个空列表。
+2. 准备 seenKeywords，用来记录已经见过的关键词。
+3. 准备 cleanedKeywords，用来保存清理后的结果。
+4. 遍历原来的 keywords。
+5. 遇到 None 就保留。None 是 Unity Inspector 新增元素时的临时占位。
+6. 如果 HashSet 说这是重复值，就跳过。
+7. 如果是新关键词，就加入 cleanedKeywords。
+8. 最后用 cleanedKeywords 替换原列表。
+```
+
+这里不删除 `None` 的原因：
+
+```text
+Unity Inspector 给 enum 列表点 + 时，新元素默认是枚举的第一个值。
+KeywordType 的第一个值是 None。
+如果 OnValidate 立刻删除 None，新元素会刚加上就被清掉，看起来像“点 + 没反应”。
+所以 None 允许作为编辑期占位存在。
+真正判断关键词时，HasKeyword(KeywordType.None) 仍然会返回 false。
+```
+
+为什么不直接把字段写成 `HashSet<KeywordType>`：
+
+```text
+Unity Inspector 更适合编辑 List。
+HashSet 更适合运行时代码做去重和查询。
+所以这里是：对外配置用 List，内部清洗用 HashSet。
+```
+
+这是一个比较常见的工程取舍：用适合编辑器的数据结构保存配置，用适合算法意图的数据结构处理数据。

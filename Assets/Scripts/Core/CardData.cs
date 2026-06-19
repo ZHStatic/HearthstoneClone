@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -15,6 +16,10 @@ public class CardData : ScriptableObject
     [SerializeField] private int health = 1;
     [SerializeField] private int spellDamage = 0;
     [SerializeField] private SpellTargetType spellTargetType = SpellTargetType.None;
+
+    // 这张卡牌模板拥有的关键词。
+    // 用 List 是为了之后支持一张牌同时拥有多个关键词，例如冲锋 + 嘲讽。
+    [SerializeField] private List<KeywordType> keywords = new List<KeywordType>();
     [SerializeField] [TextArea] private string description = "";
 
     // 公开只读属性 — 外部能读，但不能改
@@ -26,7 +31,21 @@ public class CardData : ScriptableObject
     public int Health => health;
     public int SpellDamage => spellDamage;
     public SpellTargetType SpellTargetType => spellTargetType;
+
+    // 外部只能读取关键词列表，不能直接替换整个列表。
+    public IReadOnlyList<KeywordType> Keywords => keywords;
     public string Description => description;
+
+    /// <summary>
+    /// 查询这张卡牌模板是否拥有指定关键词。
+    /// </summary>
+    public bool HasKeyword(KeywordType keyword)
+    {
+        if (keyword == KeywordType.None) return false;
+        if (keywords == null) return false;
+
+        return keywords.Contains(keyword);
+    }
 
     private void OnValidate()
     {
@@ -42,5 +61,40 @@ public class CardData : ScriptableObject
         health = cardType == CardType.Minion
             ? Mathf.Max(1, health)
             : Mathf.Max(0, health);
+
+        CleanKeywords();
+    }
+
+    /// <summary>
+    /// 清理 Inspector 中的关键词配置，避免重复保存有效关键词。
+    /// None 需要保留为编辑期占位，否则 Unity Inspector 点 + 后会立刻被清掉。
+    /// </summary>
+    private void CleanKeywords()
+    {
+        if (keywords == null)
+        {
+            keywords = new List<KeywordType>();
+            return;
+        }
+
+        HashSet<KeywordType> seenKeywords = new HashSet<KeywordType>();
+        List<KeywordType> cleanedKeywords = new List<KeywordType>();
+
+        // HashSet 用来记录已经出现过的关键词，List 用来保留最终的 Inspector 显示顺序。
+        foreach (KeywordType keyword in keywords)
+        {
+            if (keyword == KeywordType.None)
+            {
+                cleanedKeywords.Add(keyword);
+                continue;
+            }
+
+            bool isNewKeyword = seenKeywords.Add(keyword);
+            if (!isNewKeyword) continue;
+
+            cleanedKeywords.Add(keyword);
+        }
+
+        keywords = cleanedKeywords;
     }
 }
