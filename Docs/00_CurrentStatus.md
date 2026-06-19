@@ -1,113 +1,120 @@
 # Current Status
 
-## 阶段 1 复盘学习入口
-
-为了帮助重新理解阶段 1 的代码、Unity 关联和 UI 回调，新增以下学习文档：
-
-- `Docs/Learning/Stage1ReviewGuide.md`：阶段 1 推荐复盘顺序、核心链路和练习方式。
-- `Docs/Learning/UICallbacksAndButtonGuide.md`：专门解释 `Button.onClick`、`Action<T>`、`AddListener` 和点击回调链。
-- `Docs/Learning/CodeReadingChecklist.md`：逐行读代码时可反复使用的检查表。
-
 最后更新：2026-06-19
 
 ## 当前阶段
 
-阶段 1 已完成，阶段 1.5：最小原型展示打磨已验收通过。
-阶段 2.1：基础伤害法术已完成并提交。
+阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5 已完成。
 
-当前状态：
+当前停靠点：
 
 ```text
-阶段 1 最小对战闭环已完成。
-阶段 1.5 已补充基础随从卡、操作反馈、选中高亮和基础 UI 可读性调整。
-阶段 2.1 已补充卡牌类型、法术目标类型、基础伤害法术结算和第一张测试法术牌。
-当前可以完成：抽牌 → 出牌 → 召唤随从 / 施放伤害法术 → 操作反馈 → 随从攻击随从/英雄 → 胜负判定。
+阶段 2.2 准备开始：第一个关键词“冲锋”
 ```
 
-下一步建议进入阶段 2.2：第一个关键词“冲锋”。
+阶段 2.1.5 的整理目标已经完成：进入关键词前，项目重新收束到“能读懂、能讲清、能继续扩展”的状态。
 
-## 已完成
+## 当前可玩内容
+
+当前 Play 模式已能完成：
+
+```text
+抽牌
+出牌
+召唤随从
+施放单目标伤害法术
+费用不足和非法操作提示
+随从攻击随从
+随从攻击英雄
+结束回合
+胜负判定
+```
+
+当前测试卡牌：
+
+- 基础随从：训练新兵、河湾猎手、城墙守卫、战场斗士、岩石巨人。
+- 基础法术：火花，1 费，造成 2 点伤害，目标为任意角色。
+
+## 当前代码结构
 
 ### Core 层
 
-- `CardData.cs`：卡牌模板数据，使用 `ScriptableObject`。
-- `CardType.cs`：卡牌类型枚举，当前支持随从牌和法术牌。
-- `SpellTargetType.cs`：法术目标类型枚举，当前支持单目标法术的目标范围。
-- `Card.cs`：运行时卡牌实例，引用 `CardData`，保存当前费用。
-- `Hero.cs`：英雄血量、受伤、治疗、死亡判断。
-- `Player.cs`：玩家手牌、牌库、法力水晶、抽牌、出牌。
-- `Board.cs`：战场，管理双方场上的随从列表。
-- `Minion.cs`：场上随从实例，管理攻击、生命、所属玩家、能否攻击。
-- `GameManager.cs`：对局流程，管理开局、回合、出牌、攻击、基础伤害法术、死亡清理、胜负判断。
+| 文件 | 职责 |
+|------|------|
+| `CardData.cs` | ScriptableObject 卡牌模板数据 |
+| `CardType.cs` | 卡牌类型：随从、法术 |
+| `SpellTargetType.cs` | 单目标法术可选择的目标范围 |
+| `Card.cs` | 手牌/牌库中的运行时卡牌实例 |
+| `Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
+| `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌 |
+| `Board.cs` | 双方战场随从列表和召唤位置限制 |
+| `Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限 |
+| `GameManager.cs` | 当前阶段的对局流程调度 |
 
 ### UI 层
 
-- `CardView.cs`：显示单张手牌，区分随从和法术的基础数值显示，点击后通知上层。
-- `HandView.cs`：显示当前行动者的手牌列表。
-- `MinionView.cs`：显示单个场上随从，点击后通知上层，并支持选中高亮。
-- `BoardView.cs`：显示一方战场上的随从列表，并传递随从点击回调和选中状态。
-- `GameUIController.cs`：连接 UI 和 `GameManager`，处理点击出牌、法术选目标、随从攻击随从、随从攻击英雄、结束回合、操作反馈和刷新。
+| 文件 | 职责 |
+|------|------|
+| `CardView.cs` | 显示一张手牌并转发点击 |
+| `HandView.cs` | 根据手牌列表生成多个 `CardView` |
+| `MinionView.cs` | 显示一个场上随从、点击和选中高亮 |
+| `BoardView.cs` | 根据一方战场列表生成多个 `MinionView` |
+| `GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、选择状态、反馈和刷新 |
 
-### Unity 资源
+## 文档分工
 
-- `Assets/Prefabs/UI/CardViewPrefab.prefab`
-- `Assets/Prefabs/UI/MinionViewPrefab.prefab`
-- 卡牌数据位于 `Assets/ScriptableObjects/Cards/`
-- 当前主测试场景：`Assets/Scenes/BattlePrototype.unity`
-- 阶段 1.5 基础随从卡：训练新兵、河湾猎手、城墙守卫、战场斗士、岩石巨人。
-- 阶段 2.1 测试法术卡：火花。
+以后按这个分工维护文档，避免重复：
+
+| 文档 | 只负责 |
+|------|--------|
+| `Docs/00_CurrentStatus.md` | 当前进度、当前停靠点、下一步 |
+| `Docs/01_ProjectPlan.md` | 项目长期路线和阶段目标 |
+| `Docs/02_CoreArchitecture.md` | Core 层职责、依赖、边界和后续拆分点 |
+| `Docs/03_UIArchitecture.md` | UI 层职责、点击输入、刷新方式 |
+| `Docs/04_FeatureFlows.md` | 玩家操作到代码调用的流程 |
+| `Docs/05_InterviewNotes.md` | 面试时怎么讲这个项目 |
+| `Docs/Learning/` | 学习笔记，不要求和正式架构文档完全同步 |
 
 ## 已确认
 
 - Unity Play 模式可以运行。
 - 牌库中配置有效 `CardData` 后，手牌可以显示。
-- 点击随从牌可以调用 `GameManager.TryPlayMinionCard(card)`；点击法术牌后可以选择目标并调用对应法术方法。
-- 成功出牌后，手牌减少、法力减少、战场出现随从。
-- 点击结束回合后，当前行动者切换，UI 会刷新。
-- 随从攻击随从 UI 已测试通过。
-- 随从攻击英雄 UI 已测试通过。
-- 已定位并修复一次 `NullReferenceException`：牌库列表中存在空的 `CardData` 项时，`Player` 现在会跳过空项。
-- 阶段 1.5 Play 模式验收通过：费用不足、出牌成功、选中/取消选中、攻击随从、攻击英雄和 UI 刷新均可正常展示。
-- UI 可读性已做基础调整：左上角 HUD、卡牌文字、随从文字和操作提示比第一版更容易阅读。
-- 阶段 2.1 Play 模式验收通过：点击火花进入法术选目标状态，点击随从或英雄可造成 2 点伤害，手牌、法力、血量和 UI 刷新正常。
-- 法术牌在手牌中会显示 `SpellDamage`，不再按随从牌显示攻击/生命。
+- 空的 `CardData` 会被 `Player` 跳过，避免开局空引用。
+- 随从牌可以通过 `GameManager.TryPlayMinionCard(card)` 召唤。
+- 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
+- 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
+- 结束回合后，当前行动者切换，UI 刷新。
+- 随从攻击随从、随从攻击英雄和胜负判定已测试通过。
 
-## 当前设计理解
+## 架构停靠结论
 
-当前项目分为两层：
+当前代码不需要推倒重来，可以继续在现有结构上做第一个关键词。
 
-```text
-Core：规则层
-UI：表现和输入层
-```
+需要记住的风险点：
 
-核心原则：
+- `GameManager` 已经负责回合、出牌、法术、攻击、死亡清理和胜负判断，后续不能无限加规则特判。
+- `GameUIController` 已经负责攻击选择、法术选择、英雄点击、操作反馈和刷新，后续 UI 状态复杂时需要拆分。
+- 当前法术直接由 `GameManager` 结算，这是阶段性简化，不是成熟项目最终做法。
+- 当前还没有事件系统，战吼、亡语、圣盾这类机制不要急着硬写。
 
-- `CardData` 是静态模板，`Card` / `Minion` 是运行时状态。
-- `CardType` 区分随从牌和法术牌；`SpellTargetType` 描述法术可选择的目标范围。
-- `Player` 管理手牌、牌库、法力。
-- `Board` 管理战场随从列表。
-- `GameManager` 负责当前阶段的对局流程调度，包括随从召唤、随从攻击和基础伤害法术。
-- UI 不直接改规则状态，只读取 Core 状态，并调用 `GameManager` 方法。
-
-## 当前文档结构
+关键词前的判断：
 
 ```text
-Docs/
-├── 00_CurrentStatus.md
-├── 01_ProjectPlan.md
-├── 02_CoreArchitecture.md
-├── 03_UIArchitecture.md
-├── 04_FeatureFlows.md
-├── 05_InterviewNotes.md
-└── Learning/
-    ├── CSharpNotes.md
-    └── UnityNotes.md
+冲锋可以作为最小关键词验证。
+嘲讽开始会影响攻击目标选择。
+战吼和亡语开始需要更认真地引入事件或效果系统。
 ```
 
-## 下一步：阶段 2.2
+## 下一步
 
-- 开始设计第一个关键词：冲锋。
-- 引入事件系统前，先用最小实现验证“关键词数据 → 随从生成 → 规则生效”的链路。
-- 后续关键词建议从嘲讽开始，再进入战吼、亡语、圣盾。
-- 继续保持 Core 不依赖 UI，UI 只负责显示、输入和反馈。
+阶段 2.2：第一个关键词“冲锋”。
+
+开始写代码前，先按属性清单确认：
+
+```text
+关键词数据放在哪里？
+随从生成时如何继承关键词？
+冲锋如何让新召唤随从立刻可以攻击？
+UI 是否需要显示关键词？
+这次是否需要事件系统，还是先做最小验证？
+```

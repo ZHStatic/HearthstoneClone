@@ -25,6 +25,7 @@
 
 - 阶段 1.5 最小原型展示打磨已验收通过
 - 阶段 2.1 基础伤害法术已验收通过
+- 阶段 2.1.5 架构复盘与文档整理已完成
 - 下一步：阶段 2.2，制作第一个关键词“冲锋”
 
 暂未完成：
@@ -63,7 +64,10 @@ Docs/
 ├── 04_FeatureFlows.md
 ├── 05_InterviewNotes.md
 └── Learning/
+    ├── CodeReadingChecklist.md
     ├── CSharpNotes.md
+    ├── Stage1ReviewGuide.md
+    ├── UICallbacksAndButtonGuide.md
     └── UnityNotes.md
 ```
 
@@ -128,6 +132,7 @@ Docs/
 - Core 层不依赖 UI 层。
 - UI 点击只调用 `GameManager` 方法，不直接修改规则数据。
 - 当前基础伤害法术先由 `GameManager` 直接结算，后续复杂法术和关键词会逐步抽到事件系统。
+- 阶段 2.1.5 已整理文档边界：状态、计划、Core 架构、UI 架构、功能流程和面试笔记各自维护不同内容。
 
 ## 学习复盘文档
 
