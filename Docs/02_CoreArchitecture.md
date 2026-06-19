@@ -50,6 +50,7 @@ Core 不依赖 UI
 | `CardType` | `Assets/Scripts/Core/CardType.cs` | 区分随从牌和法术牌 |
 | `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
 | `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋和嘲讽 |
+| `BattlecryType` | `Assets/Scripts/Core/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
@@ -82,6 +83,7 @@ flowchart TD
     CardData --> CardType
     CardData --> SpellTargetType
     CardData --> KeywordType
+    CardData --> BattlecryType
     Minion --> KeywordType
 ```
 
@@ -136,11 +138,14 @@ Minion = 战场上的运行时随从
 | `CleanupDeadMinions()` | 清理死亡随从 |
 | `CheckGameOver()` | 检查胜负 |
 
-`TryPlayMinionCard()` 当前还会在召唤成功后调用 `ApplySummonKeywords(minion)`。
-这个方法只处理召唤时立刻生效的关键词，目前只有冲锋。
+`TryPlayMinionCard()` 当前还会在召唤成功后调用 `ResolveAfterSummon(minion)`。
+这个方法统一处理召唤后的阶段性结算，目前包含冲锋和最小战吼。
 
 嘲讽不属于召唤时效果，而是攻击目标合法性规则。
 当前由 `TryAttackMinion()` 和 `TryAttackHero()` 在攻击前检查。
+
+战吼属于出牌/召唤成功后触发的一次性效果。
+当前由 `ResolveBattlecry(minion)` 直接结算，暂不使用完整事件系统。
 
 这些方法返回 `bool` 的含义通常是：
 
@@ -159,7 +164,7 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 |----------|----------------|--------------|
 | `GameManager` 直接结算基础伤害法术 | 当前只有一张单目标伤害法术 | 法术类型变多时抽出 `EffectSystem` |
 | `GameManager` 直接处理攻击、反击和嘲讽目标检查 | 攻击规则还简单，嘲讽只影响目标合法性 | 圣盾、剧毒、风怒等机制继续增加时抽出 `CombatResolver` |
-| `GameManager` 直接处理冲锋 | 冲锋只改召唤后的攻击权限 | 召唤触发效果变多时抽出召唤/事件处理 |
+| `GameManager` 直接处理冲锋和第一个战吼 | 当前只验证召唤后结算链路 | 战吼类型变多或亡语出现时抽出事件/效果系统 |
 | `GameManager` 直接清理死亡随从 | 当前死亡只需要移除 | 亡语出现时抽出 `DeathProcessor` |
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
 | 反馈文本由 `GameUIController` 拼接 | 当前只服务演示和调试 | 需要日志、动画、音效时再抽操作结果对象 |
@@ -174,7 +179,8 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 ## 关键词实现结论
 
 阶段 2.2 已完成第一个关键词“冲锋”。
-阶段 2.3 已完成第二个关键词“嘲讽”的代码实现，等待 Unity Play 模式验证。
+阶段 2.3 已完成第二个关键词“嘲讽”。
+阶段 2.4 已完成第一个战吼的最小代码链路，并通过 Unity Play 模式验证。
 
 当前链路：
 
@@ -224,7 +230,30 @@ CombatResolver
 
 本项目现在已经把冲锋跑通，并完成嘲讽代码实现。
 `CardView` 和 `MinionView` 都会显示关键词文字。
-下一步是回到 Unity Editor 配置测试卡的 `Taunt` 关键词，并在 Play 模式验证攻击目标限制。
+
+## 战吼实现结论
+
+阶段 2.4 先不直接上完整 `GameEventBus`，而是用普通方法模拟“召唤后触发效果”的思想。
+
+当前链路：
+
+```text
+CardData.BattlecryType 配置 DealDamageToEnemyHero
+CardData.BattlecryDamage 配置伤害值
+GameManager.TryPlayMinionCard() 召唤 Minion
+ResolveAfterSummon(minion)
+ApplySummonKeywords(minion)
+ResolveBattlecry(minion)
+DealBattlecryDamageToEnemyHero(minion)
+opponent.Hero.TakeDamage(...)
+CheckGameOver()
+CardView 显示“战吼：对敌方英雄造成 X 点伤害”
+```
+
+这是阶段性简化，不是成熟项目最终做法。
+它的目的不是完成所有战吼，而是让项目先出现“发生一件事以后，触发一个效果”的最小形状。
+
+完整事件系统建议在亡语前引入，因为亡语会被攻击、法术、战吼、AOE 等多个来源触发。
 
 ## 后续拆分点
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -138,16 +139,13 @@ public class CardView : MonoBehaviour
     {
         if (cardData == null) return "";
 
-        string keywordsText = GetKeywordsText(cardData);
-        string description = cardData.Description;
+        List<string> lines = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(keywordsText)) return description;
-        if (string.IsNullOrWhiteSpace(description)) return keywordsText;
+        AddDescriptionLine(lines, GetKeywordsText(cardData));
+        AddDescriptionLine(lines, GetBattlecryText(cardData));
+        AddDescriptionLine(lines, cardData.Description);
 
-        // 如果手写描述里已经包含关键词，就不重复拼一遍。
-        if (description.Contains(keywordsText)) return description;
-
-        return $"{keywordsText}\n{description}";
+        return string.Join("\n", lines);
     }
 
     /// <summary>
@@ -174,6 +172,35 @@ public class CardView : MonoBehaviour
         }
 
         return text;
+    }
+
+    /// <summary>
+    /// 生成战吼显示文字。
+    /// 战吼是出牌时触发的一次性效果，所以只显示在手牌描述区。
+    /// </summary>
+    private string GetBattlecryText(CardData cardData)
+    {
+        if (cardData == null) return "";
+        if (!cardData.HasBattlecry) return "";
+
+        switch (cardData.BattlecryType)
+        {
+            case BattlecryType.DealDamageToEnemyHero:
+                return $"战吼：对敌方英雄造成 {cardData.BattlecryDamage} 点伤害";
+            default:
+                return "";
+        }
+    }
+
+    /// <summary>
+    /// 向描述行列表中加入一行非空内容。
+    /// </summary>
+    private void AddDescriptionLine(List<string> lines, string line)
+    {
+        if (lines == null) return;
+        if (string.IsNullOrWhiteSpace(line)) return;
+
+        lines.Add(line);
     }
 
     /// <summary>

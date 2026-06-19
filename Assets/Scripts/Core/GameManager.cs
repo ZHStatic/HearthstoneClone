@@ -132,7 +132,7 @@ public class GameManager : MonoBehaviour
         bool summoned = Board.SummonMinion(minion);
         if (!summoned) return false;
 
-        ApplySummonKeywords(minion);
+        ResolveAfterSummon(minion);
         return true;
     }
 
@@ -264,6 +264,18 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 统一处理随从被召唤成功后的结算。
+    /// 当前包含冲锋和最小战吼，后续可以逐步替换成事件系统。
+    /// </summary>
+    private void ResolveAfterSummon(Minion minion)
+    {
+        if (minion == null) return;
+
+        ApplySummonKeywords(minion);
+        ResolveBattlecry(minion);
+    }
+
+    /// <summary>
     /// 判断一个随从是否能成为当前攻击者的攻击目标。
     /// 如果防守方有活着的嘲讽随从，就只能攻击嘲讽随从。
     /// </summary>
@@ -322,6 +334,38 @@ public class GameManager : MonoBehaviour
         {
             minion.SetCanAttack(true);
         }
+    }
+
+    /// <summary>
+    /// 处理随从的战吼效果。
+    /// 当前阶段先只支持一个最小战吼：对敌方英雄造成伤害。
+    /// </summary>
+    private void ResolveBattlecry(Minion minion)
+    {
+        if (minion == null) return;
+        if (minion.CardData == null) return;
+        if (!minion.CardData.HasBattlecry) return;
+
+        switch (minion.CardData.BattlecryType)
+        {
+            case BattlecryType.DealDamageToEnemyHero:
+                DealBattlecryDamageToEnemyHero(minion);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 战吼：对敌方英雄造成伤害。
+    /// </summary>
+    private void DealBattlecryDamageToEnemyHero(Minion minion)
+    {
+        if (minion == null || minion.CardData == null) return;
+
+        Player opponent = GetOpponent(minion.Owner);
+        if (opponent == null || opponent.Hero == null) return;
+
+        opponent.Hero.TakeDamage(minion.CardData.BattlecryDamage);
+        CheckGameOver();
     }
 
     /// <summary>

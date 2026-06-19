@@ -125,9 +125,11 @@ GameManager.StartTurn(targetPlayer)
 7. 如果成功，Player 扣除法力并从手牌移除卡牌。
 8. GameManager 创建 Minion。
 9. Board.SummonMinion(minion) 把随从加入战场。
-10. 如果随从拥有 `Charge`，GameManager 让它立刻可以攻击。
-11. 如果随从拥有 `Taunt`，它会在后续攻击目标判断中被识别为嘲讽随从。
-12. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
+10. GameManager 调用 ResolveAfterSummon(minion) 处理召唤后结算。
+11. 如果随从拥有 `Charge`，GameManager 让它立刻可以攻击。
+12. 如果这张牌配置了战吼，GameManager 结算战吼效果。
+13. 如果随从拥有 `Taunt`，它会在后续攻击目标判断中被识别为嘲讽随从。
+14. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -199,6 +201,71 @@ UI 最后重新读取 Core 状态并显示操作结果。
 ```text
 嘲讽不使用事件系统。
 嘲讽只限制随从/英雄攻击目标，不限制法术选目标。
+```
+
+### 战吼随从补充流程
+
+入口：
+
+```text
+玩家点击一张带有 BattlecryType 的随从牌
+```
+
+当前测试战吼：
+
+```text
+火焰学徒：2 费，2/2，战吼：对敌方英雄造成 1 点伤害
+```
+
+流程：
+
+```text
+1. CardData 中配置 BattlecryType = DealDamageToEnemyHero。
+2. CardData 中配置 BattlecryDamage = 1。
+3. CardView 刷新手牌时显示“战吼：对敌方英雄造成 1 点伤害”。
+4. 玩家点击火焰学徒。
+5. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
+6. GameManager 检查出牌条件并让 Player 扣法力、移除手牌。
+7. GameManager 创建 Minion。
+8. Board.SummonMinion(minion) 把随从加入战场。
+9. GameManager.ResolveAfterSummon(minion) 被调用。
+10. ResolveAfterSummon 先处理冲锋，再处理战吼。
+11. ResolveBattlecry 识别 DealDamageToEnemyHero。
+12. GameManager 找到出牌者的对手。
+13. 敌方 Hero 承受 BattlecryDamage 点伤害。
+14. GameManager.CheckGameOver() 检查战吼是否已经打死英雄。
+15. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
+```
+
+当前阶段性简化：
+
+```text
+战吼暂时不使用完整 GameEventBus。
+当前只支持不需要选目标的战吼。
+第一版战吼固定打敌方英雄，避免同时引入出牌选目标 UI。
+亡语开始前，再正式引入事件系统。
+```
+
+### 阶段 2.4 测试步骤
+
+在 Unity Editor 中操作：
+
+```text
+1. 等 Unity 自动导入 BattlecryType.cs，并确认 Console 没有编译错误。
+2. 在 Project 面板中创建一张新的 CardData，命名为“火焰学徒”。
+3. 设置 Card Type = Minion。
+4. 设置 Cost = 2。
+5. 设置 Attack = 2。
+6. 设置 Health = 2。
+7. 设置 Battlecry Type = DealDamageToEnemyHero。
+8. 设置 Battlecry Damage = 1。
+9. 把“火焰学徒”加入 GameManager 的 Player Deck Data。
+10. 进入 Play 模式。
+11. 抽到火焰学徒后，确认手牌描述显示战吼文字。
+12. 打出火焰学徒。
+13. 确认火焰学徒进入战场。
+14. 确认敌方英雄生命立刻减少 1。
+15. 如果测试高伤害战吼，确认敌方英雄生命归零后会 Game Over。
 ```
 
 ## 法术牌施放流程

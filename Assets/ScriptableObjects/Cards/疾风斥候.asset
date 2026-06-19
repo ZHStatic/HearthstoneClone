@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60f030409b9e31043936fd5c8e8e7070, type: 3}
   m_Name: "\u75BE\u98CE\u65A5\u5019"
   m_EditorClassIdentifier: 
-  cardName: "\u672A\u547D\u540D\u5361\u724C"
+  cardName: "\u75BE\u98CE\u65A5\u5019"
   cardType: 0
   cost: 1
   attack: 1
   health: 1
   spellDamage: 0
   spellTargetType: 0
-  keywords: 
+  battlecryType: 0
+  battlecryDamage: 0
+  keywords: 01000000
   description: 

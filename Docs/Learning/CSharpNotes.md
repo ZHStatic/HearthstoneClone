@@ -824,3 +824,150 @@ HashSet 更适合运行时代码做去重和查询。
 ```
 
 这是一个比较常见的工程取舍：用适合编辑器的数据结构保存配置，用适合算法意图的数据结构处理数据。
+
+## ref 参数
+
+`ref` 是 C# 的参数修饰符。
+
+普通参数传递时，可以先理解成：
+
+```text
+方法拿到的是传入值的一份可用数据。
+方法内部怎么改，不一定会改到外面的变量本身。
+```
+
+`ref` 的意思是：
+
+```text
+把变量本身交给方法。
+方法内部可以直接修改调用者传进来的那个变量。
+```
+
+例子：
+
+```csharp
+private void Change(string value)
+{
+    value = "新内容";
+}
+
+string text = "旧内容";
+Change(text);
+
+// text 仍然是 "旧内容"
+```
+
+加上 `ref`：
+
+```csharp
+private void Change(ref string value)
+{
+    value = "新内容";
+}
+
+string text = "旧内容";
+Change(ref text);
+
+// text 变成 "新内容"
+```
+
+注意两边都要写 `ref`：
+
+```csharp
+Change(ref text);
+```
+
+这样做是为了让调用处一眼看出来：
+
+```text
+这个方法可能会改掉我传进去的变量。
+```
+
+### 什么时候适合用 ref
+
+`ref` 适合少数比较明确的场景：
+
+```text
+方法需要直接修改一个外部变量。
+这个修改是方法的核心目的。
+调用者也能清楚接受这种副作用。
+```
+
+例如一些底层性能优化、数学计算、需要同时读写同一个结构体的场景。
+
+但在普通业务逻辑和 UI 文本拼接里，`ref` 往往会增加阅读负担。
+
+### 这次 CardView 的取舍
+
+阶段 2.4 中，`CardView` 需要把几类文本拼成手牌描述：
+
+```text
+关键词
+战吼
+手写描述
+```
+
+一开始曾经写成：
+
+```csharp
+string text = "";
+
+AppendDescriptionLine(ref text, GetKeywordsText(cardData));
+AppendDescriptionLine(ref text, GetBattlecryText(cardData));
+AppendDescriptionLine(ref text, cardData.Description);
+```
+
+这种写法能跑，但不是这里最合适的工程写法。
+
+问题是：
+
+```text
+1. ref 对初学者阅读负担较高。
+2. 这里并不是真的需要“修改外部变量本身”这种能力。
+3. 文本拼接更常见的写法是先收集多行，再统一组合。
+```
+
+所以当前改成了：
+
+```csharp
+List<string> lines = new List<string>();
+
+AddDescriptionLine(lines, GetKeywordsText(cardData));
+AddDescriptionLine(lines, GetBattlecryText(cardData));
+AddDescriptionLine(lines, cardData.Description);
+
+return string.Join("\n", lines);
+```
+
+读法：
+
+```text
+1. 准备一个字符串列表 lines。
+2. 把非空描述逐行加入 lines。
+3. 用 string.Join 把这些行用换行符连接起来。
+```
+
+`string.Join("\n", lines)` 的意思是：
+
+```text
+把 lines 里的每个字符串拼起来，中间用换行符分隔。
+```
+
+这个写法更符合当前项目的学习目标：
+
+```text
+优先使用清楚、常见、容易维护的写法。
+不要为了“少写几行”引入不必要的高级语法。
+```
+
+### 当前规则
+
+以后遇到 `ref`、`out`、`delegate`、`event`、泛型接口、反射这类会增加认知负担的语法时，先问：
+
+```text
+这个语法是不是解决当前问题的常见做法？
+不用它会不会更清楚？
+它带来的复杂度值不值得？
+```
+
+如果只是为了临时方便，就优先不用。
