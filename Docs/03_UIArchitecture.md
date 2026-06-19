@@ -113,6 +113,7 @@ Spell：显示 SpellDamage，Health 位置留空
 
 ```text
 Charge -> 冲锋
+Taunt -> 嘲讽
 ```
 
 这是阶段性简化。
@@ -144,6 +145,7 @@ Charge -> 冲锋
 攻击
 当前生命
 是否可以攻击
+关键词
 是否被选中
 ```
 
@@ -151,6 +153,17 @@ Charge -> 冲锋
 它会把点击到的 `Minion` 通知给 `GameUIController`。
 真正的攻击规则仍然由 `GameManager` 判断。
 选中高亮只表现 UI 状态，不参与规则判断。
+
+阶段 2.2 / 2.3 中，`MinionView` 会复用 `canAttackText` 显示 Ready 和关键词：
+
+```text
+Ready 冲锋
+嘲讽
+Ready 嘲讽
+```
+
+这是阶段性简化。
+正式 UI 可以把 Ready 状态和关键词拆成独立图标或标签。
 
 ### BoardView
 
@@ -236,7 +249,7 @@ BoardView 根据 Board.GetMinions(...) 创建 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 阶段 2.1 中，GameUIController 也使用同一个反馈文本显示法术选择、法术命中或目标非法
-阶段 2.2 中，CardView 会在手牌描述区显示冲锋关键词，GameUIController 不参与这件事
+阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 ```
 
 ## 当前刷新方式
@@ -282,6 +295,7 @@ EnemyHeroButton
 阶段 1.5 中，`GameOverText` 在游戏未结束时复用为操作反馈文本；游戏结束后仍然显示胜负结果。
 阶段 2.1 继续复用这块文本显示法术选择和法术结算反馈。
 阶段 2.2 的手牌关键词文字复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
+阶段 2.3 的场上随从关键词文字复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 
 Prefab：
 
@@ -307,7 +321,7 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 战场随从由 MinionView 显示，BoardView 负责显示一方战场。
 GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
 阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；阶段 2.1 中，法术选目标也属于 UI 层操作状态。
-阶段 2.2 中，手牌关键词显示属于纯表现层逻辑，CardView 只读取 CardData.Keywords，不判断关键词规则。
+阶段 2.2 / 2.3 中，关键词显示属于纯表现层逻辑，CardView 读取 CardData.Keywords，MinionView 读取 Minion.Keywords，不判断关键词规则。
 具体规则仍由 GameManager 判断。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```

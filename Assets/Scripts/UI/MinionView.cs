@@ -205,6 +205,8 @@ public class MinionView : MonoBehaviour
         {
             case KeywordType.Charge:
                 return "冲锋";
+            case KeywordType.Taunt:
+                return "嘲讽";
             default:
                 return "";
         }

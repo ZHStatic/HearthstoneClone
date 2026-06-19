@@ -126,7 +126,8 @@ GameManager.StartTurn(targetPlayer)
 8. GameManager 创建 Minion。
 9. Board.SummonMinion(minion) 把随从加入战场。
 10. 如果随从拥有 `Charge`，GameManager 让它立刻可以攻击。
-11. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
+11. 如果随从拥有 `Taunt`，它会在后续攻击目标判断中被识别为嘲讽随从。
+12. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -166,6 +167,38 @@ UI 最后重新读取 Core 状态并显示操作结果。
 ```text
 冲锋不使用事件系统。
 冲锋只改变召唤后的攻击权限，不影响攻击目标和伤害结算。
+```
+
+### 嘲讽随从补充流程
+
+入口：
+
+```text
+玩家尝试攻击对方随从或英雄
+```
+
+流程：
+
+```text
+1. CardData 中的 Keywords 配置了 Taunt。
+2. GameManager 创建 Minion。
+3. Minion 从 CardData 复制关键词。
+4. UI 刷新后，CardView 和 MinionView 可以显示“嘲讽”。
+5. 玩家选择一个己方可攻击随从。
+6. 玩家点击敌方随从或敌方英雄。
+7. GameManager 先确认攻击者是否可以攻击。
+8. 如果目标是敌方英雄，GameManager 检查敌方是否有活着的嘲讽随从。
+9. 如果敌方有活着的嘲讽随从，攻击英雄失败。
+10. 如果目标是敌方随从，GameManager 检查敌方是否有活着的嘲讽随从。
+11. 如果敌方有活着的嘲讽随从，目标必须也是嘲讽随从，否则攻击失败。
+12. 如果目标合法，才进入正常伤害结算。
+```
+
+当前阶段性简化：
+
+```text
+嘲讽不使用事件系统。
+嘲讽只限制随从/英雄攻击目标，不限制法术选目标。
 ```
 
 ## 法术牌施放流程
@@ -267,8 +300,8 @@ AI 还没做，所以 UI 暂时显示当前行动者的手牌。
 5. 选择成功后，GameUIController 记录 selectedAttacker，BoardView 刷新时让对应 MinionView 高亮。
 6. 如果已经有 selectedAttacker，再点击敌方随从。
 7. GameUIController 调用 GameManager.TryAttackMinion(selectedAttacker, target)。
-8. GameManager 检查攻击者、目标、阵营和攻击权限。
-9. 双方随从互相造成攻击力数值的伤害。
+8. GameManager 检查攻击者、目标、阵营、攻击权限和嘲讽限制。
+9. 如果目标合法，双方随从互相造成攻击力数值的伤害。
 10. 攻击者 CanAttack = false。
 11. 清理死亡随从。
 12. 检查胜负。
@@ -299,11 +332,12 @@ GameManager 负责判断攻击是否合法并结算伤害。
 3. 玩家点击敌方英雄按钮。
 4. GameUIController 调用 TryAttackSelectedHero(targetHero)。
 5. TryAttackSelectedHero 调用 GameManager.TryAttackHero(selectedAttacker, targetHero)。
-6. GameManager 检查攻击者、目标英雄和阵营。
-7. 目标英雄受到攻击者攻击力数值的伤害。
-8. 攻击者 CanAttack = false。
-9. GameManager 检查胜负。
-10. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
+6. GameManager 检查攻击者、目标英雄、阵营和嘲讽限制。
+7. 如果对方场上有活着的嘲讽随从，攻击英雄失败。
+8. 如果目标合法，目标英雄受到攻击者攻击力数值的伤害。
+9. 攻击者 CanAttack = false。
+10. GameManager 检查胜负。
+11. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
 ```
 
 补充规则：

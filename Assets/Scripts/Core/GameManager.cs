@@ -183,8 +183,7 @@ public class GameManager : MonoBehaviour
     public bool TryAttackMinion(Minion attacker, Minion target)
     {
         if (!CanAttack(attacker)) return false;
-        if (target == null) return false;
-        if (target.Owner == attacker.Owner) return false;
+        if (!IsValidAttackTarget(attacker, target)) return false;
 
         attacker.TakeDamage(target.Attack);
         target.TakeDamage(attacker.Attack);
@@ -207,6 +206,7 @@ public class GameManager : MonoBehaviour
         Player opponent = GetOpponent(attacker.Owner);
         if (opponent == null) return false;
         if (targetHero != opponent.Hero) return false;
+        if (HasAliveTauntMinion(opponent)) return false;
 
         targetHero.TakeDamage(attacker.Attack);
         attacker.SetCanAttack(false);
@@ -261,6 +261,53 @@ public class GameManager : MonoBehaviour
         if (attacker.IsDead) return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// 判断一个随从是否能成为当前攻击者的攻击目标。
+    /// 如果防守方有活着的嘲讽随从，就只能攻击嘲讽随从。
+    /// </summary>
+    private bool IsValidAttackTarget(Minion attacker, Minion target)
+    {
+        if (attacker == null) return false;
+        if (target == null) return false;
+        if (target.IsDead) return false;
+
+        Player opponent = GetOpponent(attacker.Owner);
+        if (opponent == null) return false;
+        if (target.Owner != opponent) return false;
+
+        if (HasAliveTauntMinion(opponent))
+        {
+            return target.HasKeyword(KeywordType.Taunt);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 判断指定玩家场上是否有仍然存活的嘲讽随从。
+    /// </summary>
+    private bool HasAliveTauntMinion(Player owner)
+    {
+        if (owner == null) return false;
+        if (Board == null) return false;
+
+        IReadOnlyList<Minion> minions = Board.GetMinions(owner);
+        if (minions == null) return false;
+
+        foreach (Minion minion in minions)
+        {
+            if (minion == null) continue;
+            if (minion.IsDead) continue;
+
+            if (minion.HasKeyword(KeywordType.Taunt))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
