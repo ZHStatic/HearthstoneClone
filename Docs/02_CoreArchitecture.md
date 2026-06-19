@@ -10,7 +10,9 @@
 
 | 类 | 文件 | 主要职责 |
 |----|------|----------|
-| `CardData` | `Assets/Scripts/Core/CardData.cs` | 卡牌模板数据，存储名称、费用、攻击、血量、描述 |
+| `CardData` | `Assets/Scripts/Core/CardData.cs` | 卡牌模板数据，存储名称、类型、费用、随从数值、法术数值和描述 |
+| `CardType` | `Assets/Scripts/Core/CardType.cs` | 卡牌类型枚举，当前区分随从牌和法术牌 |
+| `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 法术目标类型枚举，描述单目标法术可选择的目标范围 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，引用 `CardData`，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄血量、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力水晶、抽牌、出牌 |
@@ -22,7 +24,6 @@
 
 当前还没有进入：
 
-- 法术牌
 - 武器牌
 - 英雄技能
 - 关键词
@@ -64,9 +65,12 @@ Hero 是玩家的生命主体
 
 ```text
 名称
+类型
 费用
 攻击
 血量
+法术伤害
+法术目标类型
 描述
 ```
 
@@ -83,6 +87,31 @@ Hero 是玩家的生命主体
 同一张 2费 2/3 的卡牌，可以在牌库里出现多张。
 这些卡牌共享同一个 CardData 模板。
 ```
+
+阶段 2.1 后，`CardData` 可以区分随从牌和法术牌：
+
+```text
+CardType.Minion = 随从牌
+CardType.Spell  = 法术牌
+```
+
+随从牌会使用：
+
+```text
+Attack
+Health
+```
+
+法术牌第一版会使用：
+
+```text
+SpellDamage
+SpellTargetType
+```
+
+这是阶段性简化，不是成熟项目最终做法。
+成熟项目通常会把效果拆成独立的效果数据和效果结算系统。
+本项目先把第一张伤害法术跑通，后续再逐步抽出 `EffectSystem` 和 `GameEventBus`。
 
 ### Card
 
@@ -288,6 +317,12 @@ GameManager 不代表某个玩家，也不代表某张牌。
 ```
 
 当前它直接处理出牌和攻击流程。
+阶段 2.1 中，它也直接处理第一版单目标伤害法术流程：
+
+```text
+TryPlaySpellCardOnMinion()
+TryPlaySpellCardOnHero()
+```
 
 后续系统变复杂后，可以逐渐拆分为：
 
@@ -299,7 +334,7 @@ EffectSystem
 GameEventBus
 ```
 
-但在阶段 1，先集中在 `GameManager` 里更容易学习和调试。
+但在阶段 1 到阶段 2.1，先集中在 `GameManager` 里更容易学习和调试。
 
 ## 引用关系
 
@@ -324,6 +359,9 @@ flowchart TD
 
     Board --> Player
     Board --> Minion
+
+    CardData --> CardType
+    CardData --> SpellTargetType
 ```
 
 用文字表示：
@@ -449,6 +487,81 @@ flowchart TD
 战场变化归 Board。
 整体流程由 GameManager 调度。
 ```
+
+## 法术牌施放流程
+
+对应：
+
+```text
+GameManager.TryPlaySpellCardOnMinion()
+GameManager.TryPlaySpellCardOnHero()
+```
+
+```mermaid
+flowchart TD
+    A["TryPlaySpellCardOnMinion(card, target)"] --> B{"CanPlayCard(card)"}
+    B -->|否| Z["return false"]
+    B -->|是| C{"card 是否是 Spell"}
+    C -->|否| Z
+    C -->|是| D{"目标随从是否合法"}
+    D -->|否| Z
+    D -->|是| E["CurrentPlayer.PlayCard(card)"]
+    E --> F{"是否成功打出"}
+    F -->|否| Z
+    F -->|是| G["target.TakeDamage(SpellDamage)"]
+    G --> H["CleanupDeadMinions()"]
+    H --> I["CheckGameOver()"]
+    I --> J["return true"]
+```
+
+英雄目标流程类似，只是目标从 `Minion` 换成 `Hero`：
+
+```text
+TryPlaySpellCardOnHero(card, targetHero)
+```
+
+当前阶段只支持：
+
+```text
+单目标
+造成伤害
+使用 SpellDamage 作为伤害值
+使用 SpellTargetType 判断目标是否合法
+```
+
+当前还不支持：
+
+```text
+治疗
+Buff
+抽牌
+召唤
+AOE
+随机目标
+事件链式触发
+```
+
+### 通用出牌检查
+
+阶段 2.1 把随从牌和法术牌共有的出牌前置条件抽成：
+
+```text
+CanPlayCard(card)
+```
+
+它检查：
+
+```text
+卡牌是否为空
+卡牌模板是否为空
+游戏是否未结束
+当前玩家是否存在
+卡牌是否在当前玩家手牌里
+当前法力是否足够
+```
+
+这样 `TryPlayMinionCard()` 和 `TryPlaySpellCard...()` 可以复用同一套基础检查。
+不同卡牌类型自己的规则，仍然留在各自的 TryPlay 方法中继续判断。
 
 ## 随从攻击随从流程
 
@@ -595,7 +708,8 @@ Core 不直接操作 UI
 手牌 UI 读取 Player.Hand
 结束回合按钮调用 GameManager.EndTurn()
 战场 UI 读取 Board.GetMinions()
-点击手牌调用 GameManager.TryPlayMinionCard(card)
+点击随从牌调用 GameManager.TryPlayMinionCard(card)
+点击法术牌和目标后调用 GameManager.TryPlaySpellCardOnMinion / OnHero
 ```
 
 ### 3. GameManager 调度，不独占所有职责
@@ -642,7 +756,7 @@ false = 操作失败
 
 当前阶段为了保持简单，`GameManager` 直接负责了很多流程。
 
-这是阶段 1 合理的做法，因为现在目标是：
+这是当前阶段合理的做法，因为现在目标是：
 
 ```text
 快速得到最小可玩核心
@@ -684,8 +798,8 @@ AI 或服务器权威逻辑
 
 ```text
 我先把卡牌游戏拆成数据、运行时对象、玩家资源、战场和对局流程几个核心模块。
-阶段 1 中 GameManager 承担主要调度职责。
-后续加入关键词和法术时，会通过事件总线和效果系统继续拆分结算逻辑。
+阶段 1 到阶段 2.1 中，GameManager 承担主要调度职责。
+后续加入更多关键词、亡语和复杂法术时，会通过事件总线和效果系统继续拆分结算逻辑。
 ```
 
 ## UI 接入方向

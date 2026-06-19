@@ -1,6 +1,6 @@
 # UI Architecture
 
-本文档记录阶段 1 当前 UI 层的结构。
+本文档记录当前 UI 层的结构。
 
 当前 UI 的目标不是做出最终美术效果，而是让 Core 层逻辑在 Unity 里可见、可点击、可刷新。
 
@@ -10,11 +10,11 @@
 
 | 类 | 文件 | 主要职责 |
 |----|------|----------|
-| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，点击后把 `Card` 通知给上层 |
+| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，点击后把 `Card` 通知给上层 |
 | `HandView` | `Assets/Scripts/UI/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
-| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、攻击、结束回合、反馈提示和刷新 |
+| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、攻击、结束回合、反馈提示和刷新 |
 
 当前还没有做：
 
@@ -50,6 +50,21 @@ gameManager.TryPlayMinionCard(card);
 
 然后再刷新显示。
 
+阶段 2.1 中，法术牌也遵守这个原则：
+
+```text
+UI 不自己扣法力
+UI 不自己删除手牌
+UI 不自己造成伤害
+```
+
+而是根据玩家点击调用：
+
+```csharp
+gameManager.TryPlaySpellCardOnMinion(card, target);
+gameManager.TryPlaySpellCardOnHero(card, targetHero);
+```
+
 ## 类职责说明
 
 ### CardView
@@ -61,8 +76,8 @@ gameManager.TryPlayMinionCard(card);
 ```text
 卡牌名
 费用
-攻击
-生命
+随从牌：攻击 / 生命
+法术牌：法术伤害 / 空生命位
 描述
 ```
 
@@ -82,6 +97,16 @@ onClicked
 ```
 
 `CardView` 不引用 `GameManager`，因为单张卡牌 UI 不应该知道游戏规则。
+
+阶段 2.1 中，`CardView` 会根据 `CardData.CardType` 做最小显示区分：
+
+```text
+Minion：显示 Attack 和 Health
+Spell：显示 SpellDamage，Health 位置留空
+```
+
+这是阶段性简化。
+成熟项目会给法术牌单独的版式、图标或字段标签。
 
 ### HandView
 
@@ -144,6 +169,7 @@ EnemyBoardView
 刷新法力、回合、英雄血量
 处理结束回合按钮
 处理点击手牌
+处理法术牌选择目标
 处理点击随从
 处理点击英雄
 显示操作反馈
@@ -160,6 +186,19 @@ EnemyBoardView
 点击敌方英雄 -> 调用 GameManager.TryAttackHero(...)
 攻击后清空 selectedAttacker，显示反馈并刷新 UI
 ```
+
+当前法术交互流程：
+
+```text
+点击法术牌 -> 记录 selectedSpellCard
+显示“请选择法术目标”
+点击随从 -> 调用 GameManager.TryPlaySpellCardOnMinion(...)
+点击英雄 -> 调用 GameManager.TryPlaySpellCardOnHero(...)
+施放后清空 selectedSpellCard，显示反馈并刷新 UI
+```
+
+`selectedSpellCard` 和 `selectedAttacker` 都属于 UI 层的“当前操作选择状态”。
+它们只负责记录玩家下一次点击想做什么，不直接修改 Core 规则状态。
 
 ## 引用关系
 
@@ -186,11 +225,12 @@ HandView 根据 Player.Hand 创建 CardView
 BoardView 根据 Board.GetMinions(...) 创建 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
+阶段 2.1 中，GameUIController 也使用同一个反馈文本显示法术选择、法术命中或目标非法
 ```
 
 ## 当前刷新方式
 
-阶段 1 暂时使用手动刷新：
+当前阶段暂时使用手动刷新：
 
 ```csharp
 RefreshAll();
@@ -206,8 +246,8 @@ RefreshAll();
 没有使用事件系统，原因是：
 
 ```text
-阶段 1 的目标是先跑通最小可玩流程。
-事件系统会在阶段 2 做关键词和法术时引入。
+当前操作链路还比较短，手动刷新更直观。
+事件系统会在阶段 2 后续做关键词、亡语等连锁效果时逐步引入。
 ```
 
 ## Unity 对象关系
@@ -229,6 +269,7 @@ EnemyHeroButton
 ```
 
 阶段 1.5 中，`GameOverText` 在游戏未结束时复用为操作反馈文本；游戏结束后仍然显示胜负结果。
+阶段 2.1 继续复用这块文本显示法术选择和法术结算反馈。
 
 Prefab：
 
@@ -249,10 +290,11 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 可以这样说明当前 UI 设计：
 
 ```text
-阶段 1 的 UI 层只负责表现和输入，不负责规则。
+当前 UI 层只负责表现和输入，不负责规则。
 单张卡牌由 CardView 显示，手牌区域由 HandView 批量生成。
 战场随从由 MinionView 显示，BoardView 负责显示一方战场。
 GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
-阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；具体规则仍由 GameManager 判断。
+阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；阶段 2.1 中，法术选目标也属于 UI 层操作状态。
+具体规则仍由 GameManager 判断。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```

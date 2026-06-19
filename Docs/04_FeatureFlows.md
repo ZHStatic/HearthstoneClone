@@ -83,7 +83,7 @@ GameManager.StartTurn(targetPlayer)
 10. 当前玩家场上的随从变成可以攻击。
 ```
 
-## 点击手牌出随从流程
+## 点击手牌出牌流程
 
 入口：
 
@@ -97,14 +97,32 @@ GameManager.StartTurn(targetPlayer)
 1. CardView 接收到 Button 点击。
 2. CardView 调用 onClicked(card)。
 3. GameUIController.HandleCardClicked(card) 被调用。
-4. GameUIController 先做轻量 UI 检查，用于显示费用不足、战场已满等提示。
-5. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
-6. GameManager 检查卡牌、游戏状态、当前玩家和战场空位。
-7. CurrentPlayer.PlayCard(card) 检查手牌和法力。
-8. 如果成功，Player 扣除法力并从手牌移除卡牌。
-9. GameManager 创建 Minion。
-10. Board.SummonMinion(minion) 把随从加入战场。
-11. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
+4. GameUIController 先做轻量 UI 检查，用于显示卡牌无效、费用不足等提示。
+5. 如果 card.CardData.CardType 是 Minion，进入随从召唤流程。
+6. 如果 card.CardData.CardType 是 Spell，记录 selectedSpellCard，并提示玩家选择法术目标。
+```
+
+## 随从牌召唤流程
+
+入口：
+
+```text
+玩家点击一张随从牌
+```
+
+流程：
+
+```text
+1. GameUIController.HandleCardClicked(card) 确认这是一张 Minion 卡。
+2. GameUIController 检查战场是否存在、当前玩家战场是否已满。
+3. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
+4. GameManager 通过 CanPlayCard(card) 检查通用出牌条件。
+5. GameManager 确认卡牌类型是 Minion。
+6. CurrentPlayer.PlayCard(card) 检查手牌和法力。
+7. 如果成功，Player 扣除法力并从手牌移除卡牌。
+8. GameManager 创建 Minion。
+9. Board.SummonMinion(minion) 把随从加入战场。
+10. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -116,6 +134,60 @@ GameManager 负责规则流程。
 Player 负责手牌和法力。
 Board 负责战场随从列表。
 UI 最后重新读取 Core 状态并显示操作结果。
+```
+
+## 法术牌施放流程
+
+入口：
+
+```text
+玩家点击一张法术牌，再点击一个随从或英雄
+```
+
+当前测试法术：
+
+```text
+火花：1 费，造成 2 点伤害，目标类型 AnyCharacter
+```
+
+流程：
+
+```text
+1. 玩家点击火花。
+2. CardView 调用 onClicked(card)。
+3. GameUIController.HandleCardClicked(card) 被调用。
+4. GameUIController 检查游戏状态、当前玩家、手牌归属和法力。
+5. GameUIController 发现 card.CardData.CardType 是 Spell。
+6. GameUIController 记录 selectedSpellCard = card。
+7. UI 显示“已选择火花，请选择法术目标”。
+8. 玩家点击一个随从或英雄。
+9. 如果点击随从，GameUIController 调用 TryPlaySelectedSpellOnMinion(target)。
+10. 如果点击英雄，GameUIController 调用 TryPlaySelectedSpellOnHero(targetHero)。
+11. GameUIController 把请求交给 GameManager.TryPlaySpellCardOnMinion / OnHero。
+12. GameManager 通过 CanPlayCard(card) 检查通用出牌条件。
+13. GameManager 根据 SpellTargetType 判断目标是否合法。
+14. CurrentPlayer.PlayCard(card) 扣除法力，并从手牌移除法术牌。
+15. 目标受到 SpellDamage 点伤害。
+16. GameManager 清理死亡随从并检查胜负。
+17. GameUIController 清空 selectedSpellCard，显示反馈并刷新 UI。
+```
+
+这条流程的分层：
+
+```text
+CardView 只负责转发点击。
+GameUIController 负责记录“当前选中的法术牌”和玩家选择的目标。
+GameManager 负责判断法术能否打出、目标是否合法、伤害如何结算。
+Player 负责扣法力和移除手牌。
+Hero / Minion 负责承受伤害。
+```
+
+当前阶段性简化：
+
+```text
+只支持单目标伤害法术。
+不支持治疗、Buff、抽牌、召唤、AOE 和随机目标。
+还没有事件系统，法术伤害直接由 GameManager 调用 TakeDamage。
 ```
 
 ## 结束回合流程
@@ -230,7 +302,7 @@ GameUIController.RefreshAll()
 为什么当前用手动刷新：
 
 ```text
-阶段 1 的操作点很少。
+当前操作点还不多。
 手动刷新更直观，方便学习和调试。
 阶段 2 加入事件系统后，可以逐步改成事件驱动刷新。
 ```
