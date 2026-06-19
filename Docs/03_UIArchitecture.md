@@ -120,7 +120,7 @@ Taunt -> 嘲讽
 这是阶段性简化。
 当前没有新增关键词 Text，也没有改 `CardViewPrefab` 布局；后续正式 UI 可以改成独立标签或图标。
 
-阶段 2.4 中，`CardView` 也会把 `CardData.BattlecryType` 和 `BattlecryDamage` 转成中文文字，并继续复用 `descriptionText` 显示：
+阶段 2.4 / 2.4.5 中，`CardView` 也会把 `CardData.BattlecryType` 和 `BattlecryValue` 转成中文文字，并继续复用 `descriptionText` 显示：
 
 ```text
 战吼：对敌方英雄造成 1 点伤害
@@ -333,7 +333,7 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
 阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；阶段 2.1 中，法术选目标也属于 UI 层操作状态。
 阶段 2.2 / 2.3 中，关键词显示属于纯表现层逻辑，CardView 读取 CardData.Keywords，MinionView 读取 Minion.Keywords，不判断关键词规则。
-阶段 2.4 中，战吼显示也属于纯表现层逻辑，CardView 读取 CardData.BattlecryType 和 BattlecryDamage，不执行战吼效果。
+阶段 2.4 / 2.4.5 中，战吼显示也属于纯表现层逻辑，CardView 读取 CardData.BattlecryType 和 BattlecryValue，不执行战吼效果。
 具体规则仍由 GameManager 判断。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```

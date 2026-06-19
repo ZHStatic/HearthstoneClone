@@ -221,7 +221,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 
 ```text
 1. CardData 中配置 BattlecryType = DealDamageToEnemyHero。
-2. CardData 中配置 BattlecryDamage = 1。
+2. CardData 中配置 BattlecryValue = 1。
 3. CardView 刷新手牌时显示“战吼：对敌方英雄造成 1 点伤害”。
 4. 玩家点击火焰学徒。
 5. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
@@ -232,7 +232,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 10. ResolveAfterSummon 先处理冲锋，再处理战吼。
 11. ResolveBattlecry 识别 DealDamageToEnemyHero。
 12. GameManager 找到出牌者的对手。
-13. 敌方 Hero 承受 BattlecryDamage 点伤害。
+13. 敌方 Hero 承受 BattlecryValue 点伤害。
 14. GameManager.CheckGameOver() 检查战吼是否已经打死英雄。
 15. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
 ```
@@ -242,7 +242,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 ```text
 战吼暂时不使用完整 GameEventBus。
 当前只支持不需要选目标的战吼。
-第一版战吼固定打敌方英雄，避免同时引入出牌选目标 UI。
+前两个战吼分别固定打敌方英雄和为出牌者抽牌，避免同时引入出牌选目标 UI。
 亡语开始前，再正式引入事件系统。
 ```
 
@@ -258,7 +258,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 5. 设置 Attack = 2。
 6. 设置 Health = 2。
 7. 设置 Battlecry Type = DealDamageToEnemyHero。
-8. 设置 Battlecry Damage = 1。
+8. 设置 Battlecry Value = 1。
 9. 把“火焰学徒”加入 GameManager 的 Player Deck Data。
 10. 进入 Play 模式。
 11. 抽到火焰学徒后，确认手牌描述显示战吼文字。
@@ -266,6 +266,28 @@ UI 最后重新读取 Core 状态并显示操作结果。
 13. 确认火焰学徒进入战场。
 14. 确认敌方英雄生命立刻减少 1。
 15. 如果测试高伤害战吼，确认敌方英雄生命归零后会 Game Over。
+```
+
+### 阶段 2.4.5 抽牌战吼测试步骤
+
+在 Unity Editor 中操作：
+
+```text
+1. 等 Unity 自动导入脚本，并确认 Console 没有编译错误。
+2. 创建一张新的 CardData，例如“书卷侍从”。
+3. 设置 Card Type = Minion。
+4. 设置 Cost = 2。
+5. 设置 Attack = 1。
+6. 设置 Health = 2。
+7. 设置 Battlecry Type = DrawCard。
+8. 设置 Battlecry Value = 1。
+9. 把“书卷侍从”加入 GameManager 的 Player Deck Data。
+10. 进入 Play 模式。
+11. 抽到书卷侍从后，确认手牌描述显示“战吼：抽 1 张牌”。
+12. 打出书卷侍从。
+13. 确认书卷侍从进入战场。
+14. 确认己方手牌数量先因打出书卷侍从减少 1，再因战吼抽牌增加 1。
+15. 如果手牌满，当前规则会调用 Player.DrawCard() 烧掉牌库顶牌，不额外显示提示。
 ```
 
 ## 法术牌施放流程

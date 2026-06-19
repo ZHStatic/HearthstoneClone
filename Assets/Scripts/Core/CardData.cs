@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 卡牌模板数据 — ScriptableObject
@@ -17,7 +18,7 @@ public class CardData : ScriptableObject
     [SerializeField] private int spellDamage = 0;
     [SerializeField] private SpellTargetType spellTargetType = SpellTargetType.None;
     [SerializeField] private BattlecryType battlecryType = BattlecryType.None;
-    [SerializeField] private int battlecryDamage = 0;
+    [SerializeField] [FormerlySerializedAs("battlecryDamage")] private int battlecryValue = 0;
 
     // 这张卡牌模板拥有的关键词。
     // 用 List 是为了之后支持一张牌同时拥有多个关键词，例如冲锋 + 嘲讽。
@@ -34,7 +35,7 @@ public class CardData : ScriptableObject
     public int SpellDamage => spellDamage;
     public SpellTargetType SpellTargetType => spellTargetType;
     public BattlecryType BattlecryType => battlecryType;
-    public int BattlecryDamage => battlecryDamage;
+    public int BattlecryValue => battlecryValue;
     public bool HasBattlecry => battlecryType != BattlecryType.None;
 
     // 外部只能读取关键词列表，不能直接替换整个列表。
@@ -62,7 +63,7 @@ public class CardData : ScriptableObject
         cost = Mathf.Max(0, cost);
         attack = Mathf.Max(0, attack);
         spellDamage = Mathf.Max(0, spellDamage);
-        battlecryDamage = Mathf.Max(0, battlecryDamage);
+        battlecryValue = Mathf.Max(0, battlecryValue);
 
         health = cardType == CardType.Minion
             ? Mathf.Max(1, health)

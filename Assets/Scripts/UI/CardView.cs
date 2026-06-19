@@ -186,7 +186,9 @@ public class CardView : MonoBehaviour
         switch (cardData.BattlecryType)
         {
             case BattlecryType.DealDamageToEnemyHero:
-                return $"战吼：对敌方英雄造成 {cardData.BattlecryDamage} 点伤害";
+                return $"战吼：对敌方英雄造成 {cardData.BattlecryValue} 点伤害";
+            case BattlecryType.DrawCard:
+                return $"战吼：抽 {cardData.BattlecryValue} 张牌";
             default:
                 return "";
         }

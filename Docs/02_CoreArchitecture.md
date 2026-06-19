@@ -50,7 +50,7 @@ Core 不依赖 UI
 | `CardType` | `Assets/Scripts/Core/CardType.cs` | 区分随从牌和法术牌 |
 | `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
 | `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋和嘲讽 |
-| `BattlecryType` | `Assets/Scripts/Core/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害 |
+| `BattlecryType` | `Assets/Scripts/Core/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害、抽牌 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
@@ -164,7 +164,7 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 |----------|----------------|--------------|
 | `GameManager` 直接结算基础伤害法术 | 当前只有一张单目标伤害法术 | 法术类型变多时抽出 `EffectSystem` |
 | `GameManager` 直接处理攻击、反击和嘲讽目标检查 | 攻击规则还简单，嘲讽只影响目标合法性 | 圣盾、剧毒、风怒等机制继续增加时抽出 `CombatResolver` |
-| `GameManager` 直接处理冲锋和第一个战吼 | 当前只验证召唤后结算链路 | 战吼类型变多或亡语出现时抽出事件/效果系统 |
+| `GameManager` 直接处理冲锋和少量无目标战吼 | 当前只验证召唤后结算链路 | 战吼类型变多或亡语出现时抽出事件/效果系统 |
 | `GameManager` 直接清理死亡随从 | 当前死亡只需要移除 | 亡语出现时抽出 `DeathProcessor` |
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
 | 反馈文本由 `GameUIController` 拼接 | 当前只服务演示和调试 | 需要日志、动画、音效时再抽操作结果对象 |
@@ -233,13 +233,13 @@ CombatResolver
 
 ## 战吼实现结论
 
-阶段 2.4 先不直接上完整 `GameEventBus`，而是用普通方法模拟“召唤后触发效果”的思想。
+阶段 2.4 / 2.4.5 先不直接上完整 `GameEventBus`，而是用普通方法模拟“召唤后触发效果”的思想。
 
 当前链路：
 
 ```text
 CardData.BattlecryType 配置 DealDamageToEnemyHero
-CardData.BattlecryDamage 配置伤害值
+CardData.BattlecryValue 配置伤害值
 GameManager.TryPlayMinionCard() 召唤 Minion
 ResolveAfterSummon(minion)
 ApplySummonKeywords(minion)
@@ -248,6 +248,17 @@ DealBattlecryDamageToEnemyHero(minion)
 opponent.Hero.TakeDamage(...)
 CheckGameOver()
 CardView 显示“战吼：对敌方英雄造成 X 点伤害”
+```
+
+抽牌战吼代码链路：
+
+```text
+CardData.BattlecryType 配置 DrawCard
+CardData.BattlecryValue 配置抽牌数量
+ResolveBattlecry(minion)
+DrawCardsForBattlecryOwner(minion)
+minion.Owner.DrawCard()
+CardView 显示“战吼：抽 X 张牌”
 ```
 
 这是阶段性简化，不是成熟项目最终做法。

@@ -351,6 +351,9 @@ public class GameManager : MonoBehaviour
             case BattlecryType.DealDamageToEnemyHero:
                 DealBattlecryDamageToEnemyHero(minion);
                 break;
+            case BattlecryType.DrawCard:
+                DrawCardsForBattlecryOwner(minion);
+                break;
         }
     }
 
@@ -364,8 +367,23 @@ public class GameManager : MonoBehaviour
         Player opponent = GetOpponent(minion.Owner);
         if (opponent == null || opponent.Hero == null) return;
 
-        opponent.Hero.TakeDamage(minion.CardData.BattlecryDamage);
+        opponent.Hero.TakeDamage(minion.CardData.BattlecryValue);
         CheckGameOver();
+    }
+
+    /// <summary>
+    /// 战吼：为打出这个随从的玩家抽牌。
+    /// </summary>
+    private void DrawCardsForBattlecryOwner(Minion minion)
+    {
+        if (minion == null || minion.CardData == null) return;
+        if (minion.Owner == null) return;
+
+        int drawCount = minion.CardData.BattlecryValue;
+        for (int i = 0; i < drawCount; i++)
+        {
+            minion.Owner.DrawCard();
+        }
     }
 
     /// <summary>

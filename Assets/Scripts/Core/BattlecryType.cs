@@ -12,5 +12,10 @@ public enum BattlecryType
     /// <summary>
     /// 战吼：对敌方英雄造成伤害。
     /// </summary>
-    DealDamageToEnemyHero
+    DealDamageToEnemyHero,
+
+    /// <summary>
+    /// 战吼：为出牌者抽牌。
+    /// </summary>
+    DrawCard
 }
