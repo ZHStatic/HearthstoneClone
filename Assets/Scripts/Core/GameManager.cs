@@ -429,6 +429,23 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 发布随从死亡事件。
+    /// 死亡随从是事件目标，所以填入 TargetMinion。
+    /// </summary>
+    private void PublishMinionDied(Minion minion)
+    {
+        if (EventBus == null) return;
+        if (minion == null) return;
+
+        GameEvent gameEvent = new GameEvent(
+            GameEventType.MinionDied,
+            targetPlayer: minion.Owner,
+            targetMinion: minion);
+
+        EventBus.Publish(gameEvent);
+    }
+
+    /// <summary>
     /// 订阅调试用事件日志。
     /// </summary>
     private void SubscribeDebugEventLogs()
@@ -438,6 +455,7 @@ public class GameManager : MonoBehaviour
 
         EventBus.Subscribe(GameEventType.CardPlayed, LogGameEvent);
         EventBus.Subscribe(GameEventType.MinionSummoned, LogGameEvent);
+        EventBus.Subscribe(GameEventType.MinionDied, LogGameEvent);
     }
 
     /// <summary>
@@ -529,17 +547,13 @@ public class GameManager : MonoBehaviour
 
         Player opponent = GetOpponent(CurrentPlayer);
 
-        switch (spellData.SpellTargetType)
+        return spellData.SpellTargetType switch
         {
-            case SpellTargetType.AnyCharacter:
-                return true;
-            case SpellTargetType.EnemyCharacter:
-                return targetOwner == opponent;
-            case SpellTargetType.FriendlyCharacter:
-                return targetOwner == CurrentPlayer;
-            default:
-                return false;
-        }
+            SpellTargetType.AnyCharacter => true,
+            SpellTargetType.EnemyCharacter => targetOwner == opponent,
+            SpellTargetType.FriendlyCharacter => targetOwner == CurrentPlayer,
+            _ => false,
+        };
     }
 
     /// <summary>
@@ -558,6 +572,7 @@ public class GameManager : MonoBehaviour
             Minion minion = minions[i];
             if (minion.IsDead)
             {
+                PublishMinionDied(minion);
                 Board.RemoveMinion(minion);
             }
         }

@@ -4,12 +4,12 @@
 
 ## 当前阶段
 
-阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0 已完成。
+阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1 已完成。
 
 当前停靠点：
 
 ```text
-阶段 2.5.0 已完成：事件系统基础链路
+阶段 2.5.1 已完成：`MinionDied` 死亡事件
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -18,7 +18,7 @@
 
 战吼的最小链路已经测试通过：`BattlecryType` 定义战吼类型，`CardData` 支持配置战吼类型和通用数值，`GameManager` 在随从召唤成功后调用 `ResolveAfterSummon()` 处理冲锋和战吼，`CardView` 可以在手牌描述区显示战吼文字。
 
-事件系统基础链路已经测试通过：`GameEventType` 定义事件类型，`GameEvent` 承载事件数据，`GameEventBus` 管理订阅和发布，`GameManager` 可以发布 `CardPlayed` 和 `MinionSummoned`，Console 日志已确认监听回调会执行。
+事件系统基础链路已经测试通过：`GameEventType` 定义事件类型，`GameEvent` 承载事件数据，`GameEventBus` 管理订阅和发布，`GameManager` 可以发布 `CardPlayed`、`MinionSummoned` 和 `MinionDied`，Console 日志已确认监听回调会执行。
 
 ## 当前可玩内容
 
@@ -143,7 +143,14 @@
 - Play 模式已确认：打出随从时 Console 输出 `CardPlayed` 和 `MinionSummoned`。
 - Play 模式已确认：打出法术时 Console 输出 `CardPlayed`。
 
-## 阶段 2.2 / 2.3 / 2.4 / 2.4.5 / 2.5.0 结论
+## 阶段 2.5.1 已验证
+
+- `GameManager` 在随从死亡清理时发布 `MinionDied`。
+- `MinionDied` 事件把死亡随从写入 `TargetMinion`。
+- `logGameEvents` 调试日志已订阅 `MinionDied`。
+- Play 模式已确认：随从死亡时 Console 输出 `MinionDied`，并显示死亡随从名字。
+
+## 阶段 2.2 / 2.3 / 2.4 / 2.4.5 / 2.5.0 / 2.5.1 结论
 
 当前代码不需要推倒重来，冲锋可以作为最小关键词验证保留在现有结构中。
 嘲讽也暂时可以留在 `GameManager` 的攻击目标判断里，不急着拆 `CombatResolver`。
@@ -188,7 +195,7 @@ CardData 配置 BattlecryType 和 BattlecryValue
 - `GameManager` 已经负责回合、出牌、法术、攻击、死亡清理和胜负判断，后续不能无限加规则特判。
 - `GameUIController` 已经负责攻击选择、法术选择、英雄点击、操作反馈和刷新，后续 UI 状态复杂时需要拆分。
 - 当前法术和最小战吼直接由 `GameManager` 结算，这是阶段性简化，不是成熟项目最终做法。
-- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统先只验证出牌和召唤事件，下一步再接死亡事件。
+- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统已经验证出牌、召唤和死亡事件，下一步可以开始做第一个亡语。
 
 下一步判断：
 
@@ -204,7 +211,7 @@ CardView 和 MinionView 已能显示关键词文字。
 先做 Unity 验证：
 
 ```text
-阶段 2.5.0 事件系统基础链路已完成。下一步接入 `MinionDied` 死亡事件，为亡语做准备。
+阶段 2.5.1 `MinionDied` 死亡事件已完成。下一步进入阶段 2.6：第一个亡语。
 ```
 
 继续写代码前，仍然先写属性清单，再动代码。

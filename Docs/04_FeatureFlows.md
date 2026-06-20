@@ -305,6 +305,18 @@ UI 最后重新读取 Core 状态并显示操作结果。
 8. 确认 Console 输出 CardPlayed。
 ```
 
+### 阶段 2.5.1 死亡事件测试步骤
+
+在 Unity Editor 中操作：
+
+```text
+1. 确认 GameManager 上的 Log Game Events 为开启状态。
+2. 进入 Play 模式。
+3. 让一个随从被攻击打死，或用火花打死一个随从。
+4. 确认 Console 输出 MinionDied。
+5. 确认 Console 中的 Minion 字段显示死亡随从名字，而不是 None。
+```
+
 ## 法术牌施放流程
 
 入口：
@@ -356,8 +368,8 @@ Hero / Minion 负责承受伤害。
 ```text
 只支持单目标伤害法术。
 不支持治疗、Buff、抽牌、召唤、AOE 和随机目标。
-当前已有出牌/召唤事件日志，但法术伤害仍然直接由 GameManager 调用 TakeDamage。
-死亡事件和伤害事件还没有接入事件系统。
+当前已有出牌、召唤和死亡事件日志，但法术伤害仍然直接由 GameManager 调用 TakeDamage。
+伤害事件还没有接入事件系统。
 ```
 
 ## 结束回合流程

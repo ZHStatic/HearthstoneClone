@@ -163,7 +163,19 @@ TryPlaySpellCardOnMinion() / TryPlaySpellCardOnHero() 成功后发布 CardPlayed
 logGameEvents 调试开关订阅事件并打印 Console 日志
 ```
 
-当前还没有发布 `MinionDied`，死亡事件会在下一步单独接入。
+阶段 2.5.1 已经接入死亡事件：
+
+```text
+CleanupDeadMinions()
+-> RemoveDeadMinions(owner)
+-> 发现 minion.IsDead
+-> PublishMinionDied(minion)
+-> GameEventType.MinionDied
+-> TargetMinion = 死亡随从
+-> Board.RemoveMinion(minion)
+```
+
+当前死亡事件只负责通知，不执行亡语效果。
 
 这些方法返回 `bool` 的含义通常是：
 
