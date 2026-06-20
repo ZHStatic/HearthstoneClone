@@ -52,6 +52,7 @@ public class GameManager : MonoBehaviour
         TurnNumber = 0;
         IsGameOver = false;
 
+        SubscribeGameplayEventHandlers();
         SubscribeDebugEventLogs();
         DrawStartingHands(Player);
         DrawStartingHands(Enemy);
@@ -393,6 +394,59 @@ public class GameManager : MonoBehaviour
         {
             minion.Owner.DrawCard();
         }
+    }
+
+    /// <summary>
+    /// 注册会影响游戏规则的事件监听。
+    /// 当前用于在随从死亡事件发生时结算亡语。
+    /// </summary>
+    private void SubscribeGameplayEventHandlers()
+    {
+        if (EventBus == null) return;
+
+        EventBus.Subscribe(GameEventType.MinionDied, ResolveDeathrattleOnMinionDied);
+    }
+
+    /// <summary>
+    /// 监听随从死亡事件，并尝试结算死亡随从的亡语。
+    /// </summary>
+    private void ResolveDeathrattleOnMinionDied(GameEvent gameEvent)
+    {
+        if (gameEvent == null) return;
+        if (gameEvent.Type != GameEventType.MinionDied) return;
+
+        ResolveDeathrattle(gameEvent.TargetMinion);
+    }
+
+    /// <summary>
+    /// 根据死亡随从的卡牌配置结算亡语。
+    /// </summary>
+    private void ResolveDeathrattle(Minion minion)
+    {
+        if (minion == null) return;
+        if (minion.CardData == null) return;
+        if (!minion.CardData.HasDeathrattle) return;
+
+        switch (minion.CardData.DeathrattleType)
+        {
+            case DeathrattleType.DealDamageToEnemyHero:
+                DealDeathrattleDamageToEnemyHero(minion);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 亡语：对死亡随从拥有者的敌方英雄造成伤害。
+    /// </summary>
+    private void DealDeathrattleDamageToEnemyHero(Minion minion)
+    {
+        if (minion == null || minion.CardData == null) return;
+
+        Player opponent = GetOpponent(minion.Owner);
+        if (opponent == null || opponent.Hero == null) return;
+
+        opponent.Hero.TakeDamage(minion.CardData.DeathrattleValue);
+        CheckGameOver();
     }
 
     /// <summary>

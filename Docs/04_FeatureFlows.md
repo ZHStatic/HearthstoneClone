@@ -243,7 +243,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 战吼暂时不通过 GameEventBus 结算。
 当前只支持不需要选目标的战吼。
 前两个战吼分别固定打敌方英雄和为出牌者抽牌，避免同时引入出牌选目标 UI。
-事件系统基础链路已接入，亡语开始前还需要接入死亡事件。
+事件系统基础链路和死亡事件已接入，亡语通过 MinionDied 事件触发。
 ```
 
 ### 阶段 2.4 测试步骤
@@ -315,6 +315,75 @@ UI 最后重新读取 Core 状态并显示操作结果。
 3. 让一个随从被攻击打死，或用火花打死一个随从。
 4. 确认 Console 输出 MinionDied。
 5. 确认 Console 中的 Minion 字段显示死亡随从名字，而不是 None。
+```
+
+### 亡语随从补充流程
+
+入口：
+
+```text
+一个配置了 DeathrattleType 的随从死亡
+```
+
+当前测试亡语：
+
+```text
+亡语炸弹人：2 费，1/1，亡语：对敌方英雄造成 1 点伤害
+```
+
+流程：
+
+```text
+1. CardData 中配置 DeathrattleType = DealDamageToEnemyHero。
+2. CardData 中配置 DeathrattleValue = 1。
+3. CardView 刷新手牌时显示“亡语：对敌方英雄造成 1 点伤害”。
+4. 玩家打出亡语随从。
+5. GameManager 创建 Minion，并把它召唤到 Board。
+6. MinionView 刷新场上随从时显示“亡语:1”。
+7. 这个随从被攻击或法术伤害打死。
+8. GameManager.CleanupDeadMinions() 检查到 minion.IsDead。
+9. GameManager.PublishMinionDied(minion) 发布死亡事件。
+10. GameEventBus 通知 ResolveDeathrattleOnMinionDied(gameEvent)。
+11. GameManager 从 gameEvent.TargetMinion 取出死亡随从。
+12. ResolveDeathrattle(minion) 检查死亡随从是否有亡语。
+13. 如果亡语类型是 DealDamageToEnemyHero，就找到死亡随从拥有者的对手。
+14. 敌方 Hero 承受 DeathrattleValue 点伤害。
+15. GameManager.CheckGameOver() 检查亡语是否已经打死英雄。
+16. 死亡随从随后从 Board 移除。
+17. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
+```
+
+当前阶段性简化：
+
+```text
+当前只支持一个亡语类型：对敌方英雄造成伤害。
+当前不支持亡语召唤、亡语抽牌、亡语打随从或 AOE。
+当前亡语结算仍放在 GameManager，等亡语类型变多或出现死亡连锁时再拆 DeathProcessor。
+```
+
+### 阶段 2.6 亡语测试步骤
+
+在 Unity Editor 中操作：
+
+```text
+1. 等 Unity 自动导入 DeathrattleType.cs，并确认 Console 没有编译错误。
+2. 创建一张新的 CardData，例如“亡语炸弹人”。
+3. 设置 Card Type = Minion。
+4. 设置 Cost = 2。
+5. 设置 Attack = 1。
+6. 设置 Health = 1。
+7. 设置 Deathrattle Type = DealDamageToEnemyHero。
+8. 设置 Deathrattle Value = 1。
+9. 把“亡语炸弹人”加入 GameManager 的 Player Deck Data。
+10. 进入 Play 模式。
+11. 抽到亡语炸弹人后，确认手牌描述显示“亡语：对敌方英雄造成 1 点伤害”。
+12. 打出亡语炸弹人。
+13. 确认场上随从状态区显示“亡语:1”。
+14. 让亡语炸弹人被攻击或用火花打死。
+15. 确认 Console 输出 MinionDied。
+16. 确认敌方英雄生命减少 1。
+17. 确认亡语炸弹人从战场移除。
+18. 如果把 Deathrattle Value 临时调高到足以斩杀，确认敌方英雄生命归零后会 Game Over。
 ```
 
 ## 法术牌施放流程

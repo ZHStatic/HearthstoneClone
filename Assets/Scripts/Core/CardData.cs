@@ -19,6 +19,8 @@ public class CardData : ScriptableObject
     [SerializeField] private SpellTargetType spellTargetType = SpellTargetType.None;
     [SerializeField] private BattlecryType battlecryType = BattlecryType.None;
     [SerializeField] [FormerlySerializedAs("battlecryDamage")] private int battlecryValue = 0;
+    [SerializeField] private DeathrattleType deathrattleType = DeathrattleType.None;
+    [SerializeField] private int deathrattleValue = 0;
 
     // 这张卡牌模板拥有的关键词。
     // 用 List 是为了之后支持一张牌同时拥有多个关键词，例如冲锋 + 嘲讽。
@@ -37,6 +39,9 @@ public class CardData : ScriptableObject
     public BattlecryType BattlecryType => battlecryType;
     public int BattlecryValue => battlecryValue;
     public bool HasBattlecry => battlecryType != BattlecryType.None;
+    public DeathrattleType DeathrattleType => deathrattleType;
+    public int DeathrattleValue => deathrattleValue;
+    public bool HasDeathrattle => deathrattleType != DeathrattleType.None;
 
     // 外部只能读取关键词列表，不能直接替换整个列表。
     public IReadOnlyList<KeywordType> Keywords => keywords;
@@ -64,6 +69,7 @@ public class CardData : ScriptableObject
         attack = Mathf.Max(0, attack);
         spellDamage = Mathf.Max(0, spellDamage);
         battlecryValue = Mathf.Max(0, battlecryValue);
+        deathrattleValue = Mathf.Max(0, deathrattleValue);
 
         health = cardType == CardType.Minion
             ? Mathf.Max(1, health)

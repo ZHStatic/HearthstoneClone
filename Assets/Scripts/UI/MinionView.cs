@@ -162,13 +162,13 @@ public class MinionView : MonoBehaviour
     {
         if (minion == null) return "";
 
-        string statusText = minion.CanAttack ? "Ready" : "";
-        string keywordsText = GetKeywordsText(minion);
+        string statusText = "";
 
-        if (string.IsNullOrWhiteSpace(statusText)) return keywordsText;
-        if (string.IsNullOrWhiteSpace(keywordsText)) return statusText;
+        AddStatusText(ref statusText, minion.CanAttack ? "Ready" : "");
+        AddStatusText(ref statusText, GetKeywordsText(minion));
+        AddStatusText(ref statusText, GetDeathrattleText(minion));
 
-        return $"{statusText} {keywordsText}";
+        return statusText;
     }
 
     /// <summary>
@@ -194,6 +194,38 @@ public class MinionView : MonoBehaviour
         }
 
         return text;
+    }
+
+    /// <summary>
+    /// 把随从的亡语配置转成 UI 文本。
+    /// </summary>
+    private string GetDeathrattleText(Minion minion)
+    {
+        if (minion == null || minion.CardData == null) return "";
+        if (!minion.CardData.HasDeathrattle) return "";
+
+        switch (minion.CardData.DeathrattleType)
+        {
+            case DeathrattleType.DealDamageToEnemyHero:
+                return $"亡语:{minion.CardData.DeathrattleValue}";
+            default:
+                return "";
+        }
+    }
+
+    /// <summary>
+    /// 向状态文本中拼接一段非空内容。
+    /// </summary>
+    private void AddStatusText(ref string statusText, string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        if (!string.IsNullOrWhiteSpace(statusText))
+        {
+            statusText += " ";
+        }
+
+        statusText += text;
     }
 
     /// <summary>

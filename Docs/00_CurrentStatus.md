@@ -1,15 +1,15 @@
 # Current Status
 
-最后更新：2026-06-19
+最后更新：2026-06-20
 
 ## 当前阶段
 
-阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1 已完成。
+阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6 已完成。
 
 当前停靠点：
 
 ```text
-阶段 2.5.1 已完成：`MinionDied` 死亡事件
+阶段 2.6 已完成：第一个亡语
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -19,6 +19,9 @@
 战吼的最小链路已经测试通过：`BattlecryType` 定义战吼类型，`CardData` 支持配置战吼类型和通用数值，`GameManager` 在随从召唤成功后调用 `ResolveAfterSummon()` 处理冲锋和战吼，`CardView` 可以在手牌描述区显示战吼文字。
 
 事件系统基础链路已经测试通过：`GameEventType` 定义事件类型，`GameEvent` 承载事件数据，`GameEventBus` 管理订阅和发布，`GameManager` 可以发布 `CardPlayed`、`MinionSummoned` 和 `MinionDied`，Console 日志已确认监听回调会执行。
+
+亡语的第一版代码链路已经写入：`DeathrattleType` 定义亡语类型，`CardData` 支持配置亡语类型和通用数值，`CardView` 和 `MinionView` 可以显示亡语文字，`GameManager` 监听 `MinionDied` 并在死亡随从有亡语时结算“对敌方英雄造成伤害”。
+Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌方英雄生命减少 1。
 
 ## 当前可玩内容
 
@@ -32,6 +35,8 @@
 召唤带战吼的随从并触发一次性效果
 手牌和场上随从显示关键词
 手牌显示战吼说明
+手牌和场上随从显示亡语说明
+亡语随从死亡后触发伤害
 施放单目标伤害法术
 费用不足和非法操作提示
 随从攻击随从
@@ -48,6 +53,7 @@
 - 基础法术：火花，1 费，造成 2 点伤害，目标为任意角色。
 - 战吼随从：火焰学徒，2 费，2/2，战吼为对敌方英雄造成 1 点伤害。
 - 战吼随从：书卷侍从，2 费，1/2，战吼为抽 1 张牌。
+- 亡语随从：亡语炸弹人，2 费，1/1，亡语为对敌方英雄造成 1 点伤害。
 
 ## 当前代码结构
 
@@ -60,6 +66,7 @@
 | `SpellTargetType.cs` | 单目标法术可选择的目标范围 |
 | `KeywordType.cs` | 关键词类型：当前支持 `Charge`、`Taunt` |
 | `BattlecryType.cs` | 战吼类型：当前支持对敌方英雄造成伤害、抽牌 |
+| `DeathrattleType.cs` | 亡语类型：当前支持对敌方英雄造成伤害 |
 | `GameEventType.cs` | 游戏事件类型：当前包含出牌、召唤、死亡、回合开始和回合结束 |
 | `GameEvent.cs` | 游戏事件数据：记录事件类型和相关上下文 |
 | `GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
@@ -68,15 +75,15 @@
 | `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌 |
 | `Board.cs` | 双方战场随从列表和召唤位置限制 |
 | `Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限和关键词 |
-| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算和基础事件发布 |
+| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算和基础事件发布 |
 
 ### UI 层
 
 | 文件 | 职责 |
 |------|------|
-| `CardView.cs` | 显示一张手牌、关键词文字、战吼文字并转发点击 |
+| `CardView.cs` | 显示一张手牌、关键词文字、战吼文字、亡语文字并转发点击 |
 | `HandView.cs` | 根据手牌列表生成多个 `CardView` |
-| `MinionView.cs` | 显示一个场上随从、点击和选中高亮 |
+| `MinionView.cs` | 显示一个场上随从、亡语文字、点击和选中高亮 |
 | `BoardView.cs` | 根据一方战场列表生成多个 `MinionView` |
 | `GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、选择状态、反馈和刷新 |
 
@@ -103,6 +110,9 @@
 - 配置了 `Charge` 的随从召唤后会立刻进入可攻击状态。
 - 手牌和场上随从可以显示“冲锋”“嘲讽”等关键词文字。
 - 手牌可以显示“战吼：对敌方英雄造成 X 点伤害”和“战吼：抽 X 张牌”。
+- 代码已支持手牌显示“亡语：对敌方英雄造成 X 点伤害”。
+- 代码已支持场上随从显示“亡语:X”。
+- 亡语炸弹人的亡语已在 Play 模式测试通过：死亡后敌方英雄减少 1 点生命。
 - 火焰学徒的战吼已在 Play 模式测试通过：打出后敌方英雄立刻减少 1 点生命。
 - 书卷侍从的战吼已在 Play 模式测试通过：打出后己方抽 1 张牌。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
@@ -150,7 +160,17 @@
 - `logGameEvents` 调试日志已订阅 `MinionDied`。
 - Play 模式已确认：随从死亡时 Console 输出 `MinionDied`，并显示死亡随从名字。
 
-## 阶段 2.2 / 2.3 / 2.4 / 2.4.5 / 2.5.0 / 2.5.1 结论
+## 阶段 2.6 已验证
+
+- 已新增 `DeathrattleType.cs`，当前包含 `None` 和 `DealDamageToEnemyHero`。
+- `CardData` 已支持配置 `Deathrattle Type` 和 `Deathrattle Value`。
+- `CardView` 已支持显示“亡语：对敌方英雄造成 X 点伤害”。
+- `MinionView` 已支持显示“亡语:X”。
+- `GameManager` 已注册规则事件监听，收到 `MinionDied` 后会尝试结算死亡随从的亡语。
+- 当前第一个亡语效果：对死亡随从拥有者的敌方英雄造成 `DeathrattleValue` 点伤害。
+- Unity Play 模式已确认：亡语炸弹人死亡后，Console 输出 `MinionDied`，敌方英雄生命减少 1，死亡随从从战场移除。
+
+## 阶段 2.2 / 2.3 / 2.4 / 2.4.5 / 2.5.0 / 2.5.1 / 2.6 结论
 
 当前代码不需要推倒重来，冲锋可以作为最小关键词验证保留在现有结构中。
 嘲讽也暂时可以留在 `GameManager` 的攻击目标判断里，不急着拆 `CombatResolver`。
@@ -190,12 +210,27 @@ CardData 配置 BattlecryType 和 BattlecryValue
 -> CheckGameOver()
 ```
 
+亡语代码链路：
+
+```text
+CardData 配置 DeathrattleType 和 DeathrattleValue
+-> 玩家打出随从牌
+-> 随从进入战场
+-> 随从死亡
+-> CleanupDeadMinions()
+-> PublishMinionDied(minion)
+-> EventBus 通知 ResolveDeathrattleOnMinionDied()
+-> ResolveDeathrattle(minion)
+-> DealDeathrattleDamageToEnemyHero(minion)
+-> CheckGameOver()
+```
+
 需要记住的风险点：
 
 - `GameManager` 已经负责回合、出牌、法术、攻击、死亡清理和胜负判断，后续不能无限加规则特判。
 - `GameUIController` 已经负责攻击选择、法术选择、英雄点击、操作反馈和刷新，后续 UI 状态复杂时需要拆分。
 - 当前法术和最小战吼直接由 `GameManager` 结算，这是阶段性简化，不是成熟项目最终做法。
-- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统已经验证出牌、召唤和死亡事件，下一步可以开始做第一个亡语。
+- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统已经验证出牌、召唤和死亡事件，亡语已经开始通过 `MinionDied` 事件触发。
 
 下一步判断：
 
@@ -203,7 +238,7 @@ CardData 配置 BattlecryType 和 BattlecryValue
 CardView 和 MinionView 已能显示关键词文字。
 嘲讽已经开始影响攻击目标选择。
 战吼已经开始验证“召唤后触发效果”的思想。
-亡语开始前，需要更认真地引入事件系统。
+亡语已经开始验证“死亡后触发效果”的思想。
 ```
 
 ## 下一步
@@ -211,7 +246,7 @@ CardView 和 MinionView 已能显示关键词文字。
 先做 Unity 验证：
 
 ```text
-阶段 2.5.1 `MinionDied` 死亡事件已完成。下一步进入阶段 2.6：第一个亡语。
+阶段 2.6 第一个亡语已完成。下一步进入阶段 2.7：圣盾。
 ```
 
 继续写代码前，仍然先写属性清单，再动代码。

@@ -143,6 +143,7 @@ public class CardView : MonoBehaviour
 
         AddDescriptionLine(lines, GetKeywordsText(cardData));
         AddDescriptionLine(lines, GetBattlecryText(cardData));
+        AddDescriptionLine(lines, GetDeathrattleText(cardData));
         AddDescriptionLine(lines, cardData.Description);
 
         return string.Join("\n", lines);
@@ -189,6 +190,24 @@ public class CardView : MonoBehaviour
                 return $"战吼：对敌方英雄造成 {cardData.BattlecryValue} 点伤害";
             case BattlecryType.DrawCard:
                 return $"战吼：抽 {cardData.BattlecryValue} 张牌";
+            default:
+                return "";
+        }
+    }
+
+    /// <summary>
+    /// 生成亡语显示文字。
+    /// 亡语是随从死亡时触发的一次性效果，所以显示在手牌描述区。
+    /// </summary>
+    private string GetDeathrattleText(CardData cardData)
+    {
+        if (cardData == null) return "";
+        if (!cardData.HasDeathrattle) return "";
+
+        switch (cardData.DeathrattleType)
+        {
+            case DeathrattleType.DealDamageToEnemyHero:
+                return $"亡语：对敌方英雄造成 {cardData.DeathrattleValue} 点伤害";
             default:
                 return "";
         }

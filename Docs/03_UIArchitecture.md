@@ -10,7 +10,7 @@
 
 | 类 | 文件 | 主要职责 |
 |----|------|----------|
-| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，显示关键词和战吼文字，点击后把 `Card` 通知给上层 |
+| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，显示关键词、战吼和亡语文字，点击后把 `Card` 通知给上层 |
 | `HandView` | `Assets/Scripts/UI/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
@@ -80,6 +80,7 @@ gameManager.TryPlaySpellCardOnHero(card, targetHero);
 法术牌：法术伤害 / 空生命位
 关键词
 战吼
+亡语
 描述
 ```
 
@@ -128,6 +129,12 @@ Taunt -> 嘲讽
 
 战吼只显示在手牌上，不显示在 `MinionView` 上，因为战吼是打出时触发的一次性效果，不是场上持续状态。
 
+阶段 2.6 中，`CardView` 会把 `CardData.DeathrattleType` 和 `DeathrattleValue` 转成中文文字，并继续复用 `descriptionText` 显示：
+
+```text
+亡语：对敌方英雄造成 1 点伤害
+```
+
 ### HandView
 
 `HandView` 表示手牌区域。
@@ -155,6 +162,7 @@ Taunt -> 嘲讽
 当前生命
 是否可以攻击
 关键词
+亡语
 是否被选中
 ```
 
@@ -173,6 +181,17 @@ Ready 嘲讽
 
 这是阶段性简化。
 正式 UI 可以把 Ready 状态和关键词拆成独立图标或标签。
+
+阶段 2.6 中，`MinionView` 继续复用 `canAttackText` 显示亡语摘要：
+
+```text
+亡语:1
+Ready 亡语:1
+Ready 嘲讽 亡语:1
+```
+
+这是阶段性简化。
+正式 UI 可以把亡语做成独立图标或详情面板，不和 Ready 状态挤在同一个文本里。
 
 ### BoardView
 
@@ -260,6 +279,7 @@ GameUIController 使用反馈文本显示费用不足、不能攻击、目标非
 阶段 2.1 中，GameUIController 也使用同一个反馈文本显示法术选择、法术命中或目标非法
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
+阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
 ```
 
 ## 当前刷新方式
@@ -277,11 +297,11 @@ RefreshAll();
 结束回合后刷新
 ```
 
-没有使用事件系统，原因是：
+UI 刷新还没有使用事件系统，原因是：
 
 ```text
 当前操作链路还比较短，手动刷新更直观。
-事件系统会在阶段 2 后续做关键词、亡语等连锁效果时逐步引入。
+规则层的事件系统已经用于出牌、召唤、死亡和亡语；UI 刷新后续再考虑事件驱动。
 ```
 
 ## Unity 对象关系
@@ -307,6 +327,7 @@ EnemyHeroButton
 阶段 2.2 的手牌关键词文字复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
 阶段 2.3 的场上随从关键词文字复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 阶段 2.4 的手牌战吼文字继续复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
+阶段 2.6 的手牌亡语文字继续复用 `CardView` 的 `Description Text`，场上亡语文字继续复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 
 Prefab：
 
@@ -334,6 +355,7 @@ GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从�
 阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；阶段 2.1 中，法术选目标也属于 UI 层操作状态。
 阶段 2.2 / 2.3 中，关键词显示属于纯表现层逻辑，CardView 读取 CardData.Keywords，MinionView 读取 Minion.Keywords，不判断关键词规则。
 阶段 2.4 / 2.4.5 中，战吼显示也属于纯表现层逻辑，CardView 读取 CardData.BattlecryType 和 BattlecryValue，不执行战吼效果。
+阶段 2.6 中，亡语显示也属于纯表现层逻辑，CardView 和 MinionView 读取 CardData.DeathrattleType 和 DeathrattleValue，不执行亡语效果。
 具体规则仍由 GameManager 判断。
 这样 Core 层不会依赖 UI，后续替换表现层或加入动画时，不需要修改核心规则。
 ```
