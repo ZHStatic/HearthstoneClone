@@ -696,6 +696,192 @@ CardView 只负责显示和点击。
 
 这就是 UI 分层中常见的回调写法。
 
+## C# event 和事件系统
+
+### delegate / Action / event 的关系
+
+`Action<T>` 是一种委托，可以保存一个方法。
+
+```csharp
+Action<GameEvent> listener;
+```
+
+读作：
+
+```text
+listener 可以保存一个“接收 GameEvent、没有返回值”的方法。
+```
+
+所以这种方法可以被保存进去：
+
+```csharp
+private void LogGameEvent(GameEvent gameEvent)
+{
+    Debug.Log(gameEvent.Type);
+}
+```
+
+`event` 是 C# 对委托的一层限制。
+它让外部代码只能订阅和取消订阅，不能直接触发事件。
+
+```csharp
+public event Action<int> HealthChanged;
+```
+
+外部可以这样做：
+
+```csharp
+hero.HealthChanged += RefreshHealth;
+hero.HealthChanged -= RefreshHealth;
+```
+
+外部不能这样做：
+
+```csharp
+hero.HealthChanged = null;
+hero.HealthChanged.Invoke(10);
+```
+
+只有声明这个 `event` 的类内部可以触发它：
+
+```csharp
+HealthChanged?.Invoke(currentHealth);
+```
+
+### 一个普通 C# event 例子
+
+```csharp
+public class Hero
+{
+    private int health = 30;
+
+    public event Action<int> HealthChanged;
+
+    public void TakeDamage(int damage)
+    {
+        if (damage <= 0) return;
+
+        health -= damage;
+        if (health < 0)
+        {
+            health = 0;
+        }
+
+        HealthChanged?.Invoke(health);
+    }
+}
+```
+
+读法：
+
+```text
+Hero 自己管理血量。
+当血量变化后，Hero 触发 HealthChanged。
+订阅了 HealthChanged 的外部代码会收到新的血量。
+```
+
+UI 可以订阅：
+
+```csharp
+hero.HealthChanged += RefreshHealth;
+```
+
+其中 `RefreshHealth` 必须符合 `Action<int>` 的形状：
+
+```csharp
+private void RefreshHealth(int currentHealth)
+{
+    healthText.text = currentHealth.ToString();
+}
+```
+
+### C# event 和本项目 GameEventBus 的区别
+
+C# 的 `event` 是语言机制。
+
+```text
+它通常挂在某一个对象身上。
+例如 Hero.HealthChanged、Player.CardDrawn。
+```
+
+本项目的 `GameEventBus` 是架构设计。
+
+```text
+它是一局游戏里的事件中转站。
+它统一管理 CardPlayed、MinionSummoned、MinionDied 等多种游戏事件。
+```
+
+当前项目代码：
+
+```csharp
+private readonly Dictionary<GameEventType, List<Action<GameEvent>>> listeners;
+```
+
+读作：
+
+```text
+每一种 GameEventType，对应一组处理 GameEvent 的方法。
+```
+
+订阅：
+
+```csharp
+EventBus.Subscribe(GameEventType.CardPlayed, LogGameEvent);
+```
+
+读作：
+
+```text
+以后发布 CardPlayed 事件时，请调用 LogGameEvent。
+```
+
+发布：
+
+```csharp
+EventBus.Publish(gameEvent);
+```
+
+读作：
+
+```text
+这件事发生了，请通知所有关心这种事件的方法。
+```
+
+最小链路：
+
+```text
+Subscribe：登记方法
+Publish：发布 GameEvent
+Invoke：调用之前登记的方法
+```
+
+### 为什么当前先用 GameEventBus
+
+如果每种游戏事件都写成 C# `event`，可能会变成：
+
+```csharp
+public event Action<GameEvent> CardPlayed;
+public event Action<GameEvent> MinionSummoned;
+public event Action<GameEvent> MinionDied;
+```
+
+事件种类变多后，管理会分散。
+
+当前用 `GameEventBus`，可以统一成：
+
+```csharp
+Subscribe(GameEventType eventType, Action<GameEvent> listener)
+Publish(GameEvent gameEvent)
+```
+
+阶段性结论：
+
+```text
+C# event 是语言提供的订阅/通知机制。
+GameEventBus 是本项目用 Action<GameEvent> 和 Dictionary 组织出来的游戏事件系统。
+两者有关联，但不是同一个东西。
+```
+
 ## HashSet
 
 `HashSet<T>` 是一种集合，特点是：

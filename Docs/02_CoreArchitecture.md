@@ -16,7 +16,7 @@ Core 层的目标：
 规则清楚
 状态集中
 UI 不反向控制规则
-后续可以接入关键词、法术效果、事件系统和 AI
+已经接入关键词、法术和第一版事件系统基础链路，后续继续扩展 AI
 ```
 
 ## 分层边界
@@ -51,6 +51,9 @@ Core 不依赖 UI
 | `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
 | `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋和嘲讽 |
 | `BattlecryType` | `Assets/Scripts/Core/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害、抽牌 |
+| `GameEventType` | `Assets/Scripts/Events/GameEventType.cs` | 游戏事件类型 |
+| `GameEvent` | `Assets/Scripts/Events/GameEvent.cs` | 游戏事件数据 |
+| `GameEventBus` | `Assets/Scripts/Events/GameEventBus.cs` | 游戏事件订阅和发布 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
@@ -67,6 +70,10 @@ flowchart TD
     GameManager --> Card
     GameManager --> Minion
     GameManager --> Hero
+    GameManager --> GameEventBus
+
+    GameEventBus --> GameEvent
+    GameEvent --> GameEventType
 
     Player --> Hero
     Player --> Card
@@ -145,7 +152,18 @@ Minion = 战场上的运行时随从
 当前由 `TryAttackMinion()` 和 `TryAttackHero()` 在攻击前检查。
 
 战吼属于出牌/召唤成功后触发的一次性效果。
-当前由 `ResolveBattlecry(minion)` 直接结算，暂不使用完整事件系统。
+当前由 `ResolveBattlecry(minion)` 直接结算，暂不迁移到事件系统。
+
+阶段 2.5.0 已经接入第一版事件系统基础链路：
+
+```text
+GameManager 创建 GameEventBus
+TryPlayMinionCard() 成功后发布 CardPlayed 和 MinionSummoned
+TryPlaySpellCardOnMinion() / TryPlaySpellCardOnHero() 成功后发布 CardPlayed
+logGameEvents 调试开关订阅事件并打印 Console 日志
+```
+
+当前还没有发布 `MinionDied`，死亡事件会在下一步单独接入。
 
 这些方法返回 `bool` 的含义通常是：
 

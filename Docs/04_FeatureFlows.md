@@ -240,10 +240,10 @@ UI 最后重新读取 Core 状态并显示操作结果。
 当前阶段性简化：
 
 ```text
-战吼暂时不使用完整 GameEventBus。
+战吼暂时不通过 GameEventBus 结算。
 当前只支持不需要选目标的战吼。
 前两个战吼分别固定打敌方英雄和为出牌者抽牌，避免同时引入出牌选目标 UI。
-亡语开始前，再正式引入事件系统。
+事件系统基础链路已接入，亡语开始前还需要接入死亡事件。
 ```
 
 ### 阶段 2.4 测试步骤
@@ -288,6 +288,21 @@ UI 最后重新读取 Core 状态并显示操作结果。
 13. 确认书卷侍从进入战场。
 14. 确认己方手牌数量先因打出书卷侍从减少 1，再因战吼抽牌增加 1。
 15. 如果手牌满，当前规则会调用 Player.DrawCard() 烧掉牌库顶牌，不额外显示提示。
+```
+
+### 阶段 2.5.0 事件系统基础链路测试步骤
+
+在 Unity Editor 中操作：
+
+```text
+1. 等 Unity 自动导入 Assets/Scripts/Events 下的新脚本，并确认 Console 没有编译错误。
+2. 确认 GameManager 上的 Log Game Events 为开启状态。
+3. 进入 Play 模式。
+4. 打出一张随从牌。
+5. 确认 Console 输出 CardPlayed。
+6. 确认 Console 输出 MinionSummoned。
+7. 打出一张法术牌。
+8. 确认 Console 输出 CardPlayed。
 ```
 
 ## 法术牌施放流程
@@ -341,7 +356,8 @@ Hero / Minion 负责承受伤害。
 ```text
 只支持单目标伤害法术。
 不支持治疗、Buff、抽牌、召唤、AOE 和随机目标。
-还没有事件系统，法术伤害直接由 GameManager 调用 TakeDamage。
+当前已有出牌/召唤事件日志，但法术伤害仍然直接由 GameManager 调用 TakeDamage。
+死亡事件和伤害事件还没有接入事件系统。
 ```
 
 ## 结束回合流程

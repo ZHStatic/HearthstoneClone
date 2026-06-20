@@ -4,12 +4,12 @@
 
 ## 当前阶段
 
-阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5 已完成。
+阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0 已完成。
 
 当前停靠点：
 
 ```text
-阶段 2.4.5 已完成：第二个战吼“抽牌”
+阶段 2.5.0 已完成：事件系统基础链路
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -17,6 +17,8 @@
 嘲讽的代码链路已经写入：`KeywordType` 增加 `Taunt`，`GameManager` 在攻击随从和攻击英雄前检查防守方是否有活着的嘲讽随从，`CardView` 和 `MinionView` 可以显示“嘲讽”。
 
 战吼的最小链路已经测试通过：`BattlecryType` 定义战吼类型，`CardData` 支持配置战吼类型和通用数值，`GameManager` 在随从召唤成功后调用 `ResolveAfterSummon()` 处理冲锋和战吼，`CardView` 可以在手牌描述区显示战吼文字。
+
+事件系统基础链路已经测试通过：`GameEventType` 定义事件类型，`GameEvent` 承载事件数据，`GameEventBus` 管理订阅和发布，`GameManager` 可以发布 `CardPlayed` 和 `MinionSummoned`，Console 日志已确认监听回调会执行。
 
 ## 当前可玩内容
 
@@ -58,12 +60,15 @@
 | `SpellTargetType.cs` | 单目标法术可选择的目标范围 |
 | `KeywordType.cs` | 关键词类型：当前支持 `Charge`、`Taunt` |
 | `BattlecryType.cs` | 战吼类型：当前支持对敌方英雄造成伤害、抽牌 |
+| `GameEventType.cs` | 游戏事件类型：当前包含出牌、召唤、死亡、回合开始和回合结束 |
+| `GameEvent.cs` | 游戏事件数据：记录事件类型和相关上下文 |
+| `GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
 | `Card.cs` | 手牌/牌库中的运行时卡牌实例 |
 | `Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌 |
 | `Board.cs` | 双方战场随从列表和召唤位置限制 |
 | `Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限和关键词 |
-| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查和最小战吼结算 |
+| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算和基础事件发布 |
 
 ### UI 层
 
@@ -127,7 +132,18 @@
 - Play 模式已确认：打出后己方手牌通过战吼补抽 1 张。
 - Play 模式已确认：打出的随从仍然正常进入战场。
 
-## 阶段 2.2 / 2.3 / 2.4 / 2.4.5 结论
+## 阶段 2.5.0 已验证
+
+- Unity 已自动生成 `Assets/Scripts/Events` 文件夹 `.meta`。
+- 已创建 `GameEventType.cs`、`GameEvent.cs`、`GameEventBus.cs`。
+- `GameManager` 每局开始时创建新的 `GameEventBus`。
+- `GameManager` 在卡牌成功打出后发布 `CardPlayed`。
+- `GameManager` 在随从成功召唤后发布 `MinionSummoned`。
+- 已用 `logGameEvents` 调试开关订阅 `CardPlayed` 和 `MinionSummoned`。
+- Play 模式已确认：打出随从时 Console 输出 `CardPlayed` 和 `MinionSummoned`。
+- Play 模式已确认：打出法术时 Console 输出 `CardPlayed`。
+
+## 阶段 2.2 / 2.3 / 2.4 / 2.4.5 / 2.5.0 结论
 
 当前代码不需要推倒重来，冲锋可以作为最小关键词验证保留在现有结构中。
 嘲讽也暂时可以留在 `GameManager` 的攻击目标判断里，不急着拆 `CombatResolver`。
@@ -172,7 +188,7 @@ CardData 配置 BattlecryType 和 BattlecryValue
 - `GameManager` 已经负责回合、出牌、法术、攻击、死亡清理和胜负判断，后续不能无限加规则特判。
 - `GameUIController` 已经负责攻击选择、法术选择、英雄点击、操作反馈和刷新，后续 UI 状态复杂时需要拆分。
 - 当前法术和最小战吼直接由 `GameManager` 结算，这是阶段性简化，不是成熟项目最终做法。
-- 当前冲锋、嘲讽和前两个无目标战吼不需要完整事件系统，亡语、圣盾这类机制不要急着硬写。
+- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统先只验证出牌和召唤事件，下一步再接死亡事件。
 
 下一步判断：
 
@@ -188,7 +204,7 @@ CardView 和 MinionView 已能显示关键词文字。
 先做 Unity 验证：
 
 ```text
-阶段 2.4.5 抽牌战吼已完成。下一步进入第一版事件系统设计，为亡语做准备。
+阶段 2.5.0 事件系统基础链路已完成。下一步接入 `MinionDied` 死亡事件，为亡语做准备。
 ```
 
 继续写代码前，仍然先写属性清单，再动代码。

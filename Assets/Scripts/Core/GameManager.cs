@@ -15,11 +15,13 @@ public class GameManager : MonoBehaviour
 
     // 开局每名玩家抽几张牌。先用 3，之后如果要还原炉石规则可以再扩展。
     [SerializeField] private int startingHandCount = 3;
+    [SerializeField] private bool logGameEvents = true;
 
     // 运行时对象：进入 Play 模式后由 StartNewGame 创建。
     public Player Player { get; private set; }
     public Player Enemy { get; private set; }
     public Board Board { get; private set; }
+    public GameEventBus EventBus { get; private set; }
 
     // 当前正在行动的玩家，以及本局游戏的结果状态。
     public Player CurrentPlayer { get; private set; }
@@ -39,6 +41,8 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void StartNewGame()
     {
+        EventBus = new GameEventBus();
+
         Player = new Player(playerDeckData, "Player");
         Enemy = new Player(enemyDeckData, "Enemy");
         Board = new Board(Player, Enemy);
@@ -48,6 +52,7 @@ public class GameManager : MonoBehaviour
         TurnNumber = 0;
         IsGameOver = false;
 
+        SubscribeDebugEventLogs();
         DrawStartingHands(Player);
         DrawStartingHands(Enemy);
         StartTurn(CurrentPlayer);
@@ -132,6 +137,8 @@ public class GameManager : MonoBehaviour
         bool summoned = Board.SummonMinion(minion);
         if (!summoned) return false;
 
+        PublishCardPlayed(card);
+        PublishMinionSummoned(minion);
         ResolveAfterSummon(minion);
         return true;
     }
@@ -149,6 +156,7 @@ public class GameManager : MonoBehaviour
         bool played = CurrentPlayer.PlayCard(card);
         if (!played) return false;
 
+        PublishCardPlayed(card);
         target.TakeDamage(card.CardData.SpellDamage);
 
         CleanupDeadMinions();
@@ -169,6 +177,7 @@ public class GameManager : MonoBehaviour
         bool played = CurrentPlayer.PlayCard(card);
         if (!played) return false;
 
+        PublishCardPlayed(card);
         targetHero.TakeDamage(card.CardData.SpellDamage);
 
         CleanupDeadMinions();
@@ -384,6 +393,69 @@ public class GameManager : MonoBehaviour
         {
             minion.Owner.DrawCard();
         }
+    }
+
+    /// <summary>
+    /// 发布卡牌打出事件。
+    /// </summary>
+    private void PublishCardPlayed(Card card)
+    {
+        if (EventBus == null) return;
+        if (card == null) return;
+
+        GameEvent gameEvent = new GameEvent(
+            GameEventType.CardPlayed,
+            sourcePlayer: CurrentPlayer,
+            sourceCard: card);
+
+        EventBus.Publish(gameEvent);
+    }
+
+    /// <summary>
+    /// 发布随从召唤事件。
+    /// </summary>
+    private void PublishMinionSummoned(Minion minion)
+    {
+        if (EventBus == null) return;
+        if (minion == null) return;
+
+        GameEvent gameEvent = new GameEvent(
+            GameEventType.MinionSummoned,
+            sourcePlayer: minion.Owner,
+            targetPlayer: minion.Owner,
+            targetMinion: minion);
+
+        EventBus.Publish(gameEvent);
+    }
+
+    /// <summary>
+    /// 订阅调试用事件日志。
+    /// </summary>
+    private void SubscribeDebugEventLogs()
+    {
+        if (!logGameEvents) return;
+        if (EventBus == null) return;
+
+        EventBus.Subscribe(GameEventType.CardPlayed, LogGameEvent);
+        EventBus.Subscribe(GameEventType.MinionSummoned, LogGameEvent);
+    }
+
+    /// <summary>
+    /// 在 Console 中打印事件系统是否被触发。
+    /// </summary>
+    private void LogGameEvent(GameEvent gameEvent)
+    {
+        if (gameEvent == null) return;
+
+        string cardName = gameEvent.SourceCard != null && gameEvent.SourceCard.CardData != null
+            ? gameEvent.SourceCard.CardData.CardName
+            : "None";
+
+        string minionName = gameEvent.TargetMinion != null && gameEvent.TargetMinion.CardData != null
+            ? gameEvent.TargetMinion.CardData.CardName
+            : "None";
+
+        Debug.Log($"GameEvent: {gameEvent.Type}, Card: {cardName}, Minion: {minionName}");
     }
 
     /// <summary>
