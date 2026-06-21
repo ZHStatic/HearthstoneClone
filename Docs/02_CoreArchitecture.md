@@ -49,7 +49,7 @@ Core 不依赖 UI
 | `CardData` | `Assets/Scripts/Core/CardData.cs` | 卡牌模板数据，Unity Inspector 中配置 |
 | `CardType` | `Assets/Scripts/Core/CardType.cs` | 区分随从牌和法术牌 |
 | `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
-| `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋和嘲讽 |
+| `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋、嘲讽和圣盾 |
 | `BattlecryType` | `Assets/Scripts/Core/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害、抽牌 |
 | `DeathrattleType` | `Assets/Scripts/Core/DeathrattleType.cs` | 亡语类型，当前支持对敌方英雄造成伤害 |
 | `GameEventType` | `Assets/Scripts/Events/GameEventType.cs` | 游戏事件类型 |
@@ -193,6 +193,20 @@ MinionDied 发布后
 
 当前第一个亡语只支持对敌方英雄造成伤害。
 
+阶段 2.7 开始验证“受到伤害时修改结果”的关键词：
+
+```text
+CardData 配置 DivineShield
+Minion 创建时复制 CardData.Keywords
+
+Minion.TakeDamage(amount)
+-> 如果 amount <= 0，返回 0
+-> 如果有 DivineShield，移除 DivineShield 并返回 0
+-> 如果没有 DivineShield，正常扣 CurrentHealth
+```
+
+当前圣盾只处理随从受到伤害，不影响英雄。
+
 这些方法返回 `bool` 的含义通常是：
 
 ```text
@@ -210,6 +224,7 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 |----------|----------------|--------------|
 | `GameManager` 直接结算基础伤害法术 | 当前只有一张单目标伤害法术 | 法术类型变多时抽出 `EffectSystem` |
 | `GameManager` 直接处理攻击、反击和嘲讽目标检查 | 攻击规则还简单，嘲讽只影响目标合法性 | 圣盾、剧毒、风怒等机制继续增加时抽出 `CombatResolver` |
+| `Minion.TakeDamage()` 直接处理圣盾抵消 | 当前只有圣盾一个伤害前修改规则 | 免疫、法伤、吸血、伤害翻倍等机制出现时抽出 `DamageResolver` |
 | `GameManager` 直接处理冲锋、少量无目标战吼和第一个亡语 | 当前只验证召唤后/死亡后结算链路 | 战吼或亡语类型变多时抽出事件/效果系统 |
 | `GameManager` 直接清理死亡随从 | 当前死亡流程还短 | 亡语连锁、复生、召唤等变多时抽出 `DeathProcessor` |
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
@@ -227,6 +242,7 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 阶段 2.2 已完成第一个关键词“冲锋”。
 阶段 2.3 已完成第二个关键词“嘲讽”。
 阶段 2.4 已完成第一个战吼的最小代码链路，并通过 Unity Play 模式验证。
+阶段 2.7 已完成第五个关键词“圣盾”，并通过 Unity Play 模式验证。
 
 当前链路：
 
@@ -253,6 +269,20 @@ GameManager.TryAttackHero() 检查 HasAliveTauntMinion(opponent)
 
 这个实现也暂时不需要完整事件系统，因为嘲讽只限制攻击目标，不改变伤害结算，也不影响法术选目标。
 
+圣盾链路：
+
+```text
+CardData.Keywords 配置 DivineShield
+Minion 创建时复制 CardData.Keywords
+CardView / MinionView 显示“圣盾”
+Minion.TakeDamage() 识别 DivineShield
+RemoveKeyword(DivineShield)
+本次实际伤害为 0
+```
+
+圣盾暂时放在 `Minion.TakeDamage()`，因为它只影响随从自身受到伤害时的结果。
+这是阶段性简化，不是成熟项目最终做法；如果后续出现免疫、法伤、吸血、伤害翻倍等机制，应抽出统一的 `DamageResolver`。
+
 当前编辑器取舍：
 
 ```text
@@ -274,7 +304,7 @@ GameEventBus
 CombatResolver
 ```
 
-本项目现在已经把冲锋跑通，并完成嘲讽代码实现。
+本项目现在已经把冲锋跑通，并完成嘲讽和圣盾代码实现。
 `CardView` 和 `MinionView` 都会显示关键词文字。
 
 ## 战吼实现结论

@@ -17,6 +17,7 @@ public class Minion
     public int CurrentHealth { get; private set; }
     public bool CanAttack { get; private set; }
     public bool IsDead => CurrentHealth <= 0;
+    public bool HasDivineShield => HasKeyword(KeywordType.DivineShield);
 
     // 外部可以查看随从当前有哪些关键词，但不能替换关键词列表。
     public IReadOnlyList<KeywordType> Keywords => keywords;
@@ -51,6 +52,12 @@ public class Minion
     {
         if (amount <= 0) return 0;
 
+        if (HasDivineShield)
+        {
+            RemoveKeyword(KeywordType.DivineShield);
+            return 0;
+        }
+
         CurrentHealth -= amount;
         return amount;
     }
@@ -76,6 +83,17 @@ public class Minion
     public void SetCanAttack(bool canAttack)
     {
         CanAttack = canAttack;
+    }
+
+    /// <summary>
+    /// 移除一个运行时关键词。
+    /// 当前先用于圣盾被伤害消耗，之后也可以给沉默或失去关键词效果复用。
+    /// </summary>
+    public void RemoveKeyword(KeywordType keyword)
+    {
+        if (keyword == KeywordType.None) return;
+
+        keywords.Remove(keyword);
     }
 
     public override string ToString()

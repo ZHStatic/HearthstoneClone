@@ -235,6 +235,8 @@ public class CardView : MonoBehaviour
                 return "冲锋";
             case KeywordType.Taunt:
                 return "嘲讽";
+            case KeywordType.DivineShield:
+                return "圣盾";
             default:
                 return "";
         }

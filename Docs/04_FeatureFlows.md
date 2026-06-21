@@ -386,6 +386,75 @@ UI 最后重新读取 Core 状态并显示操作结果。
 18. 如果把 Deathrattle Value 临时调高到足以斩杀，确认敌方英雄生命归零后会 Game Over。
 ```
 
+### 圣盾随从补充流程
+
+入口：
+
+```text
+一个配置了 DivineShield 的随从受到正数伤害
+```
+
+当前测试圣盾：
+
+```text
+圣盾卫士：2 费，2/2，关键词：圣盾
+```
+
+流程：
+
+```text
+1. CardData 中配置 Keywords 包含 DivineShield。
+2. CardView 刷新手牌时显示“圣盾”。
+3. 玩家打出圣盾随从。
+4. GameManager 创建 Minion。
+5. Minion 从 CardData.Keywords 复制 DivineShield。
+6. Board.SummonMinion(minion) 把随从加入战场。
+7. MinionView 刷新场上随从时显示“圣盾”。
+8. 这个随从第一次被攻击或被火花命中。
+9. GameManager 调用 Minion.TakeDamage(amount)。
+10. Minion.TakeDamage 检查到 HasDivineShield 为 true。
+11. Minion.RemoveKeyword(DivineShield) 移除圣盾。
+12. Minion.TakeDamage 返回 0，CurrentHealth 不减少。
+13. GameUIController 刷新 UI，场上随从不再显示“圣盾”。
+14. 这个随从第二次受到伤害。
+15. Minion.TakeDamage 正常扣除 CurrentHealth。
+16. 如果 CurrentHealth 小于等于 0，GameManager.CleanupDeadMinions() 会按已有死亡流程处理。
+```
+
+当前阶段性简化：
+
+```text
+圣盾暂时直接写在 Minion.TakeDamage()。
+当前不发布 DamagePrevented 或 ShieldBroken 事件。
+当前没有圣盾破裂动画、音效或专用图标。
+后续如果出现免疫、法术伤害加成、吸血、伤害翻倍等机制，再抽 DamageResolver 或 CombatResolver。
+```
+
+### 阶段 2.7 圣盾测试步骤
+
+在 Unity Editor 中操作：
+
+```text
+1. 等 Unity 自动导入 KeywordType.cs、Minion.cs、CardView.cs 和 MinionView.cs，并确认 Console 没有编译错误。
+2. 创建一张新的 CardData，例如“圣盾卫士”。
+3. 设置 Card Type = Minion。
+4. 设置 Cost = 2。
+5. 设置 Attack = 2。
+6. 设置 Health = 2。
+7. 在 Keywords 列表中添加 DivineShield。
+8. 把“圣盾卫士”加入 GameManager 的 Player Deck Data。
+9. 进入 Play 模式。
+10. 抽到圣盾卫士后，确认手牌描述显示“圣盾”。
+11. 打出圣盾卫士。
+12. 确认场上随从状态区显示“圣盾”。
+13. 用火花打圣盾卫士，或让敌方随从攻击圣盾卫士。
+14. 确认圣盾卫士第一次受到伤害后生命值不变。
+15. 确认场上随从状态区不再显示“圣盾”。
+16. 再次让圣盾卫士受到伤害。
+17. 确认第二次伤害会正常扣除生命值。
+18. 如果第二次伤害足以致死，确认随从会进入已有死亡清理流程。
+```
+
 ## 法术牌施放流程
 
 入口：
