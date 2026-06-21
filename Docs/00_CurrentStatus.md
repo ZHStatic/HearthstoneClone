@@ -5,12 +5,13 @@
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8 已完成。
+阶段 2.9 战斗日志与代码整理的代码链路已写入，Unity 已确认无编译错误，待 Play 模式逐项验证。
 
 当前停靠点：
 
 ```text
-阶段 2.8 已完成：阶段 2 收尾复盘
-下一步：阶段 3.0 AI 行动建模
+阶段 2.9 代码链路已写入：战斗日志、圣盾反馈修正、关键词显示整理
+下一步：Play 模式验证阶段 2.9 行为，再进入阶段 3.0 AI 行动建模
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -27,6 +28,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 圣盾的第一版代码链路已经写入并通过 Unity Play 模式验证：`KeywordType` 增加 `DivineShield`，`Minion.TakeDamage()` 在随从第一次受到正数伤害时移除圣盾并抵消该次伤害，`CardView` 和 `MinionView` 可以显示“圣盾”。
 
 阶段 2 收尾复盘已经完成：`README.md` 已同步当前功能，`Docs/06_Stage2Review.md` 已整理阶段 2 成果、演示脚本、架构取舍和进入 AI 前检查点。
+
+阶段 2.9 代码链路已经写入：新增 `BattleLogEntry` 和 `BattleLogger`，`GameManager` 通过 `GameManager.BattleLog.cs` 记录回合、出牌、召唤、攻击、伤害、圣盾抵消、死亡和游戏结束；`GameUIController` 的法术反馈优先读取最近一次结算日志，避免火花打到圣盾随从时误报实际伤害；`KeywordTextFormatter` 已抽出 UI 层关键词文本格式化逻辑。
 
 ## 当前可玩内容
 
@@ -77,12 +80,15 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `GameEventType.cs` | 游戏事件类型：当前包含出牌、召唤、死亡、回合开始和回合结束 |
 | `GameEvent.cs` | 游戏事件数据：记录事件类型和相关上下文 |
 | `GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
+| `BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本 |
+| `BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
 | `Card.cs` | 手牌/牌库中的运行时卡牌实例 |
 | `Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌 |
 | `Board.cs` | 双方战场随从列表和召唤位置限制 |
 | `Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限、关键词和圣盾消耗 |
-| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算和基础事件发布 |
+| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算、基础事件发布和战斗日志入口 |
+| `GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
 
 ### UI 层
 
@@ -93,6 +99,7 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `MinionView.cs` | 显示一个场上随从、关键词文字、亡语文字、点击和选中高亮 |
 | `BoardView.cs` | 根据一方战场列表生成多个 `MinionView` |
 | `GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、选择状态、反馈和刷新 |
+| `KeywordTextFormatter.cs` | UI 层关键词文本格式化工具，供 `CardView` 和 `MinionView` 复用 |
 
 ## 文档分工
 
@@ -125,6 +132,10 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - 书卷侍从的战吼已在 Play 模式测试通过：打出后己方抽 1 张牌。
 - Unity Play 模式已确认：手牌和场上随从可以显示“圣盾”。
 - Unity Play 模式已确认：圣盾随从第一次受到正数伤害时抵消该次伤害并失去圣盾，第二次伤害正常扣血。
+- 阶段 2.9 新增脚本已通过 Unity 编译检查，未出现编译错误。
+- `GameManager` 已不再忽略 `TakeDamage()` 的返回值，伤害 helper 会记录尝试伤害和实际伤害。
+- `GameUIController` 法术成功反馈已改为优先显示最近一次 Core 结算日志。
+- `CardView` 和 `MinionView` 已复用 `KeywordTextFormatter` 显示关键词。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -196,6 +207,17 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - 已把下一步统一为阶段 3.0：AI 行动建模。
 - 本阶段不改 C# 规则代码，只做文档和项目状态收口。
 
+## 阶段 2.9 代码链路已写入
+
+- 已新增 `BattleLogEntry.cs` 和 `BattleLogger.cs`，用于记录本局战斗日志。
+- 已把 `GameManager` 改为 `partial`，并新增 `GameManager.BattleLog.cs` 存放日志和伤害记录 helper。
+- `DamageMinion()` / `DamageHero()` 会包装 `TakeDamage()`，记录尝试伤害和实际伤害。
+- 圣盾抵消时会记录 `DivineShieldPrevented` 日志，并把它作为最近一次操作反馈。
+- `GameUIController` 法术反馈已优先使用 `LastActionLogEntry.Message`，避免火花打圣盾时误报“造成 2 点伤害”。
+- 已新增 `KeywordTextFormatter.cs`，`CardView` 和 `MinionView` 复用同一套关键词文本格式化逻辑。
+- 项目专用扫描脚本已确认：当前没有忽略 `TakeDamage()` 返回值、误导性法术伤害反馈、重复关键词 formatter 或关键词字符串手动拼接候选。
+- Unity 已确认无编译错误；Play 模式行为验证仍需补做。
+
 ## 阶段 2 结论
 
 当前代码不需要推倒重来，冲锋可以作为最小关键词验证保留在现有结构中。
@@ -257,9 +279,11 @@ CardData 配置 DeathrattleType 和 DeathrattleValue
 CardData 配置 DivineShield
 -> Minion 复制关键词
 -> CardView / MinionView 显示“圣盾”
--> Minion.TakeDamage(amount)
+-> GameManager.DamageMinion(...) 调用 Minion.TakeDamage(amount)
 -> 如果有圣盾，RemoveKeyword(DivineShield)
 -> 本次实际伤害返回 0，CurrentHealth 不减少
+-> BattleLogger 记录“尝试伤害”和“实际伤害 0”
+-> UI 法术反馈读取最近一次日志，显示圣盾抵消
 -> 下一次受到伤害时正常扣血
 ```
 
@@ -275,17 +299,22 @@ CardData 配置 DivineShield
 
 ```text
 CardView 和 MinionView 已能显示关键词文字。
+CardView 和 MinionView 已复用 KeywordTextFormatter。
 嘲讽已经开始影响攻击目标选择。
 战吼已经开始验证“召唤后触发效果”的思想。
 亡语已经开始验证“死亡后触发效果”的思想。
 圣盾已经开始验证“受到伤害时修改伤害结果”的思想。
+战斗日志已经开始验证“规则结算可观测性”的思想。
 ```
 
 ## 下一步
 
-进入 AI 前先做行动建模：
+进入 AI 前先完成阶段 2.9 行为验证，然后做行动建模：
 
 ```text
+阶段 2.9：Play 模式验证
+确认火花打圣盾、随从攻击圣盾、战吼伤害、亡语伤害、死亡和游戏结束日志顺序符合预期。
+
 阶段 3.0：AI 行动建模
 先定义“出牌、攻击、结束回合”这些动作怎么表示，再枚举当前局面下所有合法动作。
 第一版 AI 只需要能随机执行合法动作，不急着做搜索和评分。

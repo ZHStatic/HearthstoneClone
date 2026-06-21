@@ -55,12 +55,15 @@ Core 不依赖 UI
 | `GameEventType` | `Assets/Scripts/Events/GameEventType.cs` | 游戏事件类型 |
 | `GameEvent` | `Assets/Scripts/Events/GameEvent.cs` | 游戏事件数据 |
 | `GameEventBus` | `Assets/Scripts/Events/GameEventBus.cs` | 游戏事件订阅和发布 |
+| `BattleLogEntry` | `Assets/Scripts/Core/BattleLogEntry.cs` | 单条战斗日志快照 |
+| `BattleLogger` | `Assets/Scripts/Core/BattleLogger.cs` | 本局战斗日志记录器 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
 | `Minion` | `Assets/Scripts/Core/Minion.cs` | 场上随从实例：攻击、生命、所属玩家、能否攻击、关键词 |
 | `Board` | `Assets/Scripts/Core/Board.cs` | 双方战场随从列表、召唤上限、移除随从 |
 | `GameManager` | `Assets/Scripts/Core/GameManager.cs` | 当前阶段的对局流程调度入口 |
+| `GameManager.BattleLog` | `Assets/Scripts/Core/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
 
 ## 依赖关系
 
@@ -72,6 +75,9 @@ flowchart TD
     GameManager --> Minion
     GameManager --> Hero
     GameManager --> GameEventBus
+    GameManager --> BattleLogger
+
+    BattleLogger --> BattleLogEntry
 
     GameEventBus --> GameEvent
     GameEvent --> GameEventType
@@ -147,6 +153,13 @@ Minion = 战场上的运行时随从
 | `CleanupDeadMinions()` | 清理死亡随从 |
 | `CheckGameOver()` | 检查胜负 |
 
+阶段 2.9 开始，`GameManager` 还会维护：
+
+```text
+BattleLogger：本局战斗日志
+LastActionLogEntry：最近一次主要结算结果，当前给 UI 法术反馈使用
+```
+
 `TryPlayMinionCard()` 当前还会在召唤成功后调用 `ResolveAfterSummon(minion)`。
 这个方法统一处理召唤后的阶段性结算，目前包含冲锋和最小战吼。
 
@@ -207,6 +220,20 @@ Minion.TakeDamage(amount)
 
 当前圣盾只处理随从受到伤害，不影响英雄。
 
+阶段 2.9 开始补“规则结算可观测性”：
+
+```text
+GameManager.Try... / 战吼 / 亡语
+-> DamageMinion(...) 或 DamageHero(...)
+-> 调用 Minion.TakeDamage(...) 或 Hero.TakeDamage(...)
+-> BattleLogger 记录尝试伤害、实际伤害、来源、目标和显示文本
+-> 如果随从用圣盾抵消伤害，记录 DivineShieldPrevented
+-> GameUIController 可以读取 LastActionLogEntry.Message 显示准确反馈
+```
+
+`GameManager.BattleLog.cs` 是文件级拆分，不是新系统拆分。
+它的目的只是让主 `GameManager.cs` 保持对局流程可读；规则入口仍然在 `GameManager`。
+
 这些方法返回 `bool` 的含义通常是：
 
 ```text
@@ -228,7 +255,8 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 | `GameManager` 直接处理冲锋、少量无目标战吼和第一个亡语 | 当前只验证召唤后/死亡后结算链路 | 战吼或亡语类型变多时抽出事件/效果系统 |
 | `GameManager` 直接清理死亡随从 | 当前死亡流程还短 | 亡语连锁、复生、召唤等变多时抽出 `DeathProcessor` |
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
-| 反馈文本由 `GameUIController` 拼接 | 当前只服务演示和调试 | 需要日志、动画、音效时再抽操作结果对象 |
+| 法术反馈读取 `LastActionLogEntry` | 当前只需要修正圣盾等实际结算反馈 | 操作结果类型变多时再抽 `ActionResult` |
+| `BattleLogger` 只做内存日志 | 当前只服务调试、演示和 AI 前可观测性 | 需要回放、导出或复杂统计时再做持久化/日志 UI |
 
 面试时可以这样解释：
 
@@ -275,9 +303,11 @@ GameManager.TryAttackHero() 检查 HasAliveTauntMinion(opponent)
 CardData.Keywords 配置 DivineShield
 Minion 创建时复制 CardData.Keywords
 CardView / MinionView 显示“圣盾”
+GameManager.DamageMinion(...) 调用 Minion.TakeDamage()
 Minion.TakeDamage() 识别 DivineShield
 RemoveKeyword(DivineShield)
 本次实际伤害为 0
+BattleLogger 记录尝试伤害和实际伤害 0
 ```
 
 圣盾暂时放在 `Minion.TakeDamage()`，因为它只影响随从自身受到伤害时的结果。

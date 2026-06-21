@@ -6,7 +6,7 @@ using UnityEngine;
 /// 负责一局游戏的初始化、回合切换、出牌、攻击、死亡清理和胜负判断。
 /// 之后 UI 可以调用它的方法，但它本身不直接依赖 UI。
 /// </summary>
-public class GameManager : MonoBehaviour
+public partial class GameManager : MonoBehaviour
 {
     // 在 Inspector 里配置的双方初始牌库模板。
     // 每个元素都是一个 CardData asset，运行时会被 Player 转成 Card 实例。
@@ -22,6 +22,8 @@ public class GameManager : MonoBehaviour
     public Player Enemy { get; private set; }
     public Board Board { get; private set; }
     public GameEventBus EventBus { get; private set; }
+    public BattleLogger BattleLogger { get; private set; }
+    public BattleLogEntry LastActionLogEntry { get; private set; }
 
     // 当前正在行动的玩家，以及本局游戏的结果状态。
     public Player CurrentPlayer { get; private set; }
@@ -42,6 +44,8 @@ public class GameManager : MonoBehaviour
     public void StartNewGame()
     {
         EventBus = new GameEventBus();
+        BattleLogger = new BattleLogger();
+        LastActionLogEntry = null;
 
         Player = new Player(playerDeckData, "Player");
         Enemy = new Player(enemyDeckData, "Enemy");
@@ -88,6 +92,11 @@ public class GameManager : MonoBehaviour
 
         targetPlayer.StartTurn();
 
+        RecordBattleLog(
+            BattleLogEntryType.TurnStarted,
+            sourcePlayer: targetPlayer,
+            message: $"{GetPlayerLogName(targetPlayer)} 回合开始。");
+
         IReadOnlyList<Minion> minions = Board.GetMinions(targetPlayer);
         if (minions == null) return;
 
@@ -103,6 +112,11 @@ public class GameManager : MonoBehaviour
     public void EndTurn()
     {
         if (IsGameOver) return;
+
+        RecordBattleLog(
+            BattleLogEntryType.TurnEnded,
+            sourcePlayer: CurrentPlayer,
+            message: $"{GetPlayerLogName(CurrentPlayer)} 回合结束。");
 
         Player nextPlayer = GetOpponent(CurrentPlayer);
         StartTurn(nextPlayer);
@@ -139,7 +153,9 @@ public class GameManager : MonoBehaviour
         if (!summoned) return false;
 
         PublishCardPlayed(card);
+        RecordCardPlayed(card, CurrentPlayer);
         PublishMinionSummoned(minion);
+        RecordMinionSummoned(minion);
         ResolveAfterSummon(minion);
         return true;
     }
@@ -158,7 +174,8 @@ public class GameManager : MonoBehaviour
         if (!played) return false;
 
         PublishCardPlayed(card);
-        target.TakeDamage(card.CardData.SpellDamage);
+        RecordCardPlayed(card, CurrentPlayer);
+        DamageMinion(target, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
 
         CleanupDeadMinions();
         CheckGameOver();
@@ -179,7 +196,8 @@ public class GameManager : MonoBehaviour
         if (!played) return false;
 
         PublishCardPlayed(card);
-        targetHero.TakeDamage(card.CardData.SpellDamage);
+        RecordCardPlayed(card, CurrentPlayer);
+        DamageHero(targetHero, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
 
         CleanupDeadMinions();
         CheckGameOver();
@@ -195,8 +213,9 @@ public class GameManager : MonoBehaviour
         if (!CanAttack(attacker)) return false;
         if (!IsValidAttackTarget(attacker, target)) return false;
 
-        attacker.TakeDamage(target.Attack);
-        target.TakeDamage(attacker.Attack);
+        RecordAttack(attacker, GetMinionLogName(target));
+        DamageMinion(attacker, target.Attack, GetMinionLogName(target), target.Owner, BattleLogEntryType.Damage);
+        DamageMinion(target, attacker.Attack, GetMinionLogName(attacker), attacker.Owner, BattleLogEntryType.Damage);
         attacker.SetCanAttack(false);
 
         CleanupDeadMinions();
@@ -218,7 +237,8 @@ public class GameManager : MonoBehaviour
         if (targetHero != opponent.Hero) return false;
         if (HasAliveTauntMinion(opponent)) return false;
 
-        targetHero.TakeDamage(attacker.Attack);
+        RecordAttack(attacker, GetHeroLogName(targetHero));
+        DamageHero(targetHero, attacker.Attack, GetMinionLogName(attacker), attacker.Owner, BattleLogEntryType.Damage);
         attacker.SetCanAttack(false);
 
         CheckGameOver();
@@ -257,6 +277,16 @@ public class GameManager : MonoBehaviour
         {
             Winner = playerDead ? Enemy : Player;
         }
+
+        string message = Winner == null
+            ? "游戏结束：双方英雄同时死亡，平局。"
+            : $"游戏结束：{GetPlayerLogName(Winner)} 获胜。";
+
+        RecordBattleLog(
+            BattleLogEntryType.GameEnded,
+            sourcePlayer: Winner,
+            message: message,
+            setAsLastAction: true);
     }
 
     /// <summary>
@@ -377,7 +407,12 @@ public class GameManager : MonoBehaviour
         Player opponent = GetOpponent(minion.Owner);
         if (opponent == null || opponent.Hero == null) return;
 
-        opponent.Hero.TakeDamage(minion.CardData.BattlecryValue);
+        DamageHero(
+            opponent.Hero,
+            minion.CardData.BattlecryValue,
+            $"{GetMinionLogName(minion)} 战吼",
+            minion.Owner,
+            BattleLogEntryType.Battlecry);
         CheckGameOver();
     }
 
@@ -445,7 +480,12 @@ public class GameManager : MonoBehaviour
         Player opponent = GetOpponent(minion.Owner);
         if (opponent == null || opponent.Hero == null) return;
 
-        opponent.Hero.TakeDamage(minion.CardData.DeathrattleValue);
+        DamageHero(
+            opponent.Hero,
+            minion.CardData.DeathrattleValue,
+            $"{GetMinionLogName(minion)} 亡语",
+            minion.Owner,
+            BattleLogEntryType.Deathrattle);
         CheckGameOver();
     }
 
@@ -626,6 +666,7 @@ public class GameManager : MonoBehaviour
             Minion minion = minions[i];
             if (minion.IsDead)
             {
+                RecordMinionDied(minion);
                 PublishMinionDied(minion);
                 Board.RemoveMinion(minion);
             }

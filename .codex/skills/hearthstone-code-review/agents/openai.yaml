@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hearthstone Code Review"
+  short_description: "Project-specific review checks for HearthstoneClone."
+  default_prompt: "Use $hearthstone-code-review to scan this HearthstoneClone change for repeated patterns, feedback issues, and Core/UI boundary risks."

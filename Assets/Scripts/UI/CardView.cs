@@ -155,24 +155,9 @@ public class CardView : MonoBehaviour
     /// </summary>
     private string GetKeywordsText(CardData cardData)
     {
-        if (cardData == null || cardData.Keywords == null) return "";
+        if (cardData == null) return "";
 
-        string text = "";
-
-        foreach (KeywordType keyword in cardData.Keywords)
-        {
-            string keywordText = GetKeywordText(keyword);
-            if (string.IsNullOrWhiteSpace(keywordText)) continue;
-
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                text += " ";
-            }
-
-            text += keywordText;
-        }
-
-        return text;
+        return KeywordTextFormatter.BuildKeywordsText(cardData.Keywords);
     }
 
     /// <summary>
@@ -222,24 +207,6 @@ public class CardView : MonoBehaviour
         if (string.IsNullOrWhiteSpace(line)) return;
 
         lines.Add(line);
-    }
-
-    /// <summary>
-    /// 把关键词枚举转成玩家能看懂的中文。
-    /// </summary>
-    private string GetKeywordText(KeywordType keyword)
-    {
-        switch (keyword)
-        {
-            case KeywordType.Charge:
-                return "冲锋";
-            case KeywordType.Taunt:
-                return "嘲讽";
-            case KeywordType.DivineShield:
-                return "圣盾";
-            default:
-                return "";
-        }
     }
 
     /// <summary>

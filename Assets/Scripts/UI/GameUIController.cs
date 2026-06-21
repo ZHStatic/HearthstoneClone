@@ -439,10 +439,10 @@ public class GameUIController : MonoBehaviour
 
         string spellName = GetCardName(selectedSpellCard);
         string targetName = GetMinionName(target);
-        int damage = selectedSpellCard.CardData != null ? selectedSpellCard.CardData.SpellDamage : 0;
 
         bool played = gameManager.TryPlaySpellCardOnMinion(selectedSpellCard, target);
-        SetFeedback(played ? $"{spellName} 对 {targetName} 造成 {damage} 点伤害。" : "法术目标非法，释放失败。");
+        string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
+        SetFeedback(played ? GetLastActionMessageOrFallback(fallbackMessage) : "法术目标非法，释放失败。");
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -473,10 +473,10 @@ public class GameUIController : MonoBehaviour
 
         string spellName = GetCardName(selectedSpellCard);
         string targetName = targetHero.Name;
-        int damage = selectedSpellCard.CardData != null ? selectedSpellCard.CardData.SpellDamage : 0;
 
         bool played = gameManager.TryPlaySpellCardOnHero(selectedSpellCard, targetHero);
-        SetFeedback(played ? $"{spellName} 对 {targetName} 造成 {damage} 点伤害。" : "法术目标英雄非法，释放失败。");
+        string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
+        SetFeedback(played ? GetLastActionMessageOrFallback(fallbackMessage) : "法术目标英雄非法，释放失败。");
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -649,6 +649,22 @@ public class GameUIController : MonoBehaviour
         }
 
         return card.CardData.CardName;
+    }
+
+    /// <summary>
+    /// 优先使用 Core 层最近一次结算日志的文本。
+    /// 如果日志还没有准备好，就回退到调用方传入的默认反馈。
+    /// </summary>
+    private string GetLastActionMessageOrFallback(string fallbackMessage)
+    {
+        if (gameManager != null &&
+            gameManager.LastActionLogEntry != null &&
+            !string.IsNullOrWhiteSpace(gameManager.LastActionLogEntry.Message))
+        {
+            return gameManager.LastActionLogEntry.Message;
+        }
+
+        return fallbackMessage ?? "";
     }
 
     /// <summary>

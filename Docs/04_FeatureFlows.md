@@ -83,7 +83,8 @@ GameManager.StartTurn(targetPlayer)
 7. 当前法力补满。
 8. 手牌费用重置。
 9. 抽一张牌。
-10. 当前玩家场上的随从变成可以攻击。
+10. BattleLogger 记录回合开始。
+11. 当前玩家场上的随从变成可以攻击。
 ```
 
 ## 点击手牌出牌流程
@@ -125,11 +126,13 @@ GameManager.StartTurn(targetPlayer)
 7. 如果成功，Player 扣除法力并从手牌移除卡牌。
 8. GameManager 创建 Minion。
 9. Board.SummonMinion(minion) 把随从加入战场。
-10. GameManager 调用 ResolveAfterSummon(minion) 处理召唤后结算。
-11. 如果随从拥有 `Charge`，GameManager 让它立刻可以攻击。
-12. 如果这张牌配置了战吼，GameManager 结算战吼效果。
-13. 如果随从拥有 `Taunt`，它会在后续攻击目标判断中被识别为嘲讽随从。
-14. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
+10. BattleLogger 记录出牌和召唤。
+11. GameManager 调用 ResolveAfterSummon(minion) 处理召唤后结算。
+12. 如果随从拥有 `Charge`，GameManager 让它立刻可以攻击。
+13. 如果这张牌配置了战吼，GameManager 结算战吼效果。
+14. 如果这张牌有伤害战吼，BattleLogger 记录尝试伤害和实际伤害。
+15. 如果随从拥有 `Taunt`，它会在后续攻击目标判断中被识别为嘲讽随从。
+16. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -233,8 +236,9 @@ UI 最后重新读取 Core 状态并显示操作结果。
 11. ResolveBattlecry 识别 DealDamageToEnemyHero。
 12. GameManager 找到出牌者的对手。
 13. 敌方 Hero 承受 BattlecryValue 点伤害。
-14. GameManager.CheckGameOver() 检查战吼是否已经打死英雄。
-15. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
+14. BattleLogger 记录战吼来源、目标、尝试伤害和实际伤害。
+15. GameManager.CheckGameOver() 检查战吼是否已经打死英雄。
+16. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
 ```
 
 当前阶段性简化：
@@ -348,9 +352,10 @@ UI 最后重新读取 Core 状态并显示操作结果。
 12. ResolveDeathrattle(minion) 检查死亡随从是否有亡语。
 13. 如果亡语类型是 DealDamageToEnemyHero，就找到死亡随从拥有者的对手。
 14. 敌方 Hero 承受 DeathrattleValue 点伤害。
-15. GameManager.CheckGameOver() 检查亡语是否已经打死英雄。
-16. 死亡随从随后从 Board 移除。
-17. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
+15. BattleLogger 记录亡语来源、目标、尝试伤害和实际伤害。
+16. GameManager.CheckGameOver() 检查亡语是否已经打死英雄。
+17. 死亡随从随后从 Board 移除。
+18. GameUIController 刷新 UI，显示新的英雄血量和战场状态。
 ```
 
 当前阶段性简化：
@@ -411,21 +416,24 @@ UI 最后重新读取 Core 状态并显示操作结果。
 6. Board.SummonMinion(minion) 把随从加入战场。
 7. MinionView 刷新场上随从时显示“圣盾”。
 8. 这个随从第一次被攻击或被火花命中。
-9. GameManager 调用 Minion.TakeDamage(amount)。
-10. Minion.TakeDamage 检查到 HasDivineShield 为 true。
-11. Minion.RemoveKeyword(DivineShield) 移除圣盾。
-12. Minion.TakeDamage 返回 0，CurrentHealth 不减少。
-13. GameUIController 刷新 UI，场上随从不再显示“圣盾”。
-14. 这个随从第二次受到伤害。
-15. Minion.TakeDamage 正常扣除 CurrentHealth。
-16. 如果 CurrentHealth 小于等于 0，GameManager.CleanupDeadMinions() 会按已有死亡流程处理。
+9. GameManager 调用 DamageMinion(target, amount, sourceName, sourcePlayer, entryType)。
+10. DamageMinion 先记录目标是否有圣盾。
+11. DamageMinion 调用 Minion.TakeDamage(amount)。
+12. Minion.TakeDamage 检查到 HasDivineShield 为 true。
+13. Minion.RemoveKeyword(DivineShield) 移除圣盾。
+14. Minion.TakeDamage 返回 0，CurrentHealth 不减少。
+15. BattleLogger 记录本次尝试伤害为正数、实际伤害为 0，并标记圣盾抵消。
+16. GameUIController 刷新 UI，场上随从不再显示“圣盾”。
+17. 这个随从第二次受到伤害。
+18. Minion.TakeDamage 正常扣除 CurrentHealth。
+19. 如果 CurrentHealth 小于等于 0，GameManager.CleanupDeadMinions() 会按已有死亡流程处理。
 ```
 
 当前阶段性简化：
 
 ```text
 圣盾暂时直接写在 Minion.TakeDamage()。
-当前不发布 DamagePrevented 或 ShieldBroken 事件。
+当前不发布 DamagePrevented 或 ShieldBroken 事件，但会记录 `DivineShieldPrevented` 战斗日志。
 当前没有圣盾破裂动画、音效或专用图标。
 后续如果出现免疫、法术伤害加成、吸血、伤害翻倍等机制，再抽 DamageResolver 或 CombatResolver。
 ```
@@ -486,9 +494,11 @@ UI 最后重新读取 Core 状态并显示操作结果。
 12. GameManager 通过 CanPlayCard(card) 检查通用出牌条件。
 13. GameManager 根据 SpellTargetType 判断目标是否合法。
 14. CurrentPlayer.PlayCard(card) 扣除法力，并从手牌移除法术牌。
-15. 目标受到 SpellDamage 点伤害。
-16. GameManager 清理死亡随从并检查胜负。
-17. GameUIController 清空 selectedSpellCard，显示反馈并刷新 UI。
+15. GameManager 调用 DamageMinion 或 DamageHero 结算伤害。
+16. BattleLogger 记录法术来源、目标、尝试伤害和实际伤害。
+17. 如果目标随从用圣盾抵消伤害，BattleLogger 记录圣盾抵消。
+18. GameManager 清理死亡随从并检查胜负。
+19. GameUIController 清空 selectedSpellCard，优先显示 LastActionLogEntry.Message，并刷新 UI。
 ```
 
 这条流程的分层：
@@ -506,8 +516,8 @@ Hero / Minion 负责承受伤害。
 ```text
 只支持单目标伤害法术。
 不支持治疗、Buff、抽牌、召唤、AOE 和随机目标。
-当前已有出牌、召唤和死亡事件日志，但法术伤害仍然直接由 GameManager 调用 TakeDamage。
-伤害事件还没有接入事件系统。
+当前已有出牌、召唤和死亡事件日志，也已有 BattleLogger 记录法术伤害结果。
+伤害结算仍然不通过 GameEventBus；这是阶段性简化，不是成熟项目最终做法。
 ```
 
 ## 结束回合流程
@@ -523,11 +533,12 @@ Hero / Minion 负责承受伤害。
 ```text
 1. Button 调用 GameUIController.HandleEndTurnClicked()。
 2. GameUIController 调用 GameManager.EndTurn()。
-3. GameManager 找到当前玩家的对手。
-4. GameManager.StartTurn(nextPlayer)。
-5. 新的当前玩家开始回合。
-6. GameUIController.RefreshAll()。
-7. UI 显示新的当前玩家手牌、法力和战场状态。
+3. GameManager 用 BattleLogger 记录当前玩家回合结束。
+4. GameManager 找到当前玩家的对手。
+5. GameManager.StartTurn(nextPlayer)。
+6. 新的当前玩家开始回合，并记录回合开始日志。
+7. GameUIController.RefreshAll()。
+8. UI 显示新的当前玩家手牌、法力和战场状态。
 ```
 
 当前临时调试规则：
@@ -556,11 +567,13 @@ AI 还没做，所以 UI 暂时显示当前行动者的手牌。
 6. 如果已经有 selectedAttacker，再点击敌方随从。
 7. GameUIController 调用 GameManager.TryAttackMinion(selectedAttacker, target)。
 8. GameManager 检查攻击者、目标、阵营、攻击权限和嘲讽限制。
-9. 如果目标合法，双方随从互相造成攻击力数值的伤害。
-10. 攻击者 CanAttack = false。
-11. 清理死亡随从。
-12. 检查胜负。
-13. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
+9. 如果目标合法，BattleLogger 记录攻击行为。
+10. 双方随从通过 DamageMinion 互相造成攻击力数值的伤害。
+11. BattleLogger 记录双方尝试伤害和实际伤害；圣盾抵消时实际伤害为 0。
+12. 攻击者 CanAttack = false。
+13. 清理死亡随从，并记录死亡日志。
+14. 检查胜负。
+15. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
 ```
 
 这条流程的分层：
@@ -589,10 +602,12 @@ GameManager 负责判断攻击是否合法并结算伤害。
 5. TryAttackSelectedHero 调用 GameManager.TryAttackHero(selectedAttacker, targetHero)。
 6. GameManager 检查攻击者、目标英雄、阵营和嘲讽限制。
 7. 如果对方场上有活着的嘲讽随从，攻击英雄失败。
-8. 如果目标合法，目标英雄受到攻击者攻击力数值的伤害。
-9. 攻击者 CanAttack = false。
-10. GameManager 检查胜负。
-11. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
+8. 如果目标合法，BattleLogger 记录攻击行为。
+9. 目标英雄通过 DamageHero 受到攻击者攻击力数值的伤害。
+10. BattleLogger 记录尝试伤害和实际伤害。
+11. 攻击者 CanAttack = false。
+12. GameManager 检查胜负。
+13. GameUIController 清空 selectedAttacker，显示攻击结果提示并刷新 UI。
 ```
 
 补充规则：

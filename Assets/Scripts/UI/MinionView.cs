@@ -176,24 +176,9 @@ public class MinionView : MonoBehaviour
     /// </summary>
     private string GetKeywordsText(Minion minion)
     {
-        if (minion == null || minion.Keywords == null) return "";
+        if (minion == null) return "";
 
-        string text = "";
-
-        foreach (KeywordType keyword in minion.Keywords)
-        {
-            string keywordText = GetKeywordText(keyword);
-            if (string.IsNullOrWhiteSpace(keywordText)) continue;
-
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                text += " ";
-            }
-
-            text += keywordText;
-        }
-
-        return text;
+        return KeywordTextFormatter.BuildKeywordsText(minion.Keywords);
     }
 
     /// <summary>
@@ -226,24 +211,6 @@ public class MinionView : MonoBehaviour
         }
 
         statusText += text;
-    }
-
-    /// <summary>
-    /// 把关键词枚举转成玩家能看懂的中文。
-    /// </summary>
-    private string GetKeywordText(KeywordType keyword)
-    {
-        switch (keyword)
-        {
-            case KeywordType.Charge:
-                return "冲锋";
-            case KeywordType.Taunt:
-                return "嘲讽";
-            case KeywordType.DivineShield:
-                return "圣盾";
-            default:
-                return "";
-        }
     }
 
     /// <summary>
