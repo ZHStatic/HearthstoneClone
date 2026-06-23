@@ -17,6 +17,10 @@ public partial class GameManager : MonoBehaviour
     [SerializeField] private int startingHandCount = 3;
     [SerializeField] private bool logGameEvents = true;
 
+    // 调试开关：回合开始后打印当前玩家的合法动作列表。
+    // 只用于验证 GameActionGenerator，不会执行任何动作。
+    [SerializeField] private bool logLegalActionsOnTurnStart = false;
+
     // 运行时对象：进入 Play 模式后由 StartNewGame 创建。
     public Player Player { get; private set; }
     public Player Enemy { get; private set; }
@@ -98,12 +102,15 @@ public partial class GameManager : MonoBehaviour
             message: $"{GetPlayerLogName(targetPlayer)} 回合开始。");
 
         IReadOnlyList<Minion> minions = Board.GetMinions(targetPlayer);
-        if (minions == null) return;
-
-        foreach (Minion minion in minions)
+        if (minions != null)
         {
-            minion.SetCanAttack(true);
+            foreach (Minion minion in minions)
+            {
+                minion.SetCanAttack(true);
+            }
         }
+
+        LogLegalActionsForCurrentPlayer();
     }
 
     /// <summary>
@@ -132,6 +139,50 @@ public partial class GameManager : MonoBehaviour
         if (targetPlayer == Enemy) return Player;
 
         return null;
+    }
+
+    /// <summary>
+    /// 调试用：打印当前玩家在这个局面下可以执行的合法动作。
+    /// 这个方法只读取 GameActionGenerator 的结果，不执行任何动作。
+    /// </summary>
+    private void LogLegalActionsForCurrentPlayer()
+    {
+        if (!logLegalActionsOnTurnStart) return;
+
+        List<GameAction> legalActions = GameActionGenerator.GenerateLegalActions(this);
+        Debug.Log($"Legal Actions - {GetPlayerLogName(CurrentPlayer)}: {legalActions.Count}");
+
+        for (int i = 0; i < legalActions.Count; i++)
+        {
+            Debug.Log($"{i + 1}. {GetActionDebugText(legalActions[i])}");
+        }
+    }
+
+    /// <summary>
+    /// 把一条动作转换成 Console 中容易阅读的文本。
+    /// 只用于调试动作枚举结果，不参与正式规则结算。
+    /// </summary>
+    private string GetActionDebugText(GameAction action)
+    {
+        if (action == null) return "None";
+
+        switch (action.ActionType)
+        {
+            case GameActionType.PlayMinionCard:
+                return $"PlayMinionCard: {GetCardLogName(action.Card)}";
+            case GameActionType.PlaySpellOnMinion:
+                return $"PlaySpellOnMinion: {GetCardLogName(action.Card)} -> {GetMinionLogName(action.TargetMinion)}";
+            case GameActionType.PlaySpellOnHero:
+                return $"PlaySpellOnHero: {GetCardLogName(action.Card)} -> {GetHeroLogName(action.TargetHero)}";
+            case GameActionType.AttackMinion:
+                return $"AttackMinion: {GetMinionLogName(action.Attacker)} -> {GetMinionLogName(action.TargetMinion)}";
+            case GameActionType.AttackHero:
+                return $"AttackHero: {GetMinionLogName(action.Attacker)} -> {GetHeroLogName(action.TargetHero)}";
+            case GameActionType.EndTurn:
+                return "EndTurn";
+            default:
+                return action.ActionType.ToString();
+        }
     }
 
     /// <summary>

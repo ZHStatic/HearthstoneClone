@@ -5,15 +5,16 @@
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 先做结构和 UI 优化，并把阶段 2.9 行为作为回归验证清单保留。AI 对手放到阶段 3。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
 
 当前停靠点：
 
 ```text
 阶段 2.9 代码链路已写入：战斗日志、圣盾反馈修正、关键词显示整理
-当前重点：阶段 2.10 进入 AI 前优化
-顺序：文档记忆 -> 结果对象 -> Player 封装 -> 动作建模 -> UI 拆分 -> UI 复用刷新 -> 验证
-当前：结果对象和 Player 封装已接入，下一步是动作建模
+当前重点：阶段 3 AI 基础行动
+已完成：文档记忆 -> 结果对象 -> Player 封装 -> 动作建模 -> 动作生成验证入口
+暂缓：UI 拆分 -> UI 复用刷新
+下一步：阶段 3 让 AI 复用动作模型，先能选择并执行基础动作
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -36,6 +37,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 阶段 2.10 第一轮 Core 操作结果标准化已经写入：新增 `GameActionFailureReason` 和 `GameActionResult`，`GameManager` 已为随从出牌和法术释放提供详细结果方法，旧 `bool Try...` 方法保留为兼容入口；`GameUIController` 的随从出牌和法术释放反馈已改为读取 Core 返回的 `GameActionResult`。
 
 阶段 2.10 第二轮 Player 状态封装已经写入：`Player` 内部继续用 `List<Card>` 管理手牌和牌库，对外通过 `IReadOnlyList<Card>` 暴露 `Hand` / `Deck`；`GameManager` 和 `GameUIController` 已改为通过 `HasCardInHand(card)` 判断手牌归属。
+
+阶段 2.10 第三轮动作建模已经写入：新增 `GameActionType`、`GameAction` 和 `GameActionGenerator`。`GameActionGenerator` 只读取当前局面并枚举合法动作，不执行动作、不做 AI 决策。`GameManager` 新增 `logLegalActionsOnTurnStart` 调试开关，可在回合开始后打印当前玩家合法动作列表。
 
 ## 当前可玩内容
 
@@ -90,6 +93,9 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
 | `GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满 |
 | `GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
+| `GameActionType.cs` | 游戏动作类型：出牌、施法、攻击、结束回合 |
+| `GameAction.cs` | 单条游戏动作数据，只记录动作意图，不执行规则 |
+| `GameActionGenerator.cs` | 合法动作生成器，只读取局面并创建 `GameAction` 列表 |
 | `Card.cs` | 手牌/牌库中的运行时卡牌实例 |
 | `Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌；对外只读暴露手牌和牌库 |
@@ -164,6 +170,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - `GameManager.TryPlayMinionCardDetailed()`、`TryPlaySpellCardOnMinionDetailed()`、`TryPlaySpellCardOnHeroDetailed()` 已接入详细操作结果。
 - `Player.Hand` / `Player.Deck` 已改为只读列表，外部不能直接 `Add` / `Remove` 手牌或牌库。
 - `GameManager` 和 `GameUIController` 已通过 `Player.HasCardInHand(card)` 判断手牌归属。
+- `GameActionGenerator.GenerateLegalActions(gameManager)` 已能枚举当前玩家的出牌、施法、攻击和结束回合动作。
+- `GameManager` 已新增 `Log Legal Actions On Turn Start` 调试开关，用于 Play Mode Console 验证动作生成结果。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -232,7 +240,7 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 
 - 已更新 `README.md`，同步阶段 2 当前能力、测试卡牌、演示路径和架构重点。
 - 已新增 `Docs/06_Stage2Review.md`，集中记录阶段 2 成果、关键代码链路、架构取舍、5 分钟演示脚本和进入 AI 前检查点。
-- 曾计划下一步直接进入 AI；现在先补阶段 2.10 的结构和 UI 优化，再进入阶段 3 AI。
+- 阶段 2.10 已补完进入阶段 3 前的核心结构优化，UI 大改暂缓到功能更完整后。
 - 本阶段不改 C# 规则代码，只做文档和项目状态收口。
 
 ## 阶段 2.9 代码链路已写入
@@ -247,18 +255,18 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - Unity 已确认无编译错误；阶段 2.9 作为代码整理阶段已收口。
 - 后续做结构和 UI 优化前，仍需把火花打圣盾、随从攻击圣盾、战吼伤害、亡语伤害、死亡和游戏结束日志顺序作为回归验证清单。
 
-## 阶段 2.10 当前重点
+## 阶段 2.10 当前结论
 
-阶段 2.10 不做 AI 对手，而是先整理进入阶段 3 前会影响扩展性的地方：
+阶段 2.10 本轮先完成进入阶段 3 前最关键的结构优化：
 
 ```text
-1. 文档记忆同步
-2. 结果对象
-3. Player 封装
-4. 动作建模
-5. UI 拆分
-6. UI 复用刷新
-7. 验证
+1. 文档记忆同步：已完成
+2. 结果对象：已完成
+3. Player 封装：已完成
+4. 动作建模：已完成
+5. 动作生成验证入口：已完成
+6. UI 拆分：暂缓
+7. UI 复用刷新：暂缓
 ```
 
 计划新增或调整的代码：
@@ -267,10 +275,10 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 |------|------|
 | `GameActionFailureReason` / `GameActionResult` | 已接入：让 Core 返回明确失败原因和反馈文本，UI 不再只根据 `bool` 猜测 |
 | `Player` 状态封装 | 已接入：`Hand` / `Deck` 对外只读，外部不能直接修改手牌和牌库 |
-| `GameActionType` / `GameAction` / `GameActionGenerator` | 动作建模：只描述和枚举合法动作，不写 AI 决策 |
-| UI 拆分 | 拆普通反馈/结束文本，整理卡牌和随从显示字段，统一文本 formatter |
-| UI 复用刷新 | `HandView` / `BoardView` 复用已创建 View，减少每次刷新销毁重建 |
-| 验证 | 回归验证出牌、法术、攻击、圣盾、战吼、亡语、死亡和胜负反馈 |
+| `GameActionType` / `GameAction` / `GameActionGenerator` | 已接入：只描述和枚举合法动作，不写 AI 决策 |
+| 动作生成验证 | 已接入：`GameManager` 可在回合开始打印合法动作列表，默认关闭 |
+| UI 拆分 | 暂缓：功能更完整后统一大改 |
+| UI 复用刷新 | 暂缓：功能更完整后统一大改 |
 
 注意：
 
@@ -368,30 +376,15 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 
 ## 下一步
 
-阶段 2.10 的固定顺序：
+阶段 2.10 本轮核心优化已经完成，下一步进入阶段 3：
 
 ```text
-阶段 2.10.0：文档记忆同步
-同步 AGENTS、CurrentStatus、CoreArchitecture、UIArchitecture。
+阶段 3.0：AI 基础行动
+目标：让 AI 复用 GameActionGenerator 枚举合法动作，再选择一条基础动作执行。
+第一版先追求“能自动行动”，不做评分函数和搜索。
 
-阶段 2.10.1：Core 操作结果标准化
-新增明确的操作结果和失败原因，让 UI / AI 共用同一套规则反馈。
-
-阶段 2.10.2：Player 状态封装
-已完成：手牌和牌库改成只读暴露，外部只能通过 Player 方法改状态。
-
-阶段 2.10.3：动作建模
-先定义“出牌、攻击、结束回合”这些动作怎么表示，再枚举当前局面下所有合法动作。
-这里只做动作数据和合法动作枚举，不写 AI 决策逻辑。
-
-阶段 2.10.4：UI 拆分
-拆普通反馈和游戏结束文本，整理 CardView / MinionView 显示字段和文本 formatter。
-
-阶段 2.10.5：UI 复用刷新
-优化 HandView / BoardView 刷新复用。
-
-阶段 2.10.6：验证
-回归验证已有玩法和反馈，再进入阶段 3 AI。
+UI 拆分 / UI 复用刷新：
+暂缓到功能更完整后统一整理。
 ```
 
 继续写代码前，仍然先写属性清单，再动代码。

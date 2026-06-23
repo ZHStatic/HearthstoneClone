@@ -289,15 +289,15 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 | `GameActionResult` | class | 已新增：包含成功状态、失败原因、反馈文本和可选日志 |
 | `Player.Hand` / `Player.Deck` | 属性调整 | 已完成：对外改为只读列表，内部仍用 `List<Card>` 管理 |
 | `Player.HasCardInHand(Card card)` | 方法 | 已完成：替代外部直接 `Hand.Contains(card)` |
-| `GameActionType` | enum | 描述动作类型：出牌、攻击、结束回合等 |
-| `GameAction` | class 或 struct | 描述一个玩家或后续 AI 都能复用的动作 |
-| `GameActionGenerator` | class | 根据当前局面枚举合法动作，但不修改游戏状态，也不做 AI 决策 |
+| `GameActionType` | enum | 已新增：描述动作类型，包含出牌、施法、攻击和结束回合 |
+| `GameAction` | class | 已新增：描述一个玩家或后续 AI 都能复用的动作 |
+| `GameActionGenerator` | class | 已新增：根据当前局面枚举合法动作，但不修改游戏状态，也不做 AI 决策 |
 
 这些整理的边界：
 
 - `GameActionGenerator` 只负责“能做什么”，不负责“怎么结算”。
 - 真正执行动作仍然调用 `GameManager.Try...`。
-- 阶段 2.10 只做动作建模；阶段 3 再让 AI 从合法动作里选择并执行。
+- 阶段 2.10 已完成动作建模；阶段 3 再让 AI 从合法动作里选择并执行。
 - 如果需要新增 C# 类，仍然先写属性清单，再动代码。
 
 ## 当前阶段性简化

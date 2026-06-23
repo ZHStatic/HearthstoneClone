@@ -224,6 +224,11 @@ docs: 文档更新     → docs: 补充架构说明
 - [x] 阶段 2.10.2：Player 状态封装
   - [x] `Player.Hand` / `Player.Deck` 对外只读
   - [x] `Player.HasCardInHand(card)` 替代外部直接 `Hand.Contains(card)`
+- [x] 阶段 2.10.3：动作建模与验证入口
+  - [x] `GameActionType.cs`
+  - [x] `GameAction.cs`
+  - [x] `GameActionGenerator.cs`
+  - [x] `GameManager` 支持回合开始时打印合法动作，默认关闭
 
 ## 当前停靠点
 
@@ -241,8 +246,9 @@ docs: 文档更新     → docs: 补充架构说明
 - 阶段 2.9 已收口：战斗日志、圣盾反馈修正、关键词 formatter 复用已完成。
 - 阶段 2.10.1 已完成：随从出牌和法术释放已接入 `GameActionResult`。
 - 阶段 2.10.2 已完成：`Player` 手牌和牌库已改为只读暴露。
-- 当前重点：阶段 2.10 先做优先优化和 UI 优化，不直接进入阶段 3 AI。
-- 下一步顺序：动作建模 → UI 拆分 → UI 复用刷新 → 验证。
+- 阶段 2.10.3 已完成：动作类型、动作数据和合法动作生成器已写入，Console 验证入口已加入。
+- UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
+- 下一步：进入阶段 3，先做 AI 基础行动。
 
 ## 开发阶段速览
 
