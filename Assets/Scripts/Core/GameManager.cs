@@ -140,24 +140,106 @@ public partial class GameManager : MonoBehaviour
     /// </summary>
     public bool TryPlayMinionCard(Card card)
     {
-        if (!CanPlayCard(card)) return false;
-        if (card.CardData.CardType != CardType.Minion) return false;
-        if (Board == null) return false;
-        if (!Board.CanSummon(CurrentPlayer)) return false;
+        return TryPlayMinionCardDetailed(card).Success;
+    }
+
+    /// <summary>
+    /// 尝试打出随从牌，并返回更详细的操作结果。
+    /// 旧的 TryPlayMinionCard 仍然保留，方便现有 UI 继续只读取 bool。
+    /// </summary>
+    public GameActionResult TryPlayMinionCardDetailed(Card card)
+    {
+        GameActionResult validationResult = ValidatePlayMinionCard(card);
+        if (validationResult.Failed) return validationResult;
 
         bool played = CurrentPlayer.PlayCard(card);
-        if (!played) return false;
+        if (!played)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.Unknown,
+                "出牌失败。");
+        }
 
         Minion minion = new Minion(card.CardData, CurrentPlayer);
         bool summoned = Board.SummonMinion(minion);
-        if (!summoned) return false;
+        if (!summoned)
+        {
+            return GameActionResult.FailedWith(
+                Board.CanSummon(CurrentPlayer) ? GameActionFailureReason.Unknown : GameActionFailureReason.BoardFull,
+                "召唤随从失败。");
+        }
 
         PublishCardPlayed(card);
         RecordCardPlayed(card, CurrentPlayer);
         PublishMinionSummoned(minion);
         RecordMinionSummoned(minion);
         ResolveAfterSummon(minion);
-        return true;
+        return GameActionResult.Succeeded($"打出 {GetCardLogName(card)}。");
+    }
+
+    /// <summary>
+    /// 检查当前玩家能否打出这张随从牌。
+    /// 这里只做条件判断，不扣法力、不移除手牌、不创建随从。
+    /// </summary>
+    private GameActionResult ValidatePlayMinionCard(Card card)
+    {
+        if (card == null || card.CardData == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidCard,
+                "这张卡的数据无效。");
+        }
+
+        if (IsGameOver)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.GameOver,
+                "游戏已经结束，不能继续出牌。");
+        }
+
+        if (CurrentPlayer == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NoCurrentPlayer,
+                "当前没有行动玩家。");
+        }
+
+        if (!CurrentPlayer.HasCardInHand(card))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.CardNotInHand,
+                "这张卡不在当前玩家手牌里。");
+        }
+
+        if (card.CurrentCost > CurrentPlayer.CurrentMana)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotEnoughMana,
+                $"{GetCardLogName(card)} 需要 {card.CurrentCost} 点法力，当前只有 {CurrentPlayer.CurrentMana} 点。");
+        }
+
+        if (card.CardData.CardType != CardType.Minion)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.WrongCardType,
+                "当前操作只能打出随从牌。");
+        }
+
+        if (Board == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.BoardUnavailable,
+                "战场还没有准备好。");
+        }
+
+        if (!Board.CanSummon(CurrentPlayer))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.BoardFull,
+                "战场已满，不能召唤更多随从。");
+        }
+
+        return GameActionResult.Succeeded();
     }
 
     /// <summary>
@@ -166,20 +248,35 @@ public partial class GameManager : MonoBehaviour
     /// </summary>
     public bool TryPlaySpellCardOnMinion(Card card, Minion target)
     {
-        if (!CanPlayCard(card)) return false;
-        if (card.CardData.CardType != CardType.Spell) return false;
-        if (!CanTargetMinion(card.CardData, target)) return false;
+        return TryPlaySpellCardOnMinionDetailed(card, target).Success;
+    }
+
+    /// <summary>
+    /// 尝试把当前玩家手牌中的单目标伤害法术打到一个随从身上，并返回详细操作结果。
+    /// </summary>
+    public GameActionResult TryPlaySpellCardOnMinionDetailed(Card card, Minion target)
+    {
+        GameActionResult cardValidationResult = ValidatePlaySpellCard(card);
+        if (cardValidationResult.Failed) return cardValidationResult;
+
+        GameActionResult targetValidationResult = ValidateSpellTargetMinion(card.CardData, target);
+        if (targetValidationResult.Failed) return targetValidationResult;
 
         bool played = CurrentPlayer.PlayCard(card);
-        if (!played) return false;
+        if (!played)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.Unknown,
+                "法术释放失败。");
+        }
 
         PublishCardPlayed(card);
         RecordCardPlayed(card, CurrentPlayer);
-        DamageMinion(target, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
+        BattleLogEntry spellLogEntry = DamageMinion(target, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
 
         CleanupDeadMinions();
         CheckGameOver();
-        return true;
+        return BuildSpellSuccessResult(spellLogEntry, $"{GetCardLogName(card)} 对 {GetMinionLogName(target)} 释放成功。");
     }
 
     /// <summary>
@@ -188,20 +285,232 @@ public partial class GameManager : MonoBehaviour
     /// </summary>
     public bool TryPlaySpellCardOnHero(Card card, Hero targetHero)
     {
-        if (!CanPlayCard(card)) return false;
-        if (card.CardData.CardType != CardType.Spell) return false;
-        if (!CanTargetHero(card.CardData, targetHero)) return false;
+        return TryPlaySpellCardOnHeroDetailed(card, targetHero).Success;
+    }
+
+    /// <summary>
+    /// 尝试把当前玩家手牌中的单目标伤害法术打到一个英雄身上，并返回详细操作结果。
+    /// </summary>
+    public GameActionResult TryPlaySpellCardOnHeroDetailed(Card card, Hero targetHero)
+    {
+        GameActionResult cardValidationResult = ValidatePlaySpellCard(card);
+        if (cardValidationResult.Failed) return cardValidationResult;
+
+        GameActionResult targetValidationResult = ValidateSpellTargetHero(card.CardData, targetHero);
+        if (targetValidationResult.Failed) return targetValidationResult;
 
         bool played = CurrentPlayer.PlayCard(card);
-        if (!played) return false;
+        if (!played)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.Unknown,
+                "法术释放失败。");
+        }
 
         PublishCardPlayed(card);
         RecordCardPlayed(card, CurrentPlayer);
-        DamageHero(targetHero, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
+        BattleLogEntry spellLogEntry = DamageHero(targetHero, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
 
         CleanupDeadMinions();
         CheckGameOver();
-        return true;
+        return BuildSpellSuccessResult(spellLogEntry, $"{GetCardLogName(card)} 对 {GetHeroLogName(targetHero)} 释放成功。");
+    }
+
+    /// <summary>
+    /// 检查当前玩家能否打出这张法术牌。
+    /// 这里只检查卡牌本身，不检查具体目标。
+    /// </summary>
+    private GameActionResult ValidatePlaySpellCard(Card card)
+    {
+        if (card == null || card.CardData == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidCard,
+                "这张卡的数据无效。");
+        }
+
+        if (IsGameOver)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.GameOver,
+                "游戏已经结束，不能继续施放法术。");
+        }
+
+        if (CurrentPlayer == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NoCurrentPlayer,
+                "当前没有行动玩家。");
+        }
+
+        if (!CurrentPlayer.HasCardInHand(card))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.CardNotInHand,
+                "这张卡不在当前玩家手牌里。");
+        }
+
+        if (card.CurrentCost > CurrentPlayer.CurrentMana)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotEnoughMana,
+                $"{GetCardLogName(card)} 需要 {card.CurrentCost} 点法力，当前只有 {CurrentPlayer.CurrentMana} 点。");
+        }
+
+        if (card.CardData.CardType != CardType.Spell)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.WrongCardType,
+                "当前操作只能打出法术牌。");
+        }
+
+        return GameActionResult.Succeeded();
+    }
+
+    /// <summary>
+    /// 检查一个随从是否能成为当前法术的目标。
+    /// </summary>
+    private GameActionResult ValidateSpellTargetMinion(CardData spellData, Minion target)
+    {
+        if (spellData == null || spellData.CardType != CardType.Spell)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.WrongCardType,
+                "当前操作只能打出法术牌。");
+        }
+
+        if (target == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "法术目标无效。");
+        }
+
+        if (target.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                $"{GetMinionLogName(target)} 已经死亡，不能成为法术目标。");
+        }
+
+        Player targetOwner = target.Owner;
+        if (targetOwner != Player && targetOwner != Enemy)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "法术目标不属于本局。");
+        }
+
+        Player opponent = GetOpponent(CurrentPlayer);
+        switch (spellData.SpellTargetType)
+        {
+            case SpellTargetType.AnyCharacter:
+            case SpellTargetType.Minion:
+                return GameActionResult.Succeeded();
+            case SpellTargetType.EnemyCharacter:
+            case SpellTargetType.EnemyMinion:
+                if (targetOwner == opponent) return GameActionResult.Succeeded();
+
+                return GameActionResult.FailedWith(
+                    targetOwner == CurrentPlayer ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                    "这个法术不能选择友方随从。");
+            case SpellTargetType.FriendlyCharacter:
+            case SpellTargetType.FriendlyMinion:
+                if (targetOwner == CurrentPlayer) return GameActionResult.Succeeded();
+
+                return GameActionResult.FailedWith(
+                    GameActionFailureReason.InvalidTarget,
+                    "这个法术只能选择友方随从。");
+            default:
+                return GameActionResult.FailedWith(
+                    GameActionFailureReason.InvalidTarget,
+                    "这个法术不能选择随从作为目标。");
+        }
+    }
+
+    /// <summary>
+    /// 检查一个英雄是否能成为当前法术的目标。
+    /// </summary>
+    private GameActionResult ValidateSpellTargetHero(CardData spellData, Hero targetHero)
+    {
+        if (spellData == null || spellData.CardType != CardType.Spell)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.WrongCardType,
+                "当前操作只能打出法术牌。");
+        }
+
+        if (targetHero == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "法术目标英雄无效。");
+        }
+
+        if (targetHero.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                $"{GetHeroLogName(targetHero)} 已经死亡，不能成为法术目标。");
+        }
+
+        Player targetOwner = null;
+        if (Player != null && targetHero == Player.Hero)
+        {
+            targetOwner = Player;
+        }
+        else if (Enemy != null && targetHero == Enemy.Hero)
+        {
+            targetOwner = Enemy;
+        }
+
+        if (targetOwner == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "法术目标英雄不属于本局。");
+        }
+
+        Player opponent = GetOpponent(CurrentPlayer);
+        switch (spellData.SpellTargetType)
+        {
+            case SpellTargetType.AnyCharacter:
+                return GameActionResult.Succeeded();
+            case SpellTargetType.EnemyCharacter:
+                if (targetOwner == opponent) return GameActionResult.Succeeded();
+
+                return GameActionResult.FailedWith(
+                    targetOwner == CurrentPlayer ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                    "这个法术不能选择友方英雄。");
+            case SpellTargetType.FriendlyCharacter:
+                if (targetOwner == CurrentPlayer) return GameActionResult.Succeeded();
+
+                return GameActionResult.FailedWith(
+                    GameActionFailureReason.InvalidTarget,
+                    "这个法术只能选择友方英雄。");
+            default:
+                return GameActionResult.FailedWith(
+                    GameActionFailureReason.InvalidTarget,
+                    "这个法术不能选择英雄作为目标。");
+        }
+    }
+
+    /// <summary>
+    /// 使用法术结算日志创建成功结果。
+    /// 如果法术导致游戏结束，优先返回游戏结束日志。
+    /// 如果没有日志文本，就使用传入的默认成功反馈。
+    /// </summary>
+    private GameActionResult BuildSpellSuccessResult(BattleLogEntry spellLogEntry, string fallbackMessage)
+    {
+        BattleLogEntry resultLogEntry = IsGameOver && LastActionLogEntry != null
+            ? LastActionLogEntry
+            : spellLogEntry;
+
+        string message = resultLogEntry != null && !string.IsNullOrWhiteSpace(resultLogEntry.Message)
+            ? resultLogEntry.Message
+            : fallbackMessage ?? "";
+
+        return GameActionResult.Succeeded(message, resultLogEntry);
     }
 
     /// <summary>
@@ -568,86 +877,6 @@ public partial class GameManager : MonoBehaviour
             : "None";
 
         Debug.Log($"GameEvent: {gameEvent.Type}, Card: {cardName}, Minion: {minionName}");
-    }
-
-    /// <summary>
-    /// 通用出牌检查：只判断一张手牌能不能被当前玩家支付并打出。
-    /// 具体是召唤随从还是结算法术，由各自的 TryPlay 方法继续判断。
-    /// </summary>
-    private bool CanPlayCard(Card card)
-    {
-        if (card == null) return false;
-        if (card.CardData == null) return false;
-        if (IsGameOver) return false;
-        if (CurrentPlayer == null) return false;
-        if (!CurrentPlayer.Hand.Contains(card)) return false;
-        if (card.CurrentCost > CurrentPlayer.CurrentMana) return false;
-
-        return true;
-    }
-
-    /// <summary>
-    /// 根据法术目标类型判断目标随从是否合法。
-    /// </summary>
-    private bool CanTargetMinion(CardData spellData, Minion target)
-    {
-        if (spellData == null) return false;
-        if (spellData.CardType != CardType.Spell) return false;
-        if (target == null) return false;
-        if (target.IsDead) return false;
-
-        Player targetOwner = target.Owner;
-        if (targetOwner != Player && targetOwner != Enemy) return false;
-
-        Player opponent = GetOpponent(CurrentPlayer);
-
-        switch (spellData.SpellTargetType)
-        {
-            case SpellTargetType.AnyCharacter:
-            case SpellTargetType.Minion:
-                return true;
-            case SpellTargetType.EnemyCharacter:
-            case SpellTargetType.EnemyMinion:
-                return targetOwner == opponent;
-            case SpellTargetType.FriendlyCharacter:
-            case SpellTargetType.FriendlyMinion:
-                return targetOwner == CurrentPlayer;
-            default:
-                return false;
-        }
-    }
-
-    /// <summary>
-    /// 根据法术目标类型判断目标英雄是否合法。
-    /// </summary>
-    private bool CanTargetHero(CardData spellData, Hero targetHero)
-    {
-        if (spellData == null) return false;
-        if (spellData.CardType != CardType.Spell) return false;
-        if (targetHero == null) return false;
-        if (targetHero.IsDead) return false;
-
-        Player targetOwner = null;
-        if (Player != null && targetHero == Player.Hero)
-        {
-            targetOwner = Player;
-        }
-        else if (Enemy != null && targetHero == Enemy.Hero)
-        {
-            targetOwner = Enemy;
-        }
-
-        if (targetOwner == null) return false;
-
-        Player opponent = GetOpponent(CurrentPlayer);
-
-        return spellData.SpellTargetType switch
-        {
-            SpellTargetType.AnyCharacter => true,
-            SpellTargetType.EnemyCharacter => targetOwner == opponent,
-            SpellTargetType.FriendlyCharacter => targetOwner == CurrentPlayer,
-            _ => false,
-        };
     }
 
     /// <summary>

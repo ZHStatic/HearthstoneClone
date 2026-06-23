@@ -1,17 +1,19 @@
 # Current Status
 
-最后更新：2026-06-21
+最后更新：2026-06-23
 
 ## 当前阶段
 
-阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8 已完成。
-阶段 2.9 战斗日志与代码整理的代码链路已写入，Unity 已确认无编译错误，待 Play 模式逐项验证。
+阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 先做结构和 UI 优化，并把阶段 2.9 行为作为回归验证清单保留。AI 对手放到阶段 3。
 
 当前停靠点：
 
 ```text
 阶段 2.9 代码链路已写入：战斗日志、圣盾反馈修正、关键词显示整理
-下一步：Play 模式验证阶段 2.9 行为，再进入阶段 3.0 AI 行动建模
+当前重点：阶段 2.10 进入 AI 前优化
+顺序：文档记忆 -> 结果对象 -> Player 封装 -> 动作建模 -> UI 拆分 -> UI 复用刷新 -> 验证
+当前：结果对象和 Player 封装已接入，下一步是动作建模
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -30,6 +32,10 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 阶段 2 收尾复盘已经完成：`README.md` 已同步当前功能，`Docs/06_Stage2Review.md` 已整理阶段 2 成果、演示脚本、架构取舍和进入 AI 前检查点。
 
 阶段 2.9 代码链路已经写入：新增 `BattleLogEntry` 和 `BattleLogger`，`GameManager` 通过 `GameManager.BattleLog.cs` 记录回合、出牌、召唤、攻击、伤害、圣盾抵消、死亡和游戏结束；`GameUIController` 的法术反馈优先读取最近一次结算日志，避免火花打到圣盾随从时误报实际伤害；`KeywordTextFormatter` 已抽出 UI 层关键词文本格式化逻辑。
+
+阶段 2.10 第一轮 Core 操作结果标准化已经写入：新增 `GameActionFailureReason` 和 `GameActionResult`，`GameManager` 已为随从出牌和法术释放提供详细结果方法，旧 `bool Try...` 方法保留为兼容入口；`GameUIController` 的随从出牌和法术释放反馈已改为读取 Core 返回的 `GameActionResult`。
+
+阶段 2.10 第二轮 Player 状态封装已经写入：`Player` 内部继续用 `List<Card>` 管理手牌和牌库，对外通过 `IReadOnlyList<Card>` 暴露 `Hand` / `Deck`；`GameManager` 和 `GameUIController` 已改为通过 `HasCardInHand(card)` 判断手牌归属。
 
 ## 当前可玩内容
 
@@ -82,9 +88,11 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
 | `BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本 |
 | `BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
+| `GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满 |
+| `GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
 | `Card.cs` | 手牌/牌库中的运行时卡牌实例 |
 | `Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
-| `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌 |
+| `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌；对外只读暴露手牌和牌库 |
 | `Board.cs` | 双方战场随从列表和召唤位置限制 |
 | `Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限、关键词和圣盾消耗 |
 | `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算、基础事件发布和战斗日志入口 |
@@ -116,6 +124,23 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `Docs/06_Stage2Review.md` | 阶段 2 收尾复盘、演示脚本和进入 AI 前检查点 |
 | `Docs/Learning/` | 学习笔记，不要求和正式架构文档完全同步 |
 
+## 固定巡检方法
+
+做较大范围代码整理、架构调整或 UI 反馈修正前，先执行：
+
+```powershell
+& 'C:/Users/Static/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe' '.codex/skills/hearthstone-code-review/scripts/find_review_candidates.py'
+```
+
+巡检重点：
+
+- `TakeDamage()` / `Heal()` 返回值是否被忽略。
+- UI 是否显示 Core 实际结算结果，而不是预估结果。
+- 关键词、战吼、亡语、状态文本 formatter 是否重复。
+- Core 是否仍然不依赖 UI。
+- `GameManager` 和 `GameUIController` 是否继续膨胀。
+- 中文文档用 PowerShell 读取时使用 `-Encoding UTF8`。
+
 ## 已确认
 
 - Unity Play 模式可以运行。
@@ -134,8 +159,11 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - Unity Play 模式已确认：圣盾随从第一次受到正数伤害时抵消该次伤害并失去圣盾，第二次伤害正常扣血。
 - 阶段 2.9 新增脚本已通过 Unity 编译检查，未出现编译错误。
 - `GameManager` 已不再忽略 `TakeDamage()` 的返回值，伤害 helper 会记录尝试伤害和实际伤害。
-- `GameUIController` 法术成功反馈已改为优先显示最近一次 Core 结算日志。
+- `GameUIController` 法术成功反馈已改为显示 Core 返回的 `GameActionResult.Message`，避免 UI 直接猜测实际结算结果。
 - `CardView` 和 `MinionView` 已复用 `KeywordTextFormatter` 显示关键词。
+- `GameManager.TryPlayMinionCardDetailed()`、`TryPlaySpellCardOnMinionDetailed()`、`TryPlaySpellCardOnHeroDetailed()` 已接入详细操作结果。
+- `Player.Hand` / `Player.Deck` 已改为只读列表，外部不能直接 `Add` / `Remove` 手牌或牌库。
+- `GameManager` 和 `GameUIController` 已通过 `Player.HasCardInHand(card)` 判断手牌归属。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -204,7 +232,7 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 
 - 已更新 `README.md`，同步阶段 2 当前能力、测试卡牌、演示路径和架构重点。
 - 已新增 `Docs/06_Stage2Review.md`，集中记录阶段 2 成果、关键代码链路、架构取舍、5 分钟演示脚本和进入 AI 前检查点。
-- 已把下一步统一为阶段 3.0：AI 行动建模。
+- 曾计划下一步直接进入 AI；现在先补阶段 2.10 的结构和 UI 优化，再进入阶段 3 AI。
 - 本阶段不改 C# 规则代码，只做文档和项目状态收口。
 
 ## 阶段 2.9 代码链路已写入
@@ -216,7 +244,38 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - `GameUIController` 法术反馈已优先使用 `LastActionLogEntry.Message`，避免火花打圣盾时误报“造成 2 点伤害”。
 - 已新增 `KeywordTextFormatter.cs`，`CardView` 和 `MinionView` 复用同一套关键词文本格式化逻辑。
 - 项目专用扫描脚本已确认：当前没有忽略 `TakeDamage()` 返回值、误导性法术伤害反馈、重复关键词 formatter 或关键词字符串手动拼接候选。
-- Unity 已确认无编译错误；Play 模式行为验证仍需补做。
+- Unity 已确认无编译错误；阶段 2.9 作为代码整理阶段已收口。
+- 后续做结构和 UI 优化前，仍需把火花打圣盾、随从攻击圣盾、战吼伤害、亡语伤害、死亡和游戏结束日志顺序作为回归验证清单。
+
+## 阶段 2.10 当前重点
+
+阶段 2.10 不做 AI 对手，而是先整理进入阶段 3 前会影响扩展性的地方：
+
+```text
+1. 文档记忆同步
+2. 结果对象
+3. Player 封装
+4. 动作建模
+5. UI 拆分
+6. UI 复用刷新
+7. 验证
+```
+
+计划新增或调整的代码：
+
+| 方向 | 目标 |
+|------|------|
+| `GameActionFailureReason` / `GameActionResult` | 已接入：让 Core 返回明确失败原因和反馈文本，UI 不再只根据 `bool` 猜测 |
+| `Player` 状态封装 | 已接入：`Hand` / `Deck` 对外只读，外部不能直接修改手牌和牌库 |
+| `GameActionType` / `GameAction` / `GameActionGenerator` | 动作建模：只描述和枚举合法动作，不写 AI 决策 |
+| UI 拆分 | 拆普通反馈/结束文本，整理卡牌和随从显示字段，统一文本 formatter |
+| UI 复用刷新 | `HandView` / `BoardView` 复用已创建 View，减少每次刷新销毁重建 |
+| 验证 | 回归验证出牌、法术、攻击、圣盾、战吼、亡语、死亡和胜负反馈 |
+
+注意：
+
+- 这些改动涉及 C# 新类或较大调整时，仍然先列属性清单，再写代码。
+- Prefab / Scene 布局不由 Codex 直接改；新增 Text、绑定字段、字号颜色和位置优先在 Unity Editor 中完成。
 
 ## 阶段 2 结论
 
@@ -283,7 +342,7 @@ CardData 配置 DivineShield
 -> 如果有圣盾，RemoveKeyword(DivineShield)
 -> 本次实际伤害返回 0，CurrentHealth 不减少
 -> BattleLogger 记录“尝试伤害”和“实际伤害 0”
--> UI 法术反馈读取最近一次日志，显示圣盾抵消
+-> GameActionResult.Message 把本次结算反馈交给 UI 显示
 -> 下一次受到伤害时正常扣血
 ```
 
@@ -309,15 +368,30 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 
 ## 下一步
 
-进入 AI 前先完成阶段 2.9 行为验证，然后做行动建模：
+阶段 2.10 的固定顺序：
 
 ```text
-阶段 2.9：Play 模式验证
-确认火花打圣盾、随从攻击圣盾、战吼伤害、亡语伤害、死亡和游戏结束日志顺序符合预期。
+阶段 2.10.0：文档记忆同步
+同步 AGENTS、CurrentStatus、CoreArchitecture、UIArchitecture。
 
-阶段 3.0：AI 行动建模
+阶段 2.10.1：Core 操作结果标准化
+新增明确的操作结果和失败原因，让 UI / AI 共用同一套规则反馈。
+
+阶段 2.10.2：Player 状态封装
+已完成：手牌和牌库改成只读暴露，外部只能通过 Player 方法改状态。
+
+阶段 2.10.3：动作建模
 先定义“出牌、攻击、结束回合”这些动作怎么表示，再枚举当前局面下所有合法动作。
-第一版 AI 只需要能随机执行合法动作，不急着做搜索和评分。
+这里只做动作数据和合法动作枚举，不写 AI 决策逻辑。
+
+阶段 2.10.4：UI 拆分
+拆普通反馈和游戏结束文本，整理 CardView / MinionView 显示字段和文本 formatter。
+
+阶段 2.10.5：UI 复用刷新
+优化 HandView / BoardView 刷新复用。
+
+阶段 2.10.6：验证
+回归验证已有玩法和反馈，再进入阶段 3 AI。
 ```
 
 继续写代码前，仍然先写属性清单，再动代码。

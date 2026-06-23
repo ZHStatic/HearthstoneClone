@@ -72,6 +72,20 @@ docs: 文档更新     → docs: 补充架构说明
 - 明确区分哪些事情应该在 Unity Editor / Prefab / ScriptableObject 里配置，哪些事情应该写进代码。UI 布局、字号、颜色、边距等视觉参数优先放在 Editor/Prefab 中调整；运行时状态、规则判断、交互反馈内容才由代码控制。
 - 如果为了原型速度建议临时写法，必须明确标注“这是阶段性简化，不是成熟项目最终做法”，并补充以后求职或面试时可以如何解释这个取舍。
 
+### 固定巡检方法
+
+每次做较大范围代码整理、架构调整或 UI 反馈修正前，先按这个顺序检查：
+
+```powershell
+& 'C:/Users/Static/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe' '.codex/skills/hearthstone-code-review/scripts/find_review_candidates.py'
+```
+
+- 优先使用项目专用 `hearthstone-code-review` skill。
+- 把脚本输出当作候选，不直接当作结论；需要打开相关代码确认。
+- 重点看：忽略 `TakeDamage()` / `Heal()` 返回值、UI 误报实际伤害、重复 formatter、手动字符串拼接、Core/UI 反向依赖、`GameManager` / `GameUIController` 继续膨胀。
+- 中文文档在 PowerShell 中读取时使用 `-Encoding UTF8`，避免误判为乱码。
+- Prefab、Scene、ScriptableObject、图片、音频和 `.meta` 默认不由 Codex 直接改；视觉布局、字号、颜色、边距优先在 Unity Editor / Prefab 里调整。
+
 ### 写代码前的"属性清单"流程
 
 **每个类动笔前，先列清单，用户确认后再写代码，不要直接跳到下一步。**
@@ -163,6 +177,53 @@ docs: 文档更新     → docs: 补充架构说明
   - [x] `GameManager` 召唤后处理冲锋
   - [x] `CardView` 显示手牌关键词文字
   - [x] 疾风斥候测试通过
+- [x] 阶段 2.3：关键词“嘲讽”
+  - [x] `KeywordType` 增加 `Taunt`
+  - [x] 攻击随从和攻击英雄时检查嘲讽限制
+  - [x] 手牌和场上随从可以显示“嘲讽”
+- [x] 阶段 2.4：第一个战吼
+  - [x] `BattlecryType`
+  - [x] `CardData` 支持战吼类型和通用数值
+  - [x] 召唤后结算“对敌方英雄造成伤害”
+- [x] 阶段 2.4.5：战吼抽牌
+  - [x] 战吼通用数值复用为抽牌数量
+  - [x] 书卷侍从测试通过
+- [x] 阶段 2.5.0：事件系统基础链路
+  - [x] `GameEventType`
+  - [x] `GameEvent`
+  - [x] `GameEventBus`
+  - [x] 出牌和召唤事件可以发布和调试打印
+- [x] 阶段 2.5.1：死亡事件
+  - [x] 随从死亡时发布 `MinionDied`
+  - [x] 事件携带死亡随从
+- [x] 阶段 2.6：第一个亡语
+  - [x] `DeathrattleType`
+  - [x] `CardData` 支持亡语类型和通用数值
+  - [x] `MinionDied` 事件触发亡语伤害
+- [x] 阶段 2.7：关键词“圣盾”
+  - [x] `KeywordType` 增加 `DivineShield`
+  - [x] `Minion.TakeDamage()` 支持首次正数伤害抵消并移除圣盾
+  - [x] 手牌和场上随从显示“圣盾”
+- [x] 阶段 2.8：阶段 2 收尾复盘
+  - [x] 更新 README
+  - [x] 新增 `Docs/06_Stage2Review.md`
+  - [x] 整理阶段 2 演示脚本、架构取舍和进入 AI 前检查点
+- [x] 阶段 2.9：战斗日志与代码整理
+  - [x] `BattleLogEntry.cs`
+  - [x] `BattleLogger.cs`
+  - [x] `GameManager.BattleLog.cs`
+  - [x] 伤害 helper 记录尝试伤害和实际伤害
+  - [x] 圣盾抵消时记录 `DivineShieldPrevented`
+  - [x] `GameUIController` 法术反馈优先读取 Core 最近结算日志
+  - [x] `KeywordTextFormatter.cs` 统一关键词文本
+- [x] 阶段 2.10.1：Core 操作结果标准化第一轮
+  - [x] `GameActionFailureReason.cs`
+  - [x] `GameActionResult.cs`
+  - [x] 随从出牌和法术释放返回详细操作结果
+  - [x] UI 读取 Core 返回的反馈文本
+- [x] 阶段 2.10.2：Player 状态封装
+  - [x] `Player.Hand` / `Player.Deck` 对外只读
+  - [x] `Player.HasCardInHand(card)` 替代外部直接 `Hand.Contains(card)`
 
 ## 当前停靠点
 
@@ -171,8 +232,17 @@ docs: 文档更新     → docs: 补充架构说明
 - 阶段 2.1 基础伤害法术已完成：火花可以选择随从或英雄并造成伤害。
 - 阶段 2.1.5 已完成：文档边界重新整理，Core 架构文档不再重复详细流程。
 - 阶段 2.2 已完成：冲锋随从召唤后可以立即攻击，手牌 UI 可以显示“冲锋”。
-- Unity Play 模式已确认能运行。
-- 下一步：可选补 `MinionView` 关键词显示，或进入阶段 2.3“嘲讽”。
+- 阶段 2.3 已完成：嘲讽可以限制攻击目标，手牌和场上随从可以显示“嘲讽”。
+- 阶段 2.4 / 2.4.5 已完成：战吼可以造成敌方英雄伤害，也可以为出牌者抽牌。
+- 阶段 2.5.0 / 2.5.1 已完成：事件总线基础链路和随从死亡事件已接入。
+- 阶段 2.6 已完成：亡语炸弹人死亡后可以通过 `MinionDied` 事件触发伤害。
+- 阶段 2.7 已完成：圣盾随从第一次受到正数伤害时抵消伤害并失去圣盾。
+- 阶段 2.8 已完成：阶段 2 文档复盘和演示脚本已整理。
+- 阶段 2.9 已收口：战斗日志、圣盾反馈修正、关键词 formatter 复用已完成。
+- 阶段 2.10.1 已完成：随从出牌和法术释放已接入 `GameActionResult`。
+- 阶段 2.10.2 已完成：`Player` 手牌和牌库已改为只读暴露。
+- 当前重点：阶段 2.10 先做优先优化和 UI 优化，不直接进入阶段 3 AI。
+- 下一步顺序：动作建模 → UI 拆分 → UI 复用刷新 → 验证。
 
 ## 开发阶段速览
 
@@ -183,6 +253,15 @@ docs: 文档更新     → docs: 补充架构说明
 | 2.1 | 基础伤害法术 | 已完成 |
 | 2.1.5 | 架构复盘与文档整理 | 已完成 |
 | 2.2 | 第一个关键词：冲锋 | 已完成 |
+| 2.3 | 第二个关键词：嘲讽 | 已完成 |
+| 2.4 | 第一个战吼：伤害敌方英雄 | 已完成 |
+| 2.4.5 | 战吼抽牌 | 已完成 |
+| 2.5 | 第一版事件系统和死亡事件 | 已完成 |
+| 2.6 | 第一个亡语 | 已完成 |
+| 2.7 | 第三个关键词：圣盾 | 已完成 |
+| 2.8 | 阶段 2 收尾复盘 | 已完成 |
+| 2.9 | 战斗日志与代码整理 | 已完成 |
+| 2.10 | 进入 AI 前的结构和 UI 优化 | 当前重点 |
 | 2 | 法术 + 5 个关键词 + 事件系统 | 6-8 周 |
 | 3 | AI 对手（博弈树 + 评估函数） | 4-6 周 |
 | 4 | 套牌构筑 + UI 打磨 | 4-6 周 |

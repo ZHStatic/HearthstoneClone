@@ -47,13 +47,14 @@ new Player(deckCards, heroName)
 
 ```text
 1. 创建 Hero。
-2. 创建空 Deck。
-3. 遍历 Inspector 里配置的 CardData 列表。
-4. 如果某个 CardData 是空的，就跳过。
-5. 如果 CardData 有效，就创建 Card 实例并加入 Deck。
-6. 洗牌。
-7. 创建空 Hand。
-8. 法力初始化为 0。
+2. 创建内部空 hand。
+3. 创建内部空 deck。
+4. 遍历 Inspector 里配置的 CardData 列表。
+5. 如果某个 CardData 是空的，就跳过。
+6. 如果 CardData 有效，就创建 Card 实例并加入内部 deck。
+7. 洗牌。
+8. 对外通过只读的 Hand / Deck 属性暴露当前手牌和牌库。
+9. 法力初始化为 0。
 ```
 
 这里处理过一次真实问题：
@@ -101,7 +102,7 @@ GameManager.StartTurn(targetPlayer)
 1. CardView 接收到 Button 点击。
 2. CardView 调用 onClicked(card)。
 3. GameUIController.HandleCardClicked(card) 被调用。
-4. GameUIController 先做轻量 UI 检查，用于显示卡牌无效、费用不足等提示。
+4. GameUIController 先判断卡牌类型；具体规则检查交给 GameManager。
 5. 如果 card.CardData.CardType 是 Minion，进入随从召唤流程。
 6. 如果 card.CardData.CardType 是 Spell，记录 selectedSpellCard，并提示玩家选择法术目标。
 ```
@@ -118,10 +119,10 @@ GameManager.StartTurn(targetPlayer)
 
 ```text
 1. GameUIController.HandleCardClicked(card) 确认这是一张 Minion 卡。
-2. GameUIController 检查战场是否存在、当前玩家战场是否已满。
-3. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
-4. GameManager 通过 CanPlayCard(card) 检查通用出牌条件。
-5. GameManager 确认卡牌类型是 Minion。
+2. GameUIController 调用 GameManager.TryPlayMinionCardDetailed(card)。
+3. GameManager 通过 ValidatePlayMinionCard(card) 检查游戏状态、当前玩家、手牌归属、法力、卡牌类型和战场空间。
+4. 如果校验失败，GameManager 返回 GameActionResult，UI 显示其中的失败反馈。
+5. 如果校验成功，进入随从召唤流程。
 6. CurrentPlayer.PlayCard(card) 检查手牌和法力。
 7. 如果成功，Player 扣除法力并从手牌移除卡牌。
 8. GameManager 创建 Minion。
@@ -132,7 +133,7 @@ GameManager.StartTurn(targetPlayer)
 13. 如果这张牌配置了战吼，GameManager 结算战吼效果。
 14. 如果这张牌有伤害战吼，BattleLogger 记录尝试伤害和实际伤害。
 15. 如果随从拥有 `Taunt`，它会在后续攻击目标判断中被识别为嘲讽随从。
-16. GameUIController 设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
+16. GameUIController 读取 GameActionResult.Message，设置操作反馈并调用 RefreshAll() 刷新手牌、战场和 HUD。
 ```
 
 这条流程体现的分层：
@@ -490,15 +491,15 @@ UI 最后重新读取 Core 状态并显示操作结果。
 8. 玩家点击一个随从或英雄。
 9. 如果点击随从，GameUIController 调用 TryPlaySelectedSpellOnMinion(target)。
 10. 如果点击英雄，GameUIController 调用 TryPlaySelectedSpellOnHero(targetHero)。
-11. GameUIController 把请求交给 GameManager.TryPlaySpellCardOnMinion / OnHero。
-12. GameManager 通过 CanPlayCard(card) 检查通用出牌条件。
-13. GameManager 根据 SpellTargetType 判断目标是否合法。
+11. GameUIController 把请求交给 GameManager.TryPlaySpellCardOnMinionDetailed / TryPlaySpellCardOnHeroDetailed。
+12. GameManager 通过 ValidatePlaySpellCard(card) 检查游戏状态、当前玩家、手牌归属、法力和卡牌类型。
+13. GameManager 通过 ValidateSpellTargetMinion / ValidateSpellTargetHero 根据 SpellTargetType 判断目标是否合法。
 14. CurrentPlayer.PlayCard(card) 扣除法力，并从手牌移除法术牌。
 15. GameManager 调用 DamageMinion 或 DamageHero 结算伤害。
 16. BattleLogger 记录法术来源、目标、尝试伤害和实际伤害。
 17. 如果目标随从用圣盾抵消伤害，BattleLogger 记录圣盾抵消。
 18. GameManager 清理死亡随从并检查胜负。
-19. GameUIController 清空 selectedSpellCard，优先显示 LastActionLogEntry.Message，并刷新 UI。
+19. GameUIController 清空 selectedSpellCard，显示 GameActionResult.Message，并刷新 UI。
 ```
 
 这条流程的分层：

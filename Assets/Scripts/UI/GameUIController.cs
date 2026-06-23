@@ -113,17 +113,43 @@ public class GameUIController : MonoBehaviour
         ClearSelectedAttacker();
         ClearSelectedSpell();
 
+        if (IsSpellCard(card))
+        {
+            SelectSpellCardForTargeting(card);
+            RefreshAll();
+            return;
+        }
+
+        if (IsUnsupportedCardType(card))
+        {
+            SetFeedback("当前阶段暂不支持这种卡牌类型。");
+            RefreshAll();
+            return;
+        }
+
+        GameActionResult result = gameManager.TryPlayMinionCardDetailed(card);
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            $"打出 {GetCardName(card)}。",
+            "出牌失败。"));
+        RefreshAll();
+    }
+
+    /// <summary>
+    /// 选择一张法术牌，等待玩家点击目标。
+    /// 法术详细结果还没接入前，这里暂时保留法术选择所需的 UI 前置检查。
+    /// </summary>
+    private void SelectSpellCardForTargeting(Card card)
+    {
         if (gameManager.IsGameOver)
         {
             SetFeedback("游戏已经结束，不能继续出牌。");
-            RefreshAll();
             return;
         }
 
         if (card == null || card.CardData == null)
         {
             SetFeedback("这张卡的数据无效。");
-            RefreshAll();
             return;
         }
 
@@ -131,56 +157,23 @@ public class GameUIController : MonoBehaviour
         if (currentPlayer == null)
         {
             SetFeedback("当前没有行动玩家。");
-            RefreshAll();
             return;
         }
 
-        if (!currentPlayer.Hand.Contains(card))
+        if (!currentPlayer.HasCardInHand(card))
         {
             SetFeedback("这张卡不在当前玩家手牌里。");
-            RefreshAll();
             return;
         }
 
         if (card.CurrentCost > currentPlayer.CurrentMana)
         {
             SetFeedback($"{card.CardData.CardName} 需要 {card.CurrentCost} 点法力，当前只有 {currentPlayer.CurrentMana} 点。");
-            RefreshAll();
             return;
         }
 
-        if (card.CardData.CardType == CardType.Spell)
-        {
-            selectedSpellCard = card;
-            SetFeedback($"已选择 {card.CardData.CardName}，请选择法术目标。");
-            RefreshAll();
-            return;
-        }
-
-        if (card.CardData.CardType != CardType.Minion)
-        {
-            SetFeedback("当前阶段暂不支持这种卡牌类型。");
-            RefreshAll();
-            return;
-        }
-
-        if (gameManager.Board == null)
-        {
-            SetFeedback("战场还没有准备好。");
-            RefreshAll();
-            return;
-        }
-
-        if (!gameManager.Board.CanSummon(currentPlayer))
-        {
-            SetFeedback("战场已满，不能召唤更多随从。");
-            RefreshAll();
-            return;
-        }
-
-        bool played = gameManager.TryPlayMinionCard(card);
-        SetFeedback(played ? $"打出 {card.CardData.CardName}。" : "出牌失败。");
-        RefreshAll();
+        selectedSpellCard = card;
+        SetFeedback($"已选择 {card.CardData.CardName}，请选择法术目标。");
     }
 
     /// <summary>
@@ -440,9 +433,12 @@ public class GameUIController : MonoBehaviour
         string spellName = GetCardName(selectedSpellCard);
         string targetName = GetMinionName(target);
 
-        bool played = gameManager.TryPlaySpellCardOnMinion(selectedSpellCard, target);
+        GameActionResult result = gameManager.TryPlaySpellCardOnMinionDetailed(selectedSpellCard, target);
         string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
-        SetFeedback(played ? GetLastActionMessageOrFallback(fallbackMessage) : "法术目标非法，释放失败。");
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            fallbackMessage,
+            "法术目标非法，释放失败。"));
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -474,9 +470,12 @@ public class GameUIController : MonoBehaviour
         string spellName = GetCardName(selectedSpellCard);
         string targetName = targetHero.Name;
 
-        bool played = gameManager.TryPlaySpellCardOnHero(selectedSpellCard, targetHero);
+        GameActionResult result = gameManager.TryPlaySpellCardOnHeroDetailed(selectedSpellCard, targetHero);
         string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
-        SetFeedback(played ? GetLastActionMessageOrFallback(fallbackMessage) : "法术目标英雄非法，释放失败。");
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            fallbackMessage,
+            "法术目标英雄非法，释放失败。"));
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -652,19 +651,45 @@ public class GameUIController : MonoBehaviour
     }
 
     /// <summary>
-    /// 优先使用 Core 层最近一次结算日志的文本。
-    /// 如果日志还没有准备好，就回退到调用方传入的默认反馈。
+    /// 判断一张卡是否是法术牌。
+    /// 法术牌点击后不会立刻结算，而是先进入选目标状态。
     /// </summary>
-    private string GetLastActionMessageOrFallback(string fallbackMessage)
+    private bool IsSpellCard(Card card)
     {
-        if (gameManager != null &&
-            gameManager.LastActionLogEntry != null &&
-            !string.IsNullOrWhiteSpace(gameManager.LastActionLogEntry.Message))
+        return card != null &&
+               card.CardData != null &&
+               card.CardData.CardType == CardType.Spell;
+    }
+
+    /// <summary>
+    /// 判断一张卡是否属于当前 UI 暂不支持的类型。
+    /// 空卡或无效卡不在这里处理，会交给 Core 返回 InvalidCard。
+    /// </summary>
+    private bool IsUnsupportedCardType(Card card)
+    {
+        if (card == null || card.CardData == null) return false;
+
+        return card.CardData.CardType != CardType.Minion &&
+               card.CardData.CardType != CardType.Spell;
+    }
+
+    /// <summary>
+    /// 从 Core 操作结果中读取反馈文本。
+    /// 如果结果或文本为空，就根据成功/失败使用调用方给的默认文本。
+    /// </summary>
+    private string GetActionResultMessageOrFallback(
+        GameActionResult result,
+        string successFallback,
+        string failureFallback)
+    {
+        if (result == null) return failureFallback ?? "";
+
+        if (!string.IsNullOrWhiteSpace(result.Message))
         {
-            return gameManager.LastActionLogEntry.Message;
+            return result.Message;
         }
 
-        return fallbackMessage ?? "";
+        return result.Success ? successFallback ?? "" : failureFallback ?? "";
     }
 
     /// <summary>

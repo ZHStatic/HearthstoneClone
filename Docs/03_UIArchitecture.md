@@ -15,6 +15,7 @@
 | `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
 | `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、攻击、结束回合、反馈提示和刷新 |
+| `KeywordTextFormatter` | `Assets/Scripts/UI/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
 
@@ -22,6 +23,10 @@
 - 动画和音效
 - 敌方手牌隐藏
 - 最终视觉样式和完整美术资源
+- 独立的普通反馈文本和游戏结束文本
+- 独立的法术类型/效果显示区域
+- 独立的随从 Ready、关键词、亡语显示区域
+- `HandView` / `BoardView` 的 View 复用刷新
 
 ## 总体思路
 
@@ -45,7 +50,7 @@ UI 不自己添加随从
 而是调用：
 
 ```csharp
-gameManager.TryPlayMinionCard(card);
+gameManager.TryPlayMinionCardDetailed(card);
 ```
 
 然后再刷新显示。
@@ -61,9 +66,12 @@ UI 不自己造成伤害
 而是根据玩家点击调用：
 
 ```csharp
-gameManager.TryPlaySpellCardOnMinion(card, target);
-gameManager.TryPlaySpellCardOnHero(card, targetHero);
+gameManager.TryPlaySpellCardOnMinionDetailed(card, target);
+gameManager.TryPlaySpellCardOnHeroDetailed(card, targetHero);
 ```
+
+这些详细结果方法返回 `GameActionResult`。
+UI 只读取成功状态和反馈文本，不自己推断实际伤害、费用不足或目标非法原因。
 
 ## 类职责说明
 
@@ -243,9 +251,9 @@ EnemyBoardView
 ```text
 点击法术牌 -> 记录 selectedSpellCard
 显示“请选择法术目标”
-点击随从 -> 调用 GameManager.TryPlaySpellCardOnMinion(...)
-点击英雄 -> 调用 GameManager.TryPlaySpellCardOnHero(...)
-施放后清空 selectedSpellCard，显示反馈并刷新 UI
+点击随从 -> 调用 GameManager.TryPlaySpellCardOnMinionDetailed(...)
+点击英雄 -> 调用 GameManager.TryPlaySpellCardOnHeroDetailed(...)
+施放后读取 GameActionResult.Message，清空 selectedSpellCard，显示反馈并刷新 UI
 ```
 
 `selectedSpellCard` 和 `selectedAttacker` 都属于 UI 层的“当前操作选择状态”。
@@ -272,11 +280,11 @@ flowchart TD
 
 ```text
 GameUIController 读取 GameManager 当前状态
-HandView 根据 Player.Hand 创建 CardView
+HandView 根据只读的 Player.Hand 创建 CardView
 BoardView 根据 Board.GetMinions(...) 创建 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
-阶段 2.1 中，GameUIController 也使用同一个反馈文本显示法术选择、法术命中或目标非法
+阶段 2.10 中，随从出牌和法术释放反馈改为读取 GameActionResult.Message
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -304,6 +312,112 @@ UI 刷新还没有使用事件系统，原因是：
 规则层的事件系统已经用于出牌、召唤、死亡和亡语；UI 刷新后续再考虑事件驱动。
 ```
 
+## 阶段 2.10 UI 优化计划
+
+阶段 2.10 的 UI 优化目标不是重做美术，而是把临时复用的显示区域拆清楚，让后续 AI、更多卡牌效果和演示更稳定。
+
+### 反馈文本拆分
+
+当前 `GameOverText` 同时承担普通操作反馈和游戏结束提示。
+
+阶段 2.10 计划拆成：
+
+```text
+FeedbackText：费用不足、目标非法、请选择目标、圣盾抵消等普通操作反馈
+GameOverText：只显示胜负结果
+```
+
+代码上 `GameUIController` 会新增可选 `feedbackText` 字段。
+如果 Unity Editor 里暂时没有绑定，代码会保留旧行为作为兼容，避免 UI 突然没有反馈。
+
+Unity Editor 需要做：
+
+- 在 Canvas / HUD 区域新增或整理一个 `FeedbackText`。
+- 把它绑定到 `GameUIController`。
+- `GameOverText` 只用于游戏结束。
+
+### 卡牌显示拆分
+
+当前 `CardView` 用攻击位置显示法术伤害，并把关键词、战吼、亡语、描述都塞进 `DescriptionText`。
+这是阶段性简化，不是成熟项目最终做法。
+
+阶段 2.10 计划：
+
+```text
+随从牌：显示攻击 / 生命
+法术牌：显示类型和效果，例如“法术”“造成 2 点伤害”
+描述区：继续显示关键词、战吼、亡语和卡牌描述，但后续可拆成独立 Text
+```
+
+代码上 `CardView` 会新增可选字段，例如 `typeText` / `effectText`。
+Prefab 没绑定时，仍然保留当前旧显示方式。
+
+Unity Editor 需要做：
+
+- 在 `CardViewPrefab` 中增加类型/效果文本区域。
+- 增大 `DescriptionText` 的可用空间，避免关键词、战吼、亡语挤在一行小框里。
+
+### 随从状态拆分
+
+当前 `MinionView` 复用 `CanAttackText` 显示 Ready、关键词和亡语摘要。
+这会导致信息越来越挤。
+
+阶段 2.10 计划：
+
+```text
+StatusText：Ready
+KeywordText：冲锋 / 嘲讽 / 圣盾
+DeathrattleText：亡语:1
+```
+
+代码上 `MinionView` 会新增可选字段。
+Prefab 没绑定时，仍然回退到旧的合并文本。
+
+Unity Editor 需要做：
+
+- 在 `MinionViewPrefab` 中新增或整理 2-3 个 Text。
+- `CanAttackText` 可以保留兼容，但后续不再承担所有状态。
+
+### 文本格式化统一
+
+当前关键词已经由 `KeywordTextFormatter` 统一。
+阶段 2.10 计划继续整理战吼、亡语、法术效果和随从状态文本。
+
+目标：
+
+```text
+CardView 不自己写一套战吼/亡语文案
+MinionView 不自己写一套亡语摘要文案
+新增效果时优先改 formatter，而不是到多个 View 里复制 switch
+```
+
+可以新增 `CardTextFormatter`，或者扩展现有 formatter。
+具体写代码前先列属性清单。
+
+### 刷新方式优化
+
+当前 `HandView` / `BoardView` 每次刷新都会：
+
+```text
+Destroy 旧 View
+Instantiate 新 View
+重新绑定点击
+```
+
+卡牌少时可以接受，但后续加入动画、选中状态、AI 自动行动和更多日志时，会不稳定也浪费。
+
+阶段 2.10 计划改成简单复用：
+
+```text
+已有 View 足够：复用并刷新数据
+已有 View 不够：补 Instantiate
+已有 View 多余：SetActive(false)
+Clear()：隐藏而不是销毁
+```
+
+这不是完整对象池系统，只是阶段性整理。
+完整对象池等动画和复杂 UI 出现后再考虑。
+
 ## Unity 对象关系
 
 当前场景中需要有：
@@ -328,6 +442,8 @@ EnemyHeroButton
 阶段 2.3 的场上随从关键词文字复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 阶段 2.4 的手牌战吼文字继续复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
 阶段 2.6 的手牌亡语文字继续复用 `CardView` 的 `Description Text`，场上亡语文字继续复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
+阶段 2.9 已把关键词文本格式化抽到 `KeywordTextFormatter`。
+阶段 2.10 计划拆分 `FeedbackText`、卡牌效果文本、随从状态文本，并优化刷新复用。
 
 Prefab：
 

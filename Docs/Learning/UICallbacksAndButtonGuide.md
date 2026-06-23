@@ -208,7 +208,7 @@ HandleCardClicked 不是玩家点击时才临时找出来的。
 如果 `CardView` 直接引用 `GameManager`，代码可能会变成：
 
 ```csharp
-gameManager.TryPlayMinionCard(card);
+gameManager.TryPlayMinionCardDetailed(card);
 ```
 
 看起来更简单，但问题是：

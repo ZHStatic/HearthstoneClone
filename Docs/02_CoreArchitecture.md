@@ -57,6 +57,8 @@ Core 不依赖 UI
 | `GameEventBus` | `Assets/Scripts/Events/GameEventBus.cs` | 游戏事件订阅和发布 |
 | `BattleLogEntry` | `Assets/Scripts/Core/BattleLogEntry.cs` | 单条战斗日志快照 |
 | `BattleLogger` | `Assets/Scripts/Core/BattleLogger.cs` | 本局战斗日志记录器 |
+| `GameActionFailureReason` | `Assets/Scripts/Core/GameActionFailureReason.cs` | 游戏操作失败原因枚举 |
+| `GameActionResult` | `Assets/Scripts/Core/GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
 | `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
 | `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
 | `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
@@ -76,8 +78,11 @@ flowchart TD
     GameManager --> Hero
     GameManager --> GameEventBus
     GameManager --> BattleLogger
+    GameManager --> GameActionResult
 
     BattleLogger --> BattleLogEntry
+    GameActionResult --> GameActionFailureReason
+    GameActionResult --> BattleLogEntry
 
     GameEventBus --> GameEvent
     GameEvent --> GameEventType
@@ -146,8 +151,11 @@ Minion = 战场上的运行时随从
 | `StartTurn(Player targetPlayer)` | 切换当前玩家、补法力、抽牌、重置攻击权限 |
 | `EndTurn()` | 结束当前回合并进入对手回合 |
 | `TryPlayMinionCard(Card card)` | 尝试打出随从牌并召唤随从 |
+| `TryPlayMinionCardDetailed(Card card)` | 尝试打出随从牌，并返回详细操作结果 |
 | `TryPlaySpellCardOnMinion(Card card, Minion target)` | 尝试对随从释放伤害法术 |
+| `TryPlaySpellCardOnMinionDetailed(Card card, Minion target)` | 尝试对随从释放伤害法术，并返回详细操作结果 |
 | `TryPlaySpellCardOnHero(Card card, Hero targetHero)` | 尝试对英雄释放伤害法术 |
+| `TryPlaySpellCardOnHeroDetailed(Card card, Hero targetHero)` | 尝试对英雄释放伤害法术，并返回详细操作结果 |
 | `TryAttackMinion(Minion attacker, Minion target)` | 尝试随从攻击随从 |
 | `TryAttackHero(Minion attacker, Hero targetHero)` | 尝试随从攻击英雄 |
 | `CleanupDeadMinions()` | 清理死亡随从 |
@@ -157,7 +165,7 @@ Minion = 战场上的运行时随从
 
 ```text
 BattleLogger：本局战斗日志
-LastActionLogEntry：最近一次主要结算结果，当前给 UI 法术反馈使用
+LastActionLogEntry：最近一次主要结算结果，当前由 GameActionResult 在需要时携带给 UI
 ```
 
 `TryPlayMinionCard()` 当前还会在召唤成功后调用 `ResolveAfterSummon(minion)`。
@@ -234,14 +242,63 @@ GameManager.Try... / 战吼 / 亡语
 `GameManager.BattleLog.cs` 是文件级拆分，不是新系统拆分。
 它的目的只是让主 `GameManager.cs` 保持对局流程可读；规则入口仍然在 `GameManager`。
 
-这些方法返回 `bool` 的含义通常是：
+旧版 `Try...` 方法返回 `bool` 的含义通常是：
 
 ```text
 true = 操作成功
 false = 操作失败
 ```
 
+阶段 2.10 开始，随从出牌和法术释放已经新增详细结果版本：
+
+```text
+GameActionResult.Success：是否成功
+GameActionResult.FailureReason：失败原因枚举
+GameActionResult.Message：UI 可显示的反馈文本
+GameActionResult.LogEntry：可选的本次结算日志
+```
+
 UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态。
+
+阶段 2.10 会继续把这件事整理得更清楚：
+
+```text
+GameActionResult：描述一次操作是否成功、失败原因和反馈文本
+GameActionFailureReason：枚举失败原因，例如费用不足、目标非法、战场已满
+```
+
+短期策略不是立刻删除现有 `bool Try...` 方法，而是保留旧入口作为兼容包装，让 UI 和后续 AI 逐步迁移。
+这样可以降低一次性改动风险，也方便学习每个失败原因从哪里产生。
+
+## 进入阶段 3 前的 Core 优化
+
+阶段 2.10 的 Core 优化目标：
+
+```text
+让规则入口更清楚
+让 UI 不再重复猜失败原因
+让阶段 3 的 AI 以后复用玩家操作入口
+让 Player 的手牌和牌库不能被外部直接修改
+```
+
+计划新增或调整：
+
+| 名称 | 类型 | 目标 |
+|------|------|------|
+| `GameActionFailureReason` | enum | 已新增：描述操作失败原因，避免 UI 只看到 `false` |
+| `GameActionResult` | class | 已新增：包含成功状态、失败原因、反馈文本和可选日志 |
+| `Player.Hand` / `Player.Deck` | 属性调整 | 已完成：对外改为只读列表，内部仍用 `List<Card>` 管理 |
+| `Player.HasCardInHand(Card card)` | 方法 | 已完成：替代外部直接 `Hand.Contains(card)` |
+| `GameActionType` | enum | 描述动作类型：出牌、攻击、结束回合等 |
+| `GameAction` | class 或 struct | 描述一个玩家或后续 AI 都能复用的动作 |
+| `GameActionGenerator` | class | 根据当前局面枚举合法动作，但不修改游戏状态，也不做 AI 决策 |
+
+这些整理的边界：
+
+- `GameActionGenerator` 只负责“能做什么”，不负责“怎么结算”。
+- 真正执行动作仍然调用 `GameManager.Try...`。
+- 阶段 2.10 只做动作建模；阶段 3 再让 AI 从合法动作里选择并执行。
+- 如果需要新增 C# 类，仍然先写属性清单，再动代码。
 
 ## 当前阶段性简化
 
@@ -255,7 +312,7 @@ UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态�
 | `GameManager` 直接处理冲锋、少量无目标战吼和第一个亡语 | 当前只验证召唤后/死亡后结算链路 | 战吼或亡语类型变多时抽出事件/效果系统 |
 | `GameManager` 直接清理死亡随从 | 当前死亡流程还短 | 亡语连锁、复生、召唤等变多时抽出 `DeathProcessor` |
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
-| 法术反馈读取 `LastActionLogEntry` | 当前只需要修正圣盾等实际结算反馈 | 操作结果类型变多时再抽 `ActionResult` |
+| 旧版 `bool Try...` 方法仍保留 | 降低 UI 和后续 AI 迁移风险 | 全部调用方迁移到详细结果后再考虑删除或降级为兼容 API |
 | `BattleLogger` 只做内存日志 | 当前只服务调试、演示和 AI 前可观测性 | 需要回放、导出或复杂统计时再做持久化/日志 UI |
 
 面试时可以这样解释：
@@ -413,6 +470,7 @@ CheckGameOver()
 | 战吼、亡语、回合开始、受伤等都要触发效果 | `GameEventBus` |
 | 法术效果包含伤害、治疗、Buff、抽牌、召唤 | `EffectSystem` |
 | AI 需要枚举合法操作并模拟结果 | `ActionGenerator` 和 `AIController` |
+| UI 和 AI 都需要清楚知道失败原因 | `GameActionResult` |
 
 当前不急着拆这些系统，因为过早抽象会让学习成本变高。
 

@@ -6,18 +6,21 @@ using System.Collections.Generic;
 /// </summary>
 public class Player
 {
+    private readonly List<Card> hand;
+    private readonly List<Card> deck;
+
     // ── 英雄 ──
     public Hero Hero { get; private set; }
 
     // ── 手牌 & 牌库 ──
-    public List<Card> Hand { get; private set; }
-    public List<Card> Deck { get; private set; }
+    public IReadOnlyList<Card> Hand => hand;
+    public IReadOnlyList<Card> Deck => deck;
 
     // 手牌是否满了
-    public bool IsHandFull => Hand.Count >= MaxHandSize;
+    public bool IsHandFull => hand.Count >= MaxHandSize;
 
     // 牌库是否空了
-    public bool IsDeckEmpty => Deck.Count == 0;
+    public bool IsDeckEmpty => deck.Count == 0;
 
     // ── 法力水晶 ──
     public int MaxMana { get; private set; }     // 本回合最大水晶数
@@ -34,24 +37,24 @@ public class Player
     public Player(List<CardData> deckCards, string heroName = "未命名英雄", int heroHealth = 30)
     {
         Hero = new Hero(heroName, heroHealth);
+        hand = new List<Card>();
 
         // 从模板创建卡牌实例，放入牌库。
         // Inspector 里可能会误留空槽位，所以这里要跳过空数据，避免开局崩溃。
-        Deck = new List<Card>();
+        deck = new List<Card>();
         if (deckCards != null)
         {
             foreach (CardData data in deckCards)
             {
                 if (data == null) continue;
 
-                Deck.Add(new Card(data));
+                deck.Add(new Card(data));
             }
         }
 
         // 牌库洗牌
         ShuffleDeck();
 
-        Hand = new List<Card>();
         MaxMana = 0;
         CurrentMana = 0;
     }
@@ -71,7 +74,7 @@ public class Player
         CurrentMana = MaxMana;
 
         // 重置所有手牌的费用（消除上回合的临时减费效果）
-        foreach (Card card in Hand)
+        foreach (Card card in hand)
             card.ResetCost();
 
         // 抽一张牌
@@ -90,15 +93,15 @@ public class Player
         // 手牌满了——卡牌直接烧毁（炉石规则）
         if (IsHandFull)
         {
-            Deck.RemoveAt(Deck.Count - 1);
+            deck.RemoveAt(deck.Count - 1);
             return null;
         }
 
         // 从牌库顶抽一张（List 末尾 = 牌库顶）
-        int topIndex = Deck.Count - 1;
-        Card drawnCard = Deck[topIndex];
-        Deck.RemoveAt(topIndex);
-        Hand.Add(drawnCard);
+        int topIndex = deck.Count - 1;
+        Card drawnCard = deck[topIndex];
+        deck.RemoveAt(topIndex);
+        hand.Add(drawnCard);
 
         return drawnCard;
     }
@@ -113,12 +116,21 @@ public class Player
     public bool PlayCard(Card card)
     {
         if (card == null) return false;
-        if (!Hand.Contains(card)) return false;
+        if (!HasCardInHand(card)) return false;
         if (card.CurrentCost > CurrentMana) return false;
 
         CurrentMana -= card.CurrentCost;
-        Hand.Remove(card);
+        hand.Remove(card);
         return true;
+    }
+
+    /// <summary>
+    /// 检查这张运行时卡牌是否属于当前玩家手牌。
+    /// 外部用这个方法判断归属，而不是直接修改手牌列表。
+    /// </summary>
+    public bool HasCardInHand(Card card)
+    {
+        return card != null && hand.Contains(card);
     }
 
     // ── 牌库操作 ──
@@ -129,12 +141,12 @@ public class Player
     public void ShuffleDeck()
     {
         // Fisher-Yates 洗牌算法
-        for (int i = Deck.Count - 1; i > 0; i--)
+        for (int i = deck.Count - 1; i > 0; i--)
         {
             int j = UnityEngine.Random.Range(0, i + 1);
-            Card temp = Deck[i];
-            Deck[i] = Deck[j];
-            Deck[j] = temp;
+            Card temp = deck[i];
+            deck[i] = deck[j];
+            deck[j] = temp;
         }
     }
 }
