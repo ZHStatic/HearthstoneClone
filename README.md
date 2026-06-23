@@ -55,8 +55,8 @@
 ```text
 Assets/
 ├── Scripts/
-│   ├── Core/      # 核心规则：玩家、卡牌、战场、回合流程
-│   └── UI/        # 表现层：手牌、战场、HUD、点击输入
+│   ├── Core/      # 核心规则：卡牌、实体、动作、事件、日志
+│   └── UI/        # 表现层：控制器、视图、文本格式化
 ├── Prefabs/
 │   └── UI/        # CardViewPrefab、MinionViewPrefab
 └── Scenes/        # 当前测试场景

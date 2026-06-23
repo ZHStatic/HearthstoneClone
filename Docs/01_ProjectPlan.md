@@ -110,45 +110,23 @@
 ```
 Assets/Scripts/
 ├── Core/                    # 纯逻辑，不依赖 Unity UI
-│   ├── GameManager.cs       # 游戏总控（状态机）
-│   ├── Card.cs              # 卡牌运行时实例
-│   ├── CardData.cs          # ScriptableObject：卡牌模板数据
-│   ├── Hero.cs              # 英雄（血量、护甲、英雄技能）
-│   ├── Player.cs            # 玩家（手牌、牌库、法力水晶）
-│   ├── Board.cs             # 战场（双方各 7 个随从位）
-│   └── Minion.cs            # 随从运行时实例
-
-├── Events/                  # 事件系统
-│   ├── GameEventType.cs     # 枚举：所有事件类型
-│   ├── GameEventBus.cs      # 事件总线
-│   └── GameEvent.cs         # 事件数据结构
-
-├── Effects/                 # 卡牌效果
-│   ├── IEffect.cs           # 效果接口
-│   ├── DamageEffect.cs      # 造成伤害
-│   ├── SummonEffect.cs      # 召唤随从
-│   ├── DrawCardEffect.cs    # 抽牌
-│   ├── BuffEffect.cs        # 增减属性
-│   ├── DestroyEffect.cs     # 消灭随从
-│   └── HealEffect.cs        # 恢复生命
-
-├── Keywords/                # 关键词
-│   ├── Charge.cs            # 冲锋
-│   ├── Taunt.cs             # 嘲讽
-│   ├── Battlecry.cs         # 战吼
-│   ├── Deathrattle.cs       # 亡语
-│   └── DivineShield.cs      # 圣盾
+│   ├── GameManager.cs       # 游戏总控（当前阶段的规则调度入口）
+│   ├── Cards/               # 卡牌模板、运行时卡牌和卡牌类型
+│   ├── Entities/            # 英雄、玩家、随从、战场
+│   ├── Actions/             # 动作数据、动作结果、合法动作生成
+│   ├── Effects/             # 关键词、战吼、亡语、法术目标类型
+│   ├── Events/              # 事件系统
+│   └── Logging/             # 战斗日志和伤害记录 helper
 
 ├── AI/                      # AI 系统
 │   ├── AIController.cs      # AI 入口
-│   ├── ActionGenerator.cs   # 枚举所有合法操作
+│   ├── ActionSelector.cs    # 从合法动作中选择一个动作
 │   └── Evaluator.cs         # 局面评估函数
 
 └── UI/                      # 界面
-    ├── CardView.cs          # 单张卡牌 UI
-    ├── HandView.cs          # 手牌区
-    ├── BoardView.cs         # 战场视图
-    └── GameHUD.cs           # 法力水晶、回合按钮等
+    ├── Controllers/         # UI 总控和输入流程
+    ├── Views/               # 手牌、场面、卡牌、随从视图
+    └── Formatters/          # UI 文本格式化工具
 ```
 
 ---

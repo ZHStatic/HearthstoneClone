@@ -46,26 +46,26 @@ Core 不依赖 UI
 
 | 类 | 文件 | 当前职责 |
 |----|------|----------|
-| `CardData` | `Assets/Scripts/Core/CardData.cs` | 卡牌模板数据，Unity Inspector 中配置 |
-| `CardType` | `Assets/Scripts/Core/CardType.cs` | 区分随从牌和法术牌 |
-| `SpellTargetType` | `Assets/Scripts/Core/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
-| `KeywordType` | `Assets/Scripts/Core/KeywordType.cs` | 关键词类型，当前支持冲锋、嘲讽和圣盾 |
-| `BattlecryType` | `Assets/Scripts/Core/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害、抽牌 |
-| `DeathrattleType` | `Assets/Scripts/Core/DeathrattleType.cs` | 亡语类型，当前支持对敌方英雄造成伤害 |
-| `GameEventType` | `Assets/Scripts/Events/GameEventType.cs` | 游戏事件类型 |
-| `GameEvent` | `Assets/Scripts/Events/GameEvent.cs` | 游戏事件数据 |
-| `GameEventBus` | `Assets/Scripts/Events/GameEventBus.cs` | 游戏事件订阅和发布 |
-| `BattleLogEntry` | `Assets/Scripts/Core/BattleLogEntry.cs` | 单条战斗日志快照 |
-| `BattleLogger` | `Assets/Scripts/Core/BattleLogger.cs` | 本局战斗日志记录器 |
-| `GameActionFailureReason` | `Assets/Scripts/Core/GameActionFailureReason.cs` | 游戏操作失败原因枚举 |
-| `GameActionResult` | `Assets/Scripts/Core/GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
-| `Card` | `Assets/Scripts/Core/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
-| `Hero` | `Assets/Scripts/Core/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
-| `Player` | `Assets/Scripts/Core/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
-| `Minion` | `Assets/Scripts/Core/Minion.cs` | 场上随从实例：攻击、生命、所属玩家、能否攻击、关键词 |
-| `Board` | `Assets/Scripts/Core/Board.cs` | 双方战场随从列表、召唤上限、移除随从 |
+| `CardData` | `Assets/Scripts/Core/Cards/CardData.cs` | 卡牌模板数据，Unity Inspector 中配置 |
+| `CardType` | `Assets/Scripts/Core/Cards/CardType.cs` | 区分随从牌和法术牌 |
+| `SpellTargetType` | `Assets/Scripts/Core/Effects/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
+| `KeywordType` | `Assets/Scripts/Core/Effects/KeywordType.cs` | 关键词类型，当前支持冲锋、嘲讽和圣盾 |
+| `BattlecryType` | `Assets/Scripts/Core/Effects/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害、抽牌 |
+| `DeathrattleType` | `Assets/Scripts/Core/Effects/DeathrattleType.cs` | 亡语类型，当前支持对敌方英雄造成伤害 |
+| `GameEventType` | `Assets/Scripts/Core/Events/GameEventType.cs` | 游戏事件类型 |
+| `GameEvent` | `Assets/Scripts/Core/Events/GameEvent.cs` | 游戏事件数据 |
+| `GameEventBus` | `Assets/Scripts/Core/Events/GameEventBus.cs` | 游戏事件订阅和发布 |
+| `BattleLogEntry` | `Assets/Scripts/Core/Logging/BattleLogEntry.cs` | 单条战斗日志快照 |
+| `BattleLogger` | `Assets/Scripts/Core/Logging/BattleLogger.cs` | 本局战斗日志记录器 |
+| `GameActionFailureReason` | `Assets/Scripts/Core/Actions/GameActionFailureReason.cs` | 游戏操作失败原因枚举 |
+| `GameActionResult` | `Assets/Scripts/Core/Actions/GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
+| `Card` | `Assets/Scripts/Core/Cards/Card.cs` | 对局中的一张卡牌实例，保存当前费用 |
+| `Hero` | `Assets/Scripts/Core/Entities/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
+| `Player` | `Assets/Scripts/Core/Entities/Player.cs` | 玩家资源：英雄、手牌、牌库、法力 |
+| `Minion` | `Assets/Scripts/Core/Entities/Minion.cs` | 场上随从实例：攻击、生命、所属玩家、能否攻击、关键词 |
+| `Board` | `Assets/Scripts/Core/Entities/Board.cs` | 双方战场随从列表、召唤上限、移除随从 |
 | `GameManager` | `Assets/Scripts/Core/GameManager.cs` | 当前阶段的对局流程调度入口 |
-| `GameManager.BattleLog` | `Assets/Scripts/Core/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
+| `GameManager.BattleLog` | `Assets/Scripts/Core/Logging/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
 
 ## 依赖关系
 

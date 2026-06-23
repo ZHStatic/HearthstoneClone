@@ -10,12 +10,12 @@
 
 | 类 | 文件 | 主要职责 |
 |----|------|----------|
-| `CardView` | `Assets/Scripts/UI/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，显示关键词、战吼和亡语文字，点击后把 `Card` 通知给上层 |
-| `HandView` | `Assets/Scripts/UI/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
-| `MinionView` | `Assets/Scripts/UI/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
-| `BoardView` | `Assets/Scripts/UI/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
-| `GameUIController` | `Assets/Scripts/UI/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、攻击、结束回合、反馈提示和刷新 |
-| `KeywordTextFormatter` | `Assets/Scripts/UI/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
+| `CardView` | `Assets/Scripts/UI/Views/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，显示关键词、战吼和亡语文字，点击后把 `Card` 通知给上层 |
+| `HandView` | `Assets/Scripts/UI/Views/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
+| `MinionView` | `Assets/Scripts/UI/Views/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
+| `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
+| `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、攻击、结束回合、反馈提示和刷新 |
+| `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
 

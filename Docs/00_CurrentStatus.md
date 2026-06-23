@@ -80,40 +80,40 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 
 | 文件 | 职责 |
 |------|------|
-| `CardData.cs` | ScriptableObject 卡牌模板数据 |
-| `CardType.cs` | 卡牌类型：随从、法术 |
-| `SpellTargetType.cs` | 单目标法术可选择的目标范围 |
-| `KeywordType.cs` | 关键词类型：当前支持 `Charge`、`Taunt`、`DivineShield` |
-| `BattlecryType.cs` | 战吼类型：当前支持对敌方英雄造成伤害、抽牌 |
-| `DeathrattleType.cs` | 亡语类型：当前支持对敌方英雄造成伤害 |
-| `GameEventType.cs` | 游戏事件类型：当前包含出牌、召唤、死亡、回合开始和回合结束 |
-| `GameEvent.cs` | 游戏事件数据：记录事件类型和相关上下文 |
-| `GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
-| `BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本 |
-| `BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
-| `GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满 |
-| `GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
-| `GameActionType.cs` | 游戏动作类型：出牌、施法、攻击、结束回合 |
-| `GameAction.cs` | 单条游戏动作数据，只记录动作意图，不执行规则 |
-| `GameActionGenerator.cs` | 合法动作生成器，只读取局面并创建 `GameAction` 列表 |
-| `Card.cs` | 手牌/牌库中的运行时卡牌实例 |
-| `Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
-| `Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌；对外只读暴露手牌和牌库 |
-| `Board.cs` | 双方战场随从列表和召唤位置限制 |
-| `Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限、关键词和圣盾消耗 |
+| `Core/Cards/CardData.cs` | ScriptableObject 卡牌模板数据 |
+| `Core/Cards/CardType.cs` | 卡牌类型：随从、法术 |
+| `Core/Cards/Card.cs` | 手牌/牌库中的运行时卡牌实例 |
+| `Core/Effects/SpellTargetType.cs` | 单目标法术可选择的目标范围 |
+| `Core/Effects/KeywordType.cs` | 关键词类型：当前支持 `Charge`、`Taunt`、`DivineShield` |
+| `Core/Effects/BattlecryType.cs` | 战吼类型：当前支持对敌方英雄造成伤害、抽牌 |
+| `Core/Effects/DeathrattleType.cs` | 亡语类型：当前支持对敌方英雄造成伤害 |
+| `Core/Events/GameEventType.cs` | 游戏事件类型：当前包含出牌、召唤、死亡、回合开始和回合结束 |
+| `Core/Events/GameEvent.cs` | 游戏事件数据：记录事件类型和相关上下文 |
+| `Core/Events/GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
+| `Core/Logging/BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本 |
+| `Core/Logging/BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
+| `Core/Actions/GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满 |
+| `Core/Actions/GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
+| `Core/Actions/GameActionType.cs` | 游戏动作类型：出牌、施法、攻击、结束回合 |
+| `Core/Actions/GameAction.cs` | 单条游戏动作数据，只记录动作意图，不执行规则 |
+| `Core/Actions/GameActionGenerator.cs` | 合法动作生成器，只读取局面并创建 `GameAction` 列表 |
+| `Core/Entities/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
+| `Core/Entities/Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌；对外只读暴露手牌和牌库 |
+| `Core/Entities/Board.cs` | 双方战场随从列表和召唤位置限制 |
+| `Core/Entities/Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限、关键词和圣盾消耗 |
 | `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算、基础事件发布和战斗日志入口 |
-| `GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
+| `Core/Logging/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
 
 ### UI 层
 
 | 文件 | 职责 |
 |------|------|
-| `CardView.cs` | 显示一张手牌、关键词文字、战吼文字、亡语文字并转发点击 |
-| `HandView.cs` | 根据手牌列表生成多个 `CardView` |
-| `MinionView.cs` | 显示一个场上随从、关键词文字、亡语文字、点击和选中高亮 |
-| `BoardView.cs` | 根据一方战场列表生成多个 `MinionView` |
-| `GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、选择状态、反馈和刷新 |
-| `KeywordTextFormatter.cs` | UI 层关键词文本格式化工具，供 `CardView` 和 `MinionView` 复用 |
+| `UI/Views/CardView.cs` | 显示一张手牌、关键词文字、战吼文字、亡语文字并转发点击 |
+| `UI/Views/HandView.cs` | 根据手牌列表生成多个 `CardView` |
+| `UI/Views/MinionView.cs` | 显示一个场上随从、关键词文字、亡语文字、点击和选中高亮 |
+| `UI/Views/BoardView.cs` | 根据一方战场列表生成多个 `MinionView` |
+| `UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、选择状态、反馈和刷新 |
+| `UI/Formatters/KeywordTextFormatter.cs` | UI 层关键词文本格式化工具，供 `CardView` 和 `MinionView` 复用 |
 
 ## 文档分工
 
@@ -201,7 +201,7 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 
 ## 阶段 2.5.0 已验证
 
-- Unity 已自动生成 `Assets/Scripts/Events` 文件夹 `.meta`。
+- 当时 Unity 已自动生成事件脚本文件夹 `.meta`；当前事件脚本已随目录整理移动到 `Assets/Scripts/Core/Events`。
 - 已创建 `GameEventType.cs`、`GameEvent.cs`、`GameEventBus.cs`。
 - `GameManager` 每局开始时创建新的 `GameEventBus`。
 - `GameManager` 在卡牌成功打出后发布 `CardPlayed`。

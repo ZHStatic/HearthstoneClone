@@ -300,7 +300,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 在 Unity Editor 中操作：
 
 ```text
-1. 等 Unity 自动导入 Assets/Scripts/Events 下的新脚本，并确认 Console 没有编译错误。
+1. 等 Unity 自动导入 Assets/Scripts/Core/Events 下的新脚本，并确认 Console 没有编译错误。
 2. 确认 GameManager 上的 Log Game Events 为开启状态。
 3. 进入 Play 模式。
 4. 打出一张随从牌。
