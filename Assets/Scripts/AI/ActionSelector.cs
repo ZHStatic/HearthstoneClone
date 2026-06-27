@@ -8,12 +8,85 @@ public class ActionSelector
 {
     /// <summary>
     /// 从合法动作中选择一条动作。
-    /// 第一版使用简单优先级：攻击英雄 > 攻击随从 > 施法 > 出随从 > 结束回合。
+    /// 第一版策略：能斩杀就斩杀，能击杀随从就解场，再尝试出牌，最后结束回合。
     /// </summary>
     public GameAction SelectAction(IReadOnlyList<GameAction> legalActions)
     {
         if (legalActions == null || legalActions.Count == 0) return null;
 
+        if (TryFindLethalAction(legalActions, out GameAction lethalAction))
+        {
+            return lethalAction;
+        }
+
+        if (TryFindKillMinionAction(legalActions, out GameAction killMinionAction))
+        {
+            return killMinionAction;
+        }
+
+        if (TryFindPlayableCardAction(legalActions, out GameAction playableCardAction))
+        {
+            return playableCardAction;
+        }
+
+        return SelectHighestPriorityAction(legalActions);
+    }
+
+    private bool TryFindLethalAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
+    {
+        selectedAction = null;
+
+        for (int i = 0; i < legalActions.Count; i++)
+        {
+            GameAction action = legalActions[i];
+            if (!CanKillHero(action)) continue;
+
+            selectedAction = action;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryFindKillMinionAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
+    {
+        selectedAction = null;
+
+        for (int i = 0; i < legalActions.Count; i++)
+        {
+            GameAction action = legalActions[i];
+            if (!CanKillMinion(action)) continue;
+
+            selectedAction = action;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryFindPlayableCardAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
+    {
+        selectedAction = null;
+
+        for (int i = 0; i < legalActions.Count; i++)
+        {
+            GameAction action = legalActions[i];
+            if (action == null) continue;
+
+            if (action.ActionType == GameActionType.PlayMinionCard ||
+                action.ActionType == GameActionType.PlaySpellOnHero ||
+                action.ActionType == GameActionType.PlaySpellOnMinion)
+            {
+                selectedAction = action;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private GameAction SelectHighestPriorityAction(IReadOnlyList<GameAction> legalActions)
+    {
         GameAction selectedAction = null;
         int selectedPriority = int.MinValue;
 
@@ -30,6 +103,58 @@ public class ActionSelector
         }
 
         return selectedAction;
+    }
+
+    private bool CanKillHero(GameAction action)
+    {
+        if (action == null || action.TargetHero == null) return false;
+        if (action.Actor != null && action.TargetHero == action.Actor.Hero) return false;
+
+        int damage = GetHeroDamage(action);
+        return damage > 0 && damage >= action.TargetHero.CurrentHealth;
+    }
+
+    private bool CanKillMinion(GameAction action)
+    {
+        if (action == null || action.TargetMinion == null) return false;
+        if (action.Actor != null && action.TargetMinion.Owner == action.Actor) return false;
+
+        int damage = GetMinionDamage(action);
+        return damage > 0 && damage >= action.TargetMinion.CurrentHealth;
+    }
+
+    private int GetHeroDamage(GameAction action)
+    {
+        if (action == null) return 0;
+
+        switch (action.ActionType)
+        {
+            case GameActionType.AttackHero:
+                return action.Attacker != null ? action.Attacker.Attack : 0;
+            case GameActionType.PlaySpellOnHero:
+                return action.Card != null && action.Card.CardData != null
+                    ? action.Card.CardData.SpellDamage
+                    : 0;
+            default:
+                return 0;
+        }
+    }
+
+    private int GetMinionDamage(GameAction action)
+    {
+        if (action == null) return 0;
+
+        switch (action.ActionType)
+        {
+            case GameActionType.AttackMinion:
+                return action.Attacker != null ? action.Attacker.Attack : 0;
+            case GameActionType.PlaySpellOnMinion:
+                return action.Card != null && action.Card.CardData != null
+                    ? action.Card.CardData.SpellDamage
+                    : 0;
+            default:
+                return 0;
+        }
     }
 
     private int GetActionPriority(GameAction action)
