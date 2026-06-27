@@ -15,8 +15,6 @@ public partial class GameManager : MonoBehaviour
 
     // 开局每名玩家抽几张牌。先用 3，之后如果要还原炉石规则可以再扩展。
     [SerializeField] private int startingHandCount = 3;
-    [SerializeField] private bool logGameEvents = true;
-
     // 调试开关：回合开始后打印当前玩家的合法动作列表。
     // 只用于验证 GameActionGenerator，不会执行任何动作。
     [SerializeField] private bool logLegalActionsOnTurnStart = false;
@@ -68,7 +66,6 @@ public partial class GameManager : MonoBehaviour
         IsGameOver = false;
 
         SubscribeGameplayEventHandlers();
-        SubscribeDebugEventLogs();
         DrawStartingHands(Player);
         DrawStartingHands(Enemy);
         StartTurn(CurrentPlayer);
@@ -303,9 +300,7 @@ public partial class GameManager : MonoBehaviour
                 "召唤随从失败。");
         }
 
-        PublishCardPlayed(card);
         RecordCardPlayed(card, CurrentPlayer);
-        PublishMinionSummoned(minion);
         RecordMinionSummoned(minion);
         ResolveAfterSummon(minion);
         return GameActionResult.Succeeded($"打出 {GetCardLogName(card)}。");
@@ -404,7 +399,6 @@ public partial class GameManager : MonoBehaviour
                 "法术释放失败。");
         }
 
-        PublishCardPlayed(card);
         RecordCardPlayed(card, CurrentPlayer);
         BattleLogEntry spellLogEntry = DamageMinion(target, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
 
@@ -441,7 +435,6 @@ public partial class GameManager : MonoBehaviour
                 "法术释放失败。");
         }
 
-        PublishCardPlayed(card);
         RecordCardPlayed(card, CurrentPlayer);
         BattleLogEntry spellLogEntry = DamageHero(targetHero, card.CardData.SpellDamage, GetCardLogName(card), CurrentPlayer, BattleLogEntryType.Spell);
 
@@ -1073,39 +1066,6 @@ public partial class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 发布卡牌打出事件。
-    /// </summary>
-    private void PublishCardPlayed(Card card)
-    {
-        if (EventBus == null) return;
-        if (card == null) return;
-
-        GameEvent gameEvent = new GameEvent(
-            GameEventType.CardPlayed,
-            sourcePlayer: CurrentPlayer,
-            sourceCard: card);
-
-        EventBus.Publish(gameEvent);
-    }
-
-    /// <summary>
-    /// 发布随从召唤事件。
-    /// </summary>
-    private void PublishMinionSummoned(Minion minion)
-    {
-        if (EventBus == null) return;
-        if (minion == null) return;
-
-        GameEvent gameEvent = new GameEvent(
-            GameEventType.MinionSummoned,
-            sourcePlayer: minion.Owner,
-            targetPlayer: minion.Owner,
-            targetMinion: minion);
-
-        EventBus.Publish(gameEvent);
-    }
-
-    /// <summary>
     /// 发布随从死亡事件。
     /// 死亡随从是事件目标，所以填入 TargetMinion。
     /// </summary>
@@ -1116,41 +1076,9 @@ public partial class GameManager : MonoBehaviour
 
         GameEvent gameEvent = new GameEvent(
             GameEventType.MinionDied,
-            targetPlayer: minion.Owner,
             targetMinion: minion);
 
         EventBus.Publish(gameEvent);
-    }
-
-    /// <summary>
-    /// 订阅调试用事件日志。
-    /// </summary>
-    private void SubscribeDebugEventLogs()
-    {
-        if (!logGameEvents) return;
-        if (EventBus == null) return;
-
-        EventBus.Subscribe(GameEventType.CardPlayed, LogGameEvent);
-        EventBus.Subscribe(GameEventType.MinionSummoned, LogGameEvent);
-        EventBus.Subscribe(GameEventType.MinionDied, LogGameEvent);
-    }
-
-    /// <summary>
-    /// 在 Console 中打印事件系统是否被触发。
-    /// </summary>
-    private void LogGameEvent(GameEvent gameEvent)
-    {
-        if (gameEvent == null) return;
-
-        string cardName = gameEvent.SourceCard != null && gameEvent.SourceCard.CardData != null
-            ? gameEvent.SourceCard.CardData.CardName
-            : "None";
-
-        string minionName = gameEvent.TargetMinion != null && gameEvent.TargetMinion.CardData != null
-            ? gameEvent.TargetMinion.CardData.CardName
-            : "None";
-
-        Debug.Log($"GameEvent: {gameEvent.Type}, Card: {cardName}, Minion: {minionName}");
     }
 
     /// <summary>

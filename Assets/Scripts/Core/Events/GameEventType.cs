@@ -5,27 +5,7 @@
 public enum GameEventType
 {
     /// <summary>
-    /// 有卡牌被打出。
+    /// 有随从死亡。当前用于触发亡语。
     /// </summary>
-    CardPlayed,
-
-    /// <summary>
-    /// 有随从被召唤到战场。
-    /// </summary>
-    MinionSummoned,
-
-    /// <summary>
-    /// 有随从死亡。
-    /// </summary>
-    MinionDied,
-
-    /// <summary>
-    /// 一个玩家的回合开始。
-    /// </summary>
-    TurnStarted,
-
-    /// <summary>
-    /// 一个玩家的回合结束。
-    /// </summary>
-    TurnEnded
+    MinionDied
 }
