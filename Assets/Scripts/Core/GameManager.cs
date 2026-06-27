@@ -166,23 +166,16 @@ public partial class GameManager : MonoBehaviour
     {
         if (action == null) return "None";
 
-        switch (action.ActionType)
+        return action.ActionType switch
         {
-            case GameActionType.PlayMinionCard:
-                return $"PlayMinionCard: {GetCardLogName(action.Card)}";
-            case GameActionType.PlaySpellOnMinion:
-                return $"PlaySpellOnMinion: {GetCardLogName(action.Card)} -> {GetMinionLogName(action.TargetMinion)}";
-            case GameActionType.PlaySpellOnHero:
-                return $"PlaySpellOnHero: {GetCardLogName(action.Card)} -> {GetHeroLogName(action.TargetHero)}";
-            case GameActionType.AttackMinion:
-                return $"AttackMinion: {GetMinionLogName(action.Attacker)} -> {GetMinionLogName(action.TargetMinion)}";
-            case GameActionType.AttackHero:
-                return $"AttackHero: {GetMinionLogName(action.Attacker)} -> {GetHeroLogName(action.TargetHero)}";
-            case GameActionType.EndTurn:
-                return "EndTurn";
-            default:
-                return action.ActionType.ToString();
-        }
+            GameActionType.PlayMinionCard => $"PlayMinionCard: {GetCardLogName(action.Card)}",
+            GameActionType.PlaySpellOnMinion => $"PlaySpellOnMinion: {GetCardLogName(action.Card)} -> {GetMinionLogName(action.TargetMinion)}",
+            GameActionType.PlaySpellOnHero => $"PlaySpellOnHero: {GetCardLogName(action.Card)} -> {GetHeroLogName(action.TargetHero)}",
+            GameActionType.AttackMinion => $"AttackMinion: {GetMinionLogName(action.Attacker)} -> {GetMinionLogName(action.TargetMinion)}",
+            GameActionType.AttackHero => $"AttackHero: {GetMinionLogName(action.Attacker)} -> {GetHeroLogName(action.TargetHero)}",
+            GameActionType.EndTurn => "EndTurn",
+            _ => action.ActionType.ToString(),
+        };
     }
 
     /// <summary>

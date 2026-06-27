@@ -189,13 +189,11 @@ public class MinionView : MonoBehaviour
         if (minion == null || minion.CardData == null) return "";
         if (!minion.CardData.HasDeathrattle) return "";
 
-        switch (minion.CardData.DeathrattleType)
+        return minion.CardData.DeathrattleType switch
         {
-            case DeathrattleType.DealDamageToEnemyHero:
-                return $"亡语:{minion.CardData.DeathrattleValue}";
-            default:
-                return "";
-        }
+            DeathrattleType.DealDamageToEnemyHero => $"亡语:{minion.CardData.DeathrattleValue}",
+            _ => "",
+        };
     }
 
     /// <summary>

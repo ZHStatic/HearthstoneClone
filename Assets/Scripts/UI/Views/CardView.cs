@@ -169,15 +169,12 @@ public class CardView : MonoBehaviour
         if (cardData == null) return "";
         if (!cardData.HasBattlecry) return "";
 
-        switch (cardData.BattlecryType)
+        return cardData.BattlecryType switch
         {
-            case BattlecryType.DealDamageToEnemyHero:
-                return $"战吼：对敌方英雄造成 {cardData.BattlecryValue} 点伤害";
-            case BattlecryType.DrawCard:
-                return $"战吼：抽 {cardData.BattlecryValue} 张牌";
-            default:
-                return "";
-        }
+            BattlecryType.DealDamageToEnemyHero => $"战吼：对敌方英雄造成 {cardData.BattlecryValue} 点伤害",
+            BattlecryType.DrawCard => $"战吼：抽 {cardData.BattlecryValue} 张牌",
+            _ => "",
+        };
     }
 
     /// <summary>
@@ -189,13 +186,11 @@ public class CardView : MonoBehaviour
         if (cardData == null) return "";
         if (!cardData.HasDeathrattle) return "";
 
-        switch (cardData.DeathrattleType)
+        return cardData.DeathrattleType switch
         {
-            case DeathrattleType.DealDamageToEnemyHero:
-                return $"亡语：对敌方英雄造成 {cardData.DeathrattleValue} 点伤害";
-            default:
-                return "";
-        }
+            DeathrattleType.DealDamageToEnemyHero => $"亡语：对敌方英雄造成 {cardData.DeathrattleValue} 点伤害",
+            _ => "",
+        };
     }
 
     /// <summary>

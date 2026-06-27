@@ -74,8 +74,8 @@ public static class GameActionGenerator
         Player opponent = gameManager.GetOpponent(actor);
         AddSpellTargetMinionActions(actions, gameManager, actor, card, opponent);
 
-        AddSpellTargetHeroAction(actions, gameManager, actor, card, actor != null ? actor.Hero : null);
-        AddSpellTargetHeroAction(actions, gameManager, actor, card, opponent != null ? opponent.Hero : null);
+        AddSpellTargetHeroAction(actions, gameManager, actor, card, actor?.Hero);
+        AddSpellTargetHeroAction(actions, gameManager, actor, card, opponent?.Hero);
     }
 
     /// <summary>
@@ -299,17 +299,13 @@ public static class GameActionGenerator
         if (targetOwner == null) return false;
 
         Player opponent = gameManager.GetOpponent(actor);
-        switch (spellData.SpellTargetType)
+        return spellData.SpellTargetType switch
         {
-            case SpellTargetType.AnyCharacter:
-                return true;
-            case SpellTargetType.EnemyCharacter:
-                return targetOwner == opponent;
-            case SpellTargetType.FriendlyCharacter:
-                return targetOwner == actor;
-            default:
-                return false;
-        }
+            SpellTargetType.AnyCharacter => true,
+            SpellTargetType.EnemyCharacter => targetOwner == opponent,
+            SpellTargetType.FriendlyCharacter => targetOwner == actor,
+            _ => false,
+        };
     }
 
     /// <summary>

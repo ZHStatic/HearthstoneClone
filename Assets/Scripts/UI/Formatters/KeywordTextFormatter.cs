@@ -11,17 +11,13 @@ public static class KeywordTextFormatter
     /// </summary>
     public static string GetKeywordText(KeywordType keyword)
     {
-        switch (keyword)
+        return keyword switch
         {
-            case KeywordType.Charge:
-                return "冲锋";
-            case KeywordType.Taunt:
-                return "嘲讽";
-            case KeywordType.DivineShield:
-                return "圣盾";
-            default:
-                return "";
-        }
+            KeywordType.Charge => "冲锋",
+            KeywordType.Taunt => "嘲讽",
+            KeywordType.DivineShield => "圣盾",
+            _ => "",
+        };
     }
 
     /// <summary>
