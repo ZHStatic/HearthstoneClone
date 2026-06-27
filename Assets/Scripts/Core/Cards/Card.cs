@@ -18,12 +18,7 @@ public class Card
     /// <param name="data">ScriptableObject 模板</param>
     public Card(CardData data)
     {
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
-
-        CardData = data;
+        CardData = data != null ? data : throw new ArgumentNullException(nameof(data));
         SetCurrentCost(data.Cost);
     }
 
