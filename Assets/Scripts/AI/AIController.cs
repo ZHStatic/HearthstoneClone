@@ -40,7 +40,7 @@ public class AIController
             if (gameManager.CurrentPlayer != controlledPlayer) return;
         }
 
-        Debug.LogWarning("AI reached max actions this turn. Force ending turn to avoid an infinite loop.");
+        Debug.LogWarning("AI 达到本回合行动上限，强制结束回合，避免死循环。");
         gameManager.ExecuteAction(GameAction.CreateEndTurn(controlledPlayer));
     }
 
@@ -51,52 +51,71 @@ public class AIController
 
         if (selectedAction == null)
         {
-            Debug.Log("AI found no legal actions.");
+            Debug.Log("AI 没有找到可执行动作。");
             return null;
         }
 
-        Debug.Log($"AI selected action: {GetActionDebugText(selectedAction)}");
+        Debug.Log($"AI 选择：{GetActionDebugText(selectedAction)}");
 
         GameActionResult result = gameManager.ExecuteAction(selectedAction);
         if (result.Failed)
         {
-            Debug.LogWarning($"AI action failed: {result.Message}");
+            Debug.LogWarning($"AI 行动失败：{GetActionResultText(result)}");
             return null;
         }
 
-        if (!string.IsNullOrEmpty(result.Message))
-        {
-            Debug.Log($"AI action result: {result.Message}");
-        }
+        Debug.Log($"AI 结果：{GetActionResultText(result)}");
 
         return selectedAction;
     }
 
+    /// <summary>
+    /// 把 AI 选择的动作转换成适合 Console 阅读的中文文本。
+    /// 这里只负责展示，不参与动作合法性判断或执行。
+    /// </summary>
     private string GetActionDebugText(GameAction action)
     {
-        if (action == null) return "None";
+        if (action == null) return "无动作";
 
         return action.ActionType switch
         {
-            GameActionType.PlayMinionCard => $"PlayMinionCard: {GetCardName(action.Card)}",
-            GameActionType.PlaySpellOnMinion => $"PlaySpellOnMinion: {GetCardName(action.Card)} -> {GetMinionName(action.TargetMinion)}",
-            GameActionType.PlaySpellOnHero => $"PlaySpellOnHero: {GetCardName(action.Card)} -> Hero",
-            GameActionType.AttackMinion => $"AttackMinion: {GetMinionName(action.Attacker)} -> {GetMinionName(action.TargetMinion)}",
-            GameActionType.AttackHero => $"AttackHero: {GetMinionName(action.Attacker)} -> Hero",
-            GameActionType.EndTurn => "EndTurn",
-            _ => action.ActionType.ToString(),
+            GameActionType.PlayMinionCard => $"打出随从牌 {GetCardName(action.Card)}",
+            GameActionType.PlaySpellOnMinion => $"对 {GetMinionName(action.TargetMinion)} 释放 {GetCardName(action.Card)}",
+            GameActionType.PlaySpellOnHero => $"对 {GetHeroName(action.TargetHero)} 释放 {GetCardName(action.Card)}",
+            GameActionType.AttackMinion => $"{GetMinionName(action.Attacker)} 攻击 {GetMinionName(action.TargetMinion)}",
+            GameActionType.AttackHero => $"{GetMinionName(action.Attacker)} 攻击 {GetHeroName(action.TargetHero)}",
+            GameActionType.EndTurn => "结束回合",
+            _ => $"未知动作：{action.ActionType}",
         };
+    }
+
+    /// <summary>
+    /// 把 Core 返回的操作结果转换成稳定的日志文本。
+    /// Core 仍然负责真正的结算消息，这里只处理空消息和空结果的兜底显示。
+    /// </summary>
+    private string GetActionResultText(GameActionResult result)
+    {
+        if (result == null) return "没有返回操作结果。";
+        if (!string.IsNullOrEmpty(result.Message)) return result.Message;
+
+        return result.Success ? "行动执行成功。" : "行动执行失败。";
     }
 
     private string GetCardName(Card card)
     {
-        if (card == null || card.CardData == null) return "Unknown Card";
+        if (card == null || card.CardData == null) return "未知卡牌";
         return card.CardData.CardName;
+    }
+
+    private string GetHeroName(Hero hero)
+    {
+        if (hero == null) return "未知英雄";
+        return hero.Name;
     }
 
     private string GetMinionName(Minion minion)
     {
-        if (minion == null || minion.CardData == null) return "Unknown Minion";
+        if (minion == null || minion.CardData == null) return "未知随从";
         return minion.CardData.CardName;
     }
 }
