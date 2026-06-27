@@ -247,7 +247,7 @@ public partial class GameManager : MonoBehaviour
 
     /// <summary>
     /// 尝试把当前玩家手牌中的一张随从牌召唤到战场。
-    /// 目前阶段所有 CardData 都先当作随从牌处理，法术和武器之后再扩展。
+    /// 这是兼容旧调用方的 bool 入口；新流程优先使用 TryPlayMinionCardDetailed 或 ExecuteAction。
     /// </summary>
     public bool TryPlayMinionCard(Card card)
     {
@@ -256,7 +256,7 @@ public partial class GameManager : MonoBehaviour
 
     /// <summary>
     /// 尝试打出随从牌，并返回更详细的操作结果。
-    /// 旧的 TryPlayMinionCard 仍然保留，方便现有 UI 继续只读取 bool。
+    /// UI 和 AI 应优先使用这个入口或 ExecuteAction，以便读取失败原因和反馈文本。
     /// </summary>
     public GameActionResult TryPlayMinionCardDetailed(Card card)
     {
@@ -355,7 +355,7 @@ public partial class GameManager : MonoBehaviour
 
     /// <summary>
     /// 尝试把当前玩家手牌中的单目标伤害法术打到一个随从身上。
-    /// 阶段 2.1 先只支持 SpellDamage，不处理治疗、Buff 和事件系统。
+    /// 这是兼容旧调用方的 bool 入口；新流程优先使用 TryPlaySpellCardOnMinionDetailed 或 ExecuteAction。
     /// </summary>
     public bool TryPlaySpellCardOnMinion(Card card, Minion target)
     {
@@ -392,7 +392,7 @@ public partial class GameManager : MonoBehaviour
 
     /// <summary>
     /// 尝试把当前玩家手牌中的单目标伤害法术打到一个英雄身上。
-    /// 阶段 2.1 先只支持 SpellDamage，不处理治疗、Buff 和事件系统。
+    /// 这是兼容旧调用方的 bool 入口；新流程优先使用 TryPlaySpellCardOnHeroDetailed 或 ExecuteAction。
     /// </summary>
     public bool TryPlaySpellCardOnHero(Card card, Hero targetHero)
     {
@@ -643,7 +643,7 @@ public partial class GameManager : MonoBehaviour
 
     /// <summary>
     /// 尝试让一个随从攻击另一个随从。
-    /// 双方会互相造成等于自身攻击力的伤害，然后清理死亡随从。
+    /// 这是兼容旧调用方的 bool 入口；新流程优先使用 TryAttackMinionDetailed 或 ExecuteAction。
     /// </summary>
     public bool TryAttackMinion(Minion attacker, Minion target)
     {
@@ -670,7 +670,7 @@ public partial class GameManager : MonoBehaviour
 
     /// <summary>
     /// 尝试让一个随从攻击对方英雄。
-    /// 不能攻击自己的英雄，也不能攻击不属于本局对手的英雄。
+    /// 这是兼容旧调用方的 bool 入口；新流程优先使用 TryAttackHeroDetailed 或 ExecuteAction。
     /// </summary>
     public bool TryAttackHero(Minion attacker, Hero targetHero)
     {

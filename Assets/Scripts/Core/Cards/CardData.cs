@@ -80,7 +80,8 @@ public class CardData : ScriptableObject
 
     /// <summary>
     /// 清理 Inspector 中的关键词配置，避免重复保存有效关键词。
-    /// None 需要保留为编辑期占位，否则 Unity Inspector 点 + 后会立刻被清掉。
+    /// None 需要保留为编辑期占位。
+    /// Unity Inspector 给 List 点 + 时会复制最后一项，所以重复项也改成 None，而不是直接删除。
     /// </summary>
     private void CleanKeywords()
     {
@@ -103,7 +104,11 @@ public class CardData : ScriptableObject
             }
 
             bool isNewKeyword = seenKeywords.Add(keyword);
-            if (!isNewKeyword) continue;
+            if (!isNewKeyword)
+            {
+                cleanedKeywords.Add(KeywordType.None);
+                continue;
+            }
 
             cleanedKeywords.Add(keyword);
         }

@@ -4,11 +4,29 @@
 /// </summary>
 public class GameActionResult
 {
+    /// <summary>
+    /// 这次操作是否成功执行。
+    /// </summary>
     public bool Success { get; private set; }
+
+    /// <summary>
+    /// 操作失败时的原因；成功时固定为 None。
+    /// </summary>
     public GameActionFailureReason FailureReason { get; private set; }
+
+    /// <summary>
+    /// 可直接给 UI 或 Console 使用的反馈文本。
+    /// </summary>
     public string Message { get; private set; }
+
+    /// <summary>
+    /// 这次操作对应的核心结算日志；没有具体日志时为 null。
+    /// </summary>
     public BattleLogEntry LogEntry { get; private set; }
 
+    /// <summary>
+    /// Success 的反向便捷属性，便于调用方写提前返回。
+    /// </summary>
     public bool Failed => !Success;
 
     private GameActionResult(

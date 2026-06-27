@@ -24,17 +24,50 @@ public enum BattleLogEntryType
 /// </summary>
 public class BattleLogEntry
 {
+    /// <summary>
+    /// 这条日志对应的事件类别，例如攻击、法术、亡语或游戏结束。
+    /// </summary>
     public BattleLogEntryType EntryType { get; private set; }
-    public int TurnNumber { get; private set; }
-    public string SourcePlayerName { get; private set; }
-    public string TargetPlayerName { get; private set; }
-    public string SourceName { get; private set; }
-    public string TargetName { get; private set; }
-    public int AttemptedAmount { get; private set; }
-    public int ActualAmount { get; private set; }
-    public string Message { get; private set; }
 
-    public bool WasPrevented => AttemptedAmount > 0 && ActualAmount == 0;
+    /// <summary>
+    /// 日志发生时的回合数。
+    /// </summary>
+    public int TurnNumber { get; private set; }
+
+    /// <summary>
+    /// 行动来源玩家的显示名称；没有来源玩家时为空字符串。
+    /// </summary>
+    public string SourcePlayerName { get; private set; }
+
+    /// <summary>
+    /// 目标所属玩家的显示名称；没有目标玩家时为空字符串。
+    /// </summary>
+    public string TargetPlayerName { get; private set; }
+
+    /// <summary>
+    /// 行动来源的显示名称，例如卡牌名、随从名或英雄名。
+    /// </summary>
+    public string SourceName { get; private set; }
+
+    /// <summary>
+    /// 行动目标的显示名称，例如随从名或英雄名。
+    /// </summary>
+    public string TargetName { get; private set; }
+
+    /// <summary>
+    /// 规则尝试结算的数值，例如尝试造成的伤害。
+    /// </summary>
+    public int AttemptedAmount { get; private set; }
+
+    /// <summary>
+    /// 规则最终实际结算的数值，例如被圣盾抵消后可能为 0。
+    /// </summary>
+    public int ActualAmount { get; private set; }
+
+    /// <summary>
+    /// 面向玩家或调试输出的日志文本。
+    /// </summary>
+    public string Message { get; private set; }
 
     public BattleLogEntry(
         BattleLogEntryType entryType,
