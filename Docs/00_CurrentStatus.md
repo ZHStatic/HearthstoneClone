@@ -1,6 +1,6 @@
 # Current Status
 
-最后更新：2026-06-23
+最后更新：2026-06-27
 
 ## 当前阶段
 
@@ -39,6 +39,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 阶段 2.10 第二轮 Player 状态封装已经写入：`Player` 内部继续用 `List<Card>` 管理手牌和牌库，对外通过 `IReadOnlyList<Card>` 暴露 `Hand` / `Deck`；`GameManager` 和 `GameUIController` 已改为通过 `HasCardInHand(card)` 判断手牌归属。
 
 阶段 2.10 第三轮动作建模已经写入：新增 `GameActionType`、`GameAction` 和 `GameActionGenerator`。`GameActionGenerator` 只读取当前局面并枚举合法动作，不执行动作、不做 AI 决策。`GameManager` 新增 `logLegalActionsOnTurnStart` 调试开关，可在回合开始后打印当前玩家合法动作列表。
+
+阶段 2.10 第四轮动作执行闭环已经写入：`GameManager` 新增 `ExecuteAction(GameAction)`，可统一执行出牌、施法、攻击和结束回合；攻击入口新增 `TryAttackMinionDetailed()` / `TryAttackHeroDetailed()`；`GameActionGenerator` 已改为复用 `GameManager` 的出牌、施法目标、攻击和嘲讽验证，避免 AI 动作生成与 Core 执行规则重复。
 
 ## 当前可玩内容
 
@@ -171,6 +173,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - `Player.Hand` / `Player.Deck` 已改为只读列表，外部不能直接 `Add` / `Remove` 手牌或牌库。
 - `GameManager` 和 `GameUIController` 已通过 `Player.HasCardInHand(card)` 判断手牌归属。
 - `GameActionGenerator.GenerateLegalActions(gameManager)` 已能枚举当前玩家的出牌、施法、攻击和结束回合动作。
+- `GameActionGenerator` 已复用 `GameManager` 验证方法，不再重复维护出牌、法术目标、攻击和嘲讽规则。
+- `GameManager.ExecuteAction(GameAction)` 已能统一执行出牌、施法、攻击和结束回合动作。
 - `GameManager` 已新增 `Log Legal Actions On Turn Start` 调试开关，用于 Play Mode Console 验证动作生成结果。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
@@ -276,6 +280,7 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `GameActionFailureReason` / `GameActionResult` | 已接入：让 Core 返回明确失败原因和反馈文本，UI 不再只根据 `bool` 猜测 |
 | `Player` 状态封装 | 已接入：`Hand` / `Deck` 对外只读，外部不能直接修改手牌和牌库 |
 | `GameActionType` / `GameAction` / `GameActionGenerator` | 已接入：只描述和枚举合法动作，不写 AI 决策 |
+| `GameManager.ExecuteAction(GameAction)` | 已接入：统一执行动作，供玩家输入和 AI 复用 |
 | 动作生成验证 | 已接入：`GameManager` 可在回合开始打印合法动作列表，默认关闭 |
 | UI 拆分 | 暂缓：功能更完整后统一大改 |
 | UI 复用刷新 | 暂缓：功能更完整后统一大改 |

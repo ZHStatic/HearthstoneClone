@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# Unity / common binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.psd binary
+*.tga binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.fbx binary
+*.dll binary

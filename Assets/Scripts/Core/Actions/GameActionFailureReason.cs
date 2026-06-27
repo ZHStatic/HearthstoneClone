@@ -56,6 +56,11 @@ public enum GameActionFailureReason
     InvalidAttacker,
 
     /// <summary>
+    /// 动作发起者不是当前行动玩家。
+    /// </summary>
+    NotCurrentPlayer,
+
+    /// <summary>
     /// 攻击者不是当前玩家控制的随从。
     /// </summary>
     NotCurrentPlayerMinion,

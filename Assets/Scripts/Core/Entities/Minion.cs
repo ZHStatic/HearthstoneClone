@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -24,8 +25,8 @@ public class Minion
 
     public Minion(CardData cardData, Player owner)
     {
-        CardData = cardData;
-        Owner = owner;
+        CardData = cardData != null ? cardData : throw new ArgumentNullException(nameof(cardData));
+        Owner = owner ?? throw new ArgumentNullException(nameof(owner));
         Attack = cardData.Attack;
         MaxHealth = cardData.Health;
         CurrentHealth = MaxHealth;
@@ -70,10 +71,11 @@ public class Minion
     {
         if (amount <= 0) return 0;
 
-        int missingHealth = MaxHealth - CurrentHealth;
+        int effectiveCurrentHealth = CurrentHealth > 0 ? CurrentHealth : 0;
+        int missingHealth = MaxHealth - effectiveCurrentHealth;
         int actualHeal = amount < missingHealth ? amount : missingHealth;
 
-        CurrentHealth += actualHeal;
+        CurrentHealth = effectiveCurrentHealth + actualHeal;
         return actualHeal;
     }
 

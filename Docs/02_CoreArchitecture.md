@@ -65,7 +65,7 @@ Core 不依赖 UI
 | `Minion` | `Assets/Scripts/Core/Entities/Minion.cs` | 场上随从实例：攻击、生命、所属玩家、能否攻击、关键词 |
 | `Board` | `Assets/Scripts/Core/Entities/Board.cs` | 双方战场随从列表、召唤上限、移除随从 |
 | `GameManager` | `Assets/Scripts/Core/GameManager.cs` | 当前阶段的对局流程调度入口 |
-| `GameManager.BattleLog` | `Assets/Scripts/Core/Logging/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
+| `GameManager.BattleLog` | `Assets/Scripts/Core/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
 
 ## 依赖关系
 
@@ -156,8 +156,11 @@ Minion = 战场上的运行时随从
 | `TryPlaySpellCardOnMinionDetailed(Card card, Minion target)` | 尝试对随从释放伤害法术，并返回详细操作结果 |
 | `TryPlaySpellCardOnHero(Card card, Hero targetHero)` | 尝试对英雄释放伤害法术 |
 | `TryPlaySpellCardOnHeroDetailed(Card card, Hero targetHero)` | 尝试对英雄释放伤害法术，并返回详细操作结果 |
-| `TryAttackMinion(Minion attacker, Minion target)` | 尝试随从攻击随从 |
-| `TryAttackHero(Minion attacker, Hero targetHero)` | 尝试随从攻击英雄 |
+| `TryAttackMinion(Minion attacker, Minion target)` | 尝试随从攻击随从，兼容旧 bool 入口 |
+| `TryAttackMinionDetailed(Minion attacker, Minion target)` | 尝试随从攻击随从，并返回详细操作结果 |
+| `TryAttackHero(Minion attacker, Hero targetHero)` | 尝试随从攻击英雄，兼容旧 bool 入口 |
+| `TryAttackHeroDetailed(Minion attacker, Hero targetHero)` | 尝试随从攻击英雄，并返回详细操作结果 |
+| `ExecuteAction(GameAction action)` | 统一执行玩家或 AI 选择的动作 |
 | `CleanupDeadMinions()` | 清理死亡随从 |
 | `CheckGameOver()` | 检查胜负 |
 
@@ -292,12 +295,14 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 | `GameActionType` | enum | 已新增：描述动作类型，包含出牌、施法、攻击和结束回合 |
 | `GameAction` | class | 已新增：描述一个玩家或后续 AI 都能复用的动作 |
 | `GameActionGenerator` | class | 已新增：根据当前局面枚举合法动作，但不修改游戏状态，也不做 AI 决策 |
+| `GameManager.ExecuteAction(GameAction)` | method | 已新增：统一分发出牌、施法、攻击和结束回合，供玩家输入和 AI 复用 |
 
 这些整理的边界：
 
 - `GameActionGenerator` 只负责“能做什么”，不负责“怎么结算”。
-- 真正执行动作仍然调用 `GameManager.Try...`。
-- 阶段 2.10 已完成动作建模；阶段 3 再让 AI 从合法动作里选择并执行。
+- 出牌、法术目标、攻击和嘲讽规则验证复用 `GameManager`，避免生成器和执行器各写一套规则。
+- 真正执行动作统一调用 `GameManager.ExecuteAction(GameAction)`，它再分发到详细 `Try...Detailed` 入口。
+- 阶段 2.10 已完成动作建模、动作生成和动作执行闭环；阶段 3 再让 AI 从合法动作里选择并执行。
 - 如果需要新增 C# 类，仍然先写属性清单，再动代码。
 
 ## 当前阶段性简化

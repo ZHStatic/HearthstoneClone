@@ -55,10 +55,11 @@ public class Hero
     {
         if (amount <= 0) return 0;
 
-        int maxHeal = MaxHealth - CurrentHealth;
+        int effectiveCurrentHealth = CurrentHealth > 0 ? CurrentHealth : 0;
+        int maxHeal = MaxHealth - effectiveCurrentHealth;
         int actualHeal = amount < maxHeal ? amount : maxHeal;
 
-        CurrentHealth += actualHeal;
+        CurrentHealth = effectiveCurrentHealth + actualHeal;
         return actualHeal;
     }
 }

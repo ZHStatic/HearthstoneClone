@@ -142,6 +142,73 @@ public partial class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 执行一条动作。
+    /// 玩家输入和阶段 3 AI 都可以走这个入口，避免各自调用不同规则方法。
+    /// </summary>
+    public GameActionResult ExecuteAction(GameAction action)
+    {
+        if (action == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.Unknown,
+                "动作无效。");
+        }
+
+        GameActionResult actorValidationResult = ValidateActionActor(action.Actor);
+        if (actorValidationResult.Failed) return actorValidationResult;
+
+        switch (action.ActionType)
+        {
+            case GameActionType.PlayMinionCard:
+                return TryPlayMinionCardDetailed(action.Card);
+            case GameActionType.PlaySpellOnMinion:
+                return TryPlaySpellCardOnMinionDetailed(action.Card, action.TargetMinion);
+            case GameActionType.PlaySpellOnHero:
+                return TryPlaySpellCardOnHeroDetailed(action.Card, action.TargetHero);
+            case GameActionType.AttackMinion:
+                return TryAttackMinionDetailed(action.Attacker, action.TargetMinion);
+            case GameActionType.AttackHero:
+                return TryAttackHeroDetailed(action.Attacker, action.TargetHero);
+            case GameActionType.EndTurn:
+                EndTurn();
+                return GameActionResult.Succeeded($"{GetPlayerLogName(CurrentPlayer)} 回合开始。");
+            default:
+                return GameActionResult.FailedWith(
+                    GameActionFailureReason.Unknown,
+                    "暂不支持这个动作。");
+        }
+    }
+
+    /// <summary>
+    /// 检查动作发起者是否是当前行动玩家。
+    /// </summary>
+    private GameActionResult ValidateActionActor(Player actor)
+    {
+        if (IsGameOver)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.GameOver,
+                "游戏已经结束，不能继续执行动作。");
+        }
+
+        if (CurrentPlayer == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NoCurrentPlayer,
+                "当前没有行动玩家。");
+        }
+
+        if (actor != CurrentPlayer)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotCurrentPlayer,
+                "只能执行当前玩家的动作。");
+        }
+
+        return GameActionResult.Succeeded();
+    }
+
+    /// <summary>
     /// 调试用：打印当前玩家在这个局面下可以执行的合法动作。
     /// 这个方法只读取 GameActionGenerator 的结果，不执行任何动作。
     /// </summary>
@@ -225,7 +292,7 @@ public partial class GameManager : MonoBehaviour
     /// 检查当前玩家能否打出这张随从牌。
     /// 这里只做条件判断，不扣法力、不移除手牌、不创建随从。
     /// </summary>
-    private GameActionResult ValidatePlayMinionCard(Card card)
+    internal GameActionResult ValidatePlayMinionCard(Card card)
     {
         if (card == null || card.CardData == null)
         {
@@ -364,7 +431,7 @@ public partial class GameManager : MonoBehaviour
     /// 检查当前玩家能否打出这张法术牌。
     /// 这里只检查卡牌本身，不检查具体目标。
     /// </summary>
-    private GameActionResult ValidatePlaySpellCard(Card card)
+    internal GameActionResult ValidatePlaySpellCard(Card card)
     {
         if (card == null || card.CardData == null)
         {
@@ -414,7 +481,7 @@ public partial class GameManager : MonoBehaviour
     /// <summary>
     /// 检查一个随从是否能成为当前法术的目标。
     /// </summary>
-    private GameActionResult ValidateSpellTargetMinion(CardData spellData, Minion target)
+    internal GameActionResult ValidateSpellTargetMinion(CardData spellData, Minion target)
     {
         if (spellData == null || spellData.CardType != CardType.Spell)
         {
@@ -475,7 +542,7 @@ public partial class GameManager : MonoBehaviour
     /// <summary>
     /// 检查一个英雄是否能成为当前法术的目标。
     /// </summary>
-    private GameActionResult ValidateSpellTargetHero(CardData spellData, Hero targetHero)
+    internal GameActionResult ValidateSpellTargetHero(CardData spellData, Hero targetHero)
     {
         if (spellData == null || spellData.CardType != CardType.Spell)
         {
@@ -558,22 +625,47 @@ public partial class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 使用攻击结算日志创建成功结果。
+    /// 如果攻击导致游戏结束，优先返回游戏结束日志。
+    /// </summary>
+    private GameActionResult BuildAttackSuccessResult(BattleLogEntry attackLogEntry, string fallbackMessage)
+    {
+        BattleLogEntry resultLogEntry = IsGameOver && LastActionLogEntry != null
+            ? LastActionLogEntry
+            : attackLogEntry;
+
+        string message = resultLogEntry != null && !string.IsNullOrWhiteSpace(resultLogEntry.Message)
+            ? resultLogEntry.Message
+            : fallbackMessage ?? "";
+
+        return GameActionResult.Succeeded(message, resultLogEntry);
+    }
+
+    /// <summary>
     /// 尝试让一个随从攻击另一个随从。
     /// 双方会互相造成等于自身攻击力的伤害，然后清理死亡随从。
     /// </summary>
     public bool TryAttackMinion(Minion attacker, Minion target)
     {
-        if (!CanAttack(attacker)) return false;
-        if (!IsValidAttackTarget(attacker, target)) return false;
+        return TryAttackMinionDetailed(attacker, target).Success;
+    }
+
+    /// <summary>
+    /// 尝试让一个随从攻击另一个随从，并返回详细操作结果。
+    /// </summary>
+    public GameActionResult TryAttackMinionDetailed(Minion attacker, Minion target)
+    {
+        GameActionResult validationResult = ValidateAttackTarget(attacker, target);
+        if (validationResult.Failed) return validationResult;
 
         RecordAttack(attacker, GetMinionLogName(target));
         DamageMinion(attacker, target.Attack, GetMinionLogName(target), target.Owner, BattleLogEntryType.Damage);
-        DamageMinion(target, attacker.Attack, GetMinionLogName(attacker), attacker.Owner, BattleLogEntryType.Damage);
+        BattleLogEntry targetDamageLogEntry = DamageMinion(target, attacker.Attack, GetMinionLogName(attacker), attacker.Owner, BattleLogEntryType.Damage);
         attacker.SetCanAttack(false);
 
         CleanupDeadMinions();
         CheckGameOver();
-        return true;
+        return BuildAttackSuccessResult(targetDamageLogEntry, $"{GetMinionLogName(attacker)} 攻击 {GetMinionLogName(target)}。");
     }
 
     /// <summary>
@@ -582,20 +674,23 @@ public partial class GameManager : MonoBehaviour
     /// </summary>
     public bool TryAttackHero(Minion attacker, Hero targetHero)
     {
-        if (!CanAttack(attacker)) return false;
-        if (targetHero == null) return false;
+        return TryAttackHeroDetailed(attacker, targetHero).Success;
+    }
 
-        Player opponent = GetOpponent(attacker.Owner);
-        if (opponent == null) return false;
-        if (targetHero != opponent.Hero) return false;
-        if (HasAliveTauntMinion(opponent)) return false;
+    /// <summary>
+    /// 尝试让一个随从攻击对方英雄，并返回详细操作结果。
+    /// </summary>
+    public GameActionResult TryAttackHeroDetailed(Minion attacker, Hero targetHero)
+    {
+        GameActionResult validationResult = ValidateAttackHeroTarget(attacker, targetHero);
+        if (validationResult.Failed) return validationResult;
 
         RecordAttack(attacker, GetHeroLogName(targetHero));
-        DamageHero(targetHero, attacker.Attack, GetMinionLogName(attacker), attacker.Owner, BattleLogEntryType.Damage);
+        BattleLogEntry damageLogEntry = DamageHero(targetHero, attacker.Attack, GetMinionLogName(attacker), attacker.Owner, BattleLogEntryType.Damage);
         attacker.SetCanAttack(false);
 
         CheckGameOver();
-        return true;
+        return BuildAttackSuccessResult(damageLogEntry, $"{GetMinionLogName(attacker)} 攻击 {GetHeroLogName(targetHero)}。");
     }
 
     /// <summary>
@@ -645,15 +740,51 @@ public partial class GameManager : MonoBehaviour
     /// <summary>
     /// 统一检查随从是否满足攻击条件。
     /// </summary>
-    private bool CanAttack(Minion attacker)
+    internal GameActionResult ValidateAttack(Minion attacker)
     {
-        if (attacker == null) return false;
-        if (IsGameOver) return false;
-        if (attacker.Owner != CurrentPlayer) return false;
-        if (!attacker.CanAttack) return false;
-        if (attacker.IsDead) return false;
+        if (attacker == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidAttacker,
+                "攻击者无效。");
+        }
 
-        return true;
+        if (IsGameOver)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.GameOver,
+                "游戏已经结束，不能继续攻击。");
+        }
+
+        if (CurrentPlayer == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NoCurrentPlayer,
+                "当前没有行动玩家。");
+        }
+
+        if (attacker.Owner != CurrentPlayer)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotCurrentPlayerMinion,
+                "只能使用当前玩家自己的随从攻击。");
+        }
+
+        if (attacker.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.MinionDead,
+                $"{GetMinionLogName(attacker)} 已经死亡，不能攻击。");
+        }
+
+        if (!attacker.CanAttack)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.MinionCannotAttack,
+                $"{GetMinionLogName(attacker)} 现在不能攻击。");
+        }
+
+        return GameActionResult.Succeeded();
     }
 
     /// <summary>
@@ -672,28 +803,104 @@ public partial class GameManager : MonoBehaviour
     /// 判断一个随从是否能成为当前攻击者的攻击目标。
     /// 如果防守方有活着的嘲讽随从，就只能攻击嘲讽随从。
     /// </summary>
-    private bool IsValidAttackTarget(Minion attacker, Minion target)
+    internal GameActionResult ValidateAttackTarget(Minion attacker, Minion target)
     {
-        if (attacker == null) return false;
-        if (target == null) return false;
-        if (target.IsDead) return false;
+        GameActionResult attackerValidationResult = ValidateAttack(attacker);
+        if (attackerValidationResult.Failed) return attackerValidationResult;
+
+        if (target == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "攻击目标无效。");
+        }
+
+        if (target.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.MinionDead,
+                $"{GetMinionLogName(target)} 已经死亡，不能成为攻击目标。");
+        }
 
         Player opponent = GetOpponent(attacker.Owner);
-        if (opponent == null) return false;
-        if (target.Owner != opponent) return false;
+        if (opponent == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "找不到攻击者的对手。");
+        }
+
+        if (target.Owner != opponent)
+        {
+            return GameActionResult.FailedWith(
+                target.Owner == attacker.Owner ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                "不能攻击友方随从。");
+        }
 
         if (HasAliveTauntMinion(opponent))
         {
-            return target.HasKeyword(KeywordType.Taunt);
+            if (!target.HasKeyword(KeywordType.Taunt))
+            {
+                return GameActionResult.FailedWith(
+                    GameActionFailureReason.TauntBlocksTarget,
+                    "敌方有嘲讽随从，必须优先攻击嘲讽随从。");
+            }
         }
 
-        return true;
+        return GameActionResult.Succeeded();
+    }
+
+    /// <summary>
+    /// 判断一个英雄是否能成为当前攻击者的攻击目标。
+    /// </summary>
+    internal GameActionResult ValidateAttackHeroTarget(Minion attacker, Hero targetHero)
+    {
+        GameActionResult attackerValidationResult = ValidateAttack(attacker);
+        if (attackerValidationResult.Failed) return attackerValidationResult;
+
+        if (targetHero == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "攻击目标英雄无效。");
+        }
+
+        if (targetHero.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                $"{GetHeroLogName(targetHero)} 已经死亡，不能成为攻击目标。");
+        }
+
+        Player opponent = GetOpponent(attacker.Owner);
+        if (opponent == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "找不到攻击者的对手。");
+        }
+
+        if (targetHero != opponent.Hero)
+        {
+            return GameActionResult.FailedWith(
+                attacker.Owner != null && targetHero == attacker.Owner.Hero ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                "不能攻击友方英雄。");
+        }
+
+        if (HasAliveTauntMinion(opponent))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.TauntBlocksTarget,
+                "敌方有嘲讽随从，不能直接攻击英雄。");
+        }
+
+        return GameActionResult.Succeeded();
     }
 
     /// <summary>
     /// 判断指定玩家场上是否有仍然存活的嘲讽随从。
     /// </summary>
-    private bool HasAliveTauntMinion(Player owner)
+    internal bool HasAliveTauntMinion(Player owner)
     {
         if (owner == null) return false;
         if (Board == null) return false;

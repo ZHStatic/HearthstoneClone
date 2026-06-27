@@ -51,10 +51,10 @@ public class GameEventBus
         if (gameEvent == null) return;
         if (!listeners.ContainsKey(gameEvent.Type)) return;
 
-        List<Action<GameEvent>> eventListeners = listeners[gameEvent.Type];
-        for (int i = 0; i < eventListeners.Count; i++)
+        List<Action<GameEvent>> eventListenersSnapshot = new List<Action<GameEvent>>(listeners[gameEvent.Type]);
+        for (int i = 0; i < eventListenersSnapshot.Count; i++)
         {
-            eventListeners[i]?.Invoke(gameEvent);
+            eventListenersSnapshot[i]?.Invoke(gameEvent);
         }
     }
 }

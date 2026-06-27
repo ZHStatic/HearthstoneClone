@@ -1,4 +1,4 @@
-using UnityEngine;
+using System;
 
 /// <summary>
 /// 卡牌运行时实例 — 存于手牌或牌库中
@@ -10,7 +10,7 @@ public class Card
     public CardData CardData { get; private set; }
 
     // 当前法力消耗（可能被效果临时修改，初始 = 模板消耗）
-    public int CurrentCost { get; set; }
+    public int CurrentCost { get; private set; }
 
     /// <summary>
     /// 构造函数 — 从模板创建一张卡牌实例
@@ -18,8 +18,21 @@ public class Card
     /// <param name="data">ScriptableObject 模板</param>
     public Card(CardData data)
     {
+        if (data == null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
         CardData = data;
-        CurrentCost = data.Cost;
+        SetCurrentCost(data.Cost);
+    }
+
+    /// <summary>
+    /// 设置当前费用，并保证不会低于 0。
+    /// </summary>
+    public void SetCurrentCost(int cost)
+    {
+        CurrentCost = cost < 0 ? 0 : cost;
     }
 
     /// <summary>
@@ -27,7 +40,7 @@ public class Card
     /// </summary>
     public void ResetCost()
     {
-        CurrentCost = CardData.Cost;
+        SetCurrentCost(CardData.Cost);
     }
 
     /// <summary>

@@ -369,8 +369,11 @@ public class GameUIController : MonoBehaviour
 
         string attackerName = GetMinionName(selectedAttacker);
         string targetName = GetMinionName(target);
-        bool attacked = gameManager.TryAttackMinion(selectedAttacker, target);
-        SetFeedback(attacked ? $"{attackerName} 攻击 {targetName}。" : "目标非法，攻击失败。");
+        GameActionResult result = gameManager.TryAttackMinionDetailed(selectedAttacker, target);
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            $"{attackerName} 攻击 {targetName}。",
+            "目标非法，攻击失败。"));
         ClearSelectedAttacker();
     }
 
@@ -401,8 +404,11 @@ public class GameUIController : MonoBehaviour
         }
 
         string attackerName = GetMinionName(selectedAttacker);
-        bool attacked = gameManager.TryAttackHero(selectedAttacker, targetHero);
-        SetFeedback(attacked ? $"{attackerName} 攻击 {targetHero.Name}。" : "目标英雄非法，攻击失败。");
+        GameActionResult result = gameManager.TryAttackHeroDetailed(selectedAttacker, targetHero);
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            $"{attackerName} 攻击 {targetHero.Name}。",
+            "目标英雄非法，攻击失败。"));
         ClearSelectedAttacker();
     }
 
