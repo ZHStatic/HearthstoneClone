@@ -21,6 +21,10 @@ public partial class GameManager : MonoBehaviour
     // 只用于验证 GameActionGenerator，不会执行任何动作。
     [SerializeField] private bool logLegalActionsOnTurnStart = false;
 
+    // 阶段 3 第一版 AI：只控制 Enemy，复用 GameActionGenerator 和 ExecuteAction。
+    [SerializeField] private bool enableEnemyAI = true;
+    [SerializeField] private int maxAIActionsPerTurn = 20;
+
     // 运行时对象：进入 Play 模式后由 StartNewGame 创建。
     public Player Player { get; private set; }
     public Player Enemy { get; private set; }
@@ -34,6 +38,8 @@ public partial class GameManager : MonoBehaviour
     public Player Winner { get; private set; }
     public int TurnNumber { get; private set; }
     public bool IsGameOver { get; private set; }
+
+    private AIController enemyAIController;
 
     // Unity 生命周期方法：Awake 会早于其他脚本的 Start 执行。
     // 这样 UI 脚本在 Start 里刷新时，Player / Enemy / Board 已经创建好了。
@@ -54,6 +60,7 @@ public partial class GameManager : MonoBehaviour
         Player = new Player(playerDeckData, "Player");
         Enemy = new Player(enemyDeckData, "Enemy");
         Board = new Board(Player, Enemy);
+        InitializeEnemyAI();
 
         CurrentPlayer = Player;
         Winner = null;
@@ -111,6 +118,22 @@ public partial class GameManager : MonoBehaviour
         }
 
         LogLegalActionsForCurrentPlayer();
+        TryRunEnemyAI();
+    }
+
+    private void InitializeEnemyAI()
+    {
+        enemyAIController = new AIController(this, Enemy, maxAIActionsPerTurn);
+    }
+
+    private void TryRunEnemyAI()
+    {
+        if (!enableEnemyAI) return;
+        if (enemyAIController == null) return;
+        if (IsGameOver) return;
+        if (CurrentPlayer != Enemy) return;
+
+        enemyAIController.TakeTurn();
     }
 
     /// <summary>
