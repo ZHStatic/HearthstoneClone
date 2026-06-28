@@ -18,6 +18,10 @@ public partial class GameManager : MonoBehaviour
     // 调试开关：回合开始后打印当前玩家的合法动作列表。
     // 只用于验证 GameActionGenerator，不会执行任何动作。
     [SerializeField] private bool logLegalActionsOnTurnStart = false;
+    // 调试开关：关闭洗牌后，Inspector 中的牌库顺序会更稳定，方便验证 AI 起手和出牌选择。
+    [SerializeField] private bool disableDeckShuffleForDebug = false;
+    // 调试开关：Enemy 回合开始时打印 AI 手牌和当前法力，方便验证 ActionSelector 的选择。
+    [SerializeField] private bool logAIHandOnTurnStart = false;
 
     // 阶段 3 第一版 AI：只控制 Enemy，复用 GameActionGenerator 和 ExecuteAction。
     [SerializeField] private bool enableEnemyAI = true;
@@ -55,8 +59,9 @@ public partial class GameManager : MonoBehaviour
         BattleLogger = new BattleLogger();
         LastActionLogEntry = null;
 
-        Player = new Player(playerDeckData, "Player");
-        Enemy = new Player(enemyDeckData, "Enemy");
+        bool shuffleDeck = !disableDeckShuffleForDebug;
+        Player = new Player(playerDeckData, "Player", shuffleDeck: shuffleDeck);
+        Enemy = new Player(enemyDeckData, "Enemy", shuffleDeck: shuffleDeck);
         Board = new Board(Player, Enemy);
         InitializeEnemyAI();
 
@@ -115,6 +120,7 @@ public partial class GameManager : MonoBehaviour
         }
 
         LogLegalActionsForCurrentPlayer();
+        LogAIHandForCurrentPlayer();
         TryRunEnemyAI();
     }
 
@@ -243,6 +249,42 @@ public partial class GameManager : MonoBehaviour
         {
             Debug.Log($"{i + 1}. {GetActionDebugText(legalActions[i])}");
         }
+    }
+
+    /// <summary>
+    /// 调试用：Enemy 回合开始时打印 AI 手牌。
+    /// 这不是正式 UI，只用于阶段 3.3 验证 AI 是否按预期选择出牌。
+    /// </summary>
+    private void LogAIHandForCurrentPlayer()
+    {
+        if (!logAIHandOnTurnStart) return;
+        if (CurrentPlayer != Enemy) return;
+        if (Enemy == null) return;
+
+        string handText = BuildHandDebugText(Enemy);
+        Debug.Log($"AI 手牌：{handText}，当前法力：{Enemy.CurrentMana}/{Enemy.MaxMana}");
+    }
+
+    private string BuildHandDebugText(Player player)
+    {
+        if (player == null || player.Hand == null || player.Hand.Count == 0)
+        {
+            return "无";
+        }
+
+        List<string> cardTexts = new List<string>();
+        foreach (Card card in player.Hand)
+        {
+            if (card == null)
+            {
+                cardTexts.Add("未知卡牌");
+                continue;
+            }
+
+            cardTexts.Add($"{card.CurrentCost}费 {GetCardLogName(card)}");
+        }
+
+        return string.Join(" | ", cardTexts);
     }
 
     /// <summary>

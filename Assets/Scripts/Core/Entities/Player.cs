@@ -34,7 +34,8 @@ public class Player
     /// <param name="deckCards">初始牌库的卡牌模板列表</param>
     /// <param name="heroName">英雄名称（如"吉安娜"）</param>
     /// <param name="heroHealth">英雄血量，默认 30</param>
-    public Player(List<CardData> deckCards, string heroName = "未命名英雄", int heroHealth = 30)
+    /// <param name="shuffleDeck">是否在创建玩家时洗牌；调试 AI 时可以关闭，让牌库顺序稳定。</param>
+    public Player(List<CardData> deckCards, string heroName = "未命名英雄", int heroHealth = 30, bool shuffleDeck = true)
     {
         Hero = new Hero(heroName, heroHealth);
         hand = new List<Card>();
@@ -52,8 +53,11 @@ public class Player
             }
         }
 
-        // 牌库洗牌
-        ShuffleDeck();
+        // 牌库洗牌。AI 调试时可以关闭，让 Inspector 中的牌库顺序更容易验证。
+        if (shuffleDeck)
+        {
+            ShuffleDeck();
+        }
 
         MaxMana = 0;
         CurrentMana = 0;
