@@ -75,6 +75,11 @@ Core 不依赖 UI
 | `ActionSelector` | `Assets/Scripts/AI/ActionSelector.cs` | 基础动作选择器，按斩杀、解场、出牌、兜底优先级选择动作 |
 | `AIActionSelection` | `Assets/Scripts/AI/AIActionSelection.cs` | AI 选择结果，包含最终动作和选择原因 |
 | `AIActionSelectionReason` | `Assets/Scripts/AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于解释当前动作来源 |
+| `Evaluator` | `Assets/Scripts/AI/Evaluator.cs` | 局面评估函数，支持真实局面和快照局面的评分 |
+| `EvaluationResult` | `Assets/Scripts/AI/EvaluationResult.cs` | 评分明细结果，保存英雄血量、手牌、场面和总分 |
+| `GameStateSnapshot` | `Assets/Scripts/AI/Simulation/GameStateSnapshot.cs` | 对局快照根对象，用于脱离真实局面做模拟 |
+| `SnapshotActionMapper` | `Assets/Scripts/AI/Simulation/SnapshotActionMapper.cs` | 把真实 `GameAction` 映射成快照动作 |
+| `SnapshotSimulator` | `Assets/Scripts/AI/Simulation/SnapshotSimulator.cs` | 在快照上执行单步动作并返回新快照 |
 
 ## 依赖关系
 
@@ -310,7 +315,7 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 
 ## 阶段 3 AI 基础链路
 
-当前 AI 第一版先追求可观察、可调试，不做局面复制和搜索。
+当前 AI 第一版先追求可观察、可调试。阶段 3.4/3.5 已补上评估函数和快照模拟基础链路，但正式选择动作时仍主要依赖规则优先级，搜索暂未开始。
 
 ```text
 Enemy 回合开始
@@ -319,7 +324,7 @@ Enemy 回合开始
 -> ActionSelector.SelectAction(legalActions)
 -> AIActionSelection(Action + Reason)
 -> GameManager.ExecuteAction(action)
--> Console 输出 AI 行动、理由和结果
+-> Console 输出 AI 行动、理由、结果和评分变化
 ```
 
 当前动作选择顺序：
@@ -331,7 +336,27 @@ Enemy 回合开始
 4. 没命中特殊策略时，按固定动作优先级兜底
 ```
 
-这是阶段性简化，不是成熟项目最终 AI。后续做评估函数时，再把“选择原因”扩展成分数、权重和候选动作比较。
+这是阶段性简化，不是成熟项目最终 AI。评估函数和快照模拟基础链路已经写入；下一步再把“选择原因”扩展成分数、权重和候选动作比较。
+
+## 阶段 3.4/3.5 评估与快照模拟链路
+
+阶段 3.4/3.5 的目标不是立刻做搜索，而是先证明“同一个局面可以被复制、评分和单步模拟”：
+
+```text
+真实 GameManager 局面
+-> GameStateSnapshot.FromGameManager(gameManager)
+-> Evaluator.EvaluateDetailed(snapshot, perspectivePlayerId)
+-> SnapshotActionMapper.TryMap(action, snapshot)
+-> SnapshotSimulator.Simulate(snapshot, snapshotAction)
+-> Evaluator.EvaluateDetailed(simulatedSnapshot, perspectivePlayerId)
+```
+
+这条链路的意义：
+
+- `Evaluator` 只负责“这个局面对某个玩家好不好”，不负责选择动作。
+- `SnapshotSimulator` 只负责“假设执行这个动作后会变成什么局面”，不修改真实游戏。
+- `GameManager` 当前只提供调试开关，用于对比真实评分和快照评分，以及打印每个合法动作模拟后的评分。
+- 下一步再让 `ActionSelector` 使用这些评分结果，而不是直接把搜索逻辑塞进 `GameManager`。
 
 ## 当前阶段性简化
 
@@ -347,7 +372,7 @@ Enemy 回合开始
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
 | 旧版 `bool Try...` 方法仍保留 | 降低 UI 和后续 AI 迁移风险 | 全部调用方迁移到详细结果后再考虑删除或降级为兼容 API |
 | `BattleLogger` 只做内存日志 | 当前只服务调试、演示和 AI 前可观测性 | 需要回放、导出或复杂统计时再做持久化/日志 UI |
-| AI 直接在真实局面上连续执行动作 | 先验证自动行动闭环和日志可观测性 | 做评估函数和搜索时再考虑局面快照或模拟器 |
+| AI 最终动作仍在真实局面上连续执行 | 真实结算仍应复用 `GameManager.ExecuteAction()`，避免 AI 和玩家规则分叉 | 评估和搜索继续扩展快照模拟器，不直接复制 `GameManager` |
 
 面试时可以这样解释：
 
@@ -503,7 +528,7 @@ CheckGameOver()
 | 随从死亡会触发亡语、复生、召唤等效果 | `DeathProcessor` |
 | 战吼、亡语、回合开始、受伤等都要触发效果 | `GameEventBus` |
 | 法术效果包含伤害、治疗、Buff、抽牌、召唤 | `EffectSystem` |
-| AI 需要枚举合法操作并模拟结果 | `GameActionGenerator`、`AIController`、局面快照或模拟器 |
+| AI 需要枚举合法操作并模拟结果 | `GameActionGenerator`、`AIController`、`Evaluator`、局面快照和模拟器 |
 | UI 和 AI 都需要清楚知道失败原因 | `GameActionResult` |
 
 当前不急着拆这些系统，因为过早抽象会让学习成本变高。

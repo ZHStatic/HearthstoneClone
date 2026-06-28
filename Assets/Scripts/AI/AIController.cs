@@ -9,6 +9,7 @@ public class AIController
 {
     private readonly GameManager gameManager;
     private readonly ActionSelector actionSelector;
+    private readonly Evaluator evaluator;
     private readonly Player controlledPlayer;
     private readonly int maxActionsPerTurn;
 
@@ -18,6 +19,7 @@ public class AIController
         this.controlledPlayer = controlledPlayer;
         this.maxActionsPerTurn = maxActionsPerTurn;
         actionSelector = new ActionSelector();
+        evaluator = new Evaluator();
     }
 
     /// <summary>
@@ -58,9 +60,11 @@ public class AIController
 
         string actionText = GetActionDebugText(selectedAction);
         string reasonText = GetSelectionReasonText(selection.Reason);
+        EvaluationResult scoreBeforeAction = GetCurrentEvaluationResult();
 
         GameActionResult result = gameManager.ExecuteAction(selectedAction);
-        string logText = BuildActionLogText(actionText, reasonText, GetActionResultText(result));
+        EvaluationResult scoreAfterAction = GetCurrentEvaluationResult();
+        string logText = BuildActionLogText(actionText, reasonText, GetActionResultText(result), scoreBeforeAction, scoreAfterAction);
         if (result.Failed)
         {
             Debug.LogWarning(logText);
@@ -76,14 +80,31 @@ public class AIController
     /// 构建单条 AI 日志。
     /// Unity Console 列表对多行日志显示不稳定，所以这里保持一行展示。
     /// </summary>
-    private string BuildActionLogText(string actionText, string reasonText, string resultText)
+    private string BuildActionLogText(string actionText, string reasonText, string resultText, EvaluationResult scoreBeforeAction, EvaluationResult scoreAfterAction)
     {
-        return $"AI 行动：{actionText} | 理由：{reasonText} | 结果：{resultText}";
+        return $"AI 行动：{actionText} | 理由：{reasonText} | 评分：{GetEvaluationDebugText(scoreBeforeAction)} -> {GetEvaluationDebugText(scoreAfterAction)} | 结果：{resultText}";
+    }
+
+    /// <summary>
+    /// 从当前 AI 控制的玩家视角读取局面评分明细。
+    /// 当前评分只用于日志观察，不影响动作选择。
+    /// </summary>
+    private EvaluationResult GetCurrentEvaluationResult()
+    {
+        if (gameManager == null || controlledPlayer == null) return new EvaluationResult(0, 0, 0);
+
+        Player opponent = gameManager.GetOpponent(controlledPlayer);
+        return evaluator.EvaluateDetailed(controlledPlayer, opponent, gameManager.Board);
+    }
+
+    private string GetEvaluationDebugText(EvaluationResult result)
+    {
+        return result != null ? result.ToDebugText() : "无评分";
     }
 
     /// <summary>
     /// 把 AI 选择原因转换成适合 Console 阅读的中文文本。
-    /// 这里只解释当前规则型策略，不涉及阶段 3.3 之后的评分函数。
+    /// 这里只解释当前规则型策略；评分函数当前只用于日志观察。
     /// </summary>
     private string GetSelectionReasonText(AIActionSelectionReason reason)
     {

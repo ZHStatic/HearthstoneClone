@@ -237,6 +237,24 @@ docs: 文档更新     → docs: 补充架构说明
   - [x] `AIActionSelection.cs`
   - [x] `AIActionSelectionReason.cs`
   - [x] AI 行动日志输出行动、理由和结果
+- [x] 阶段 3.3：AI 策略验证入口和第一轮策略微调
+  - [x] 关闭洗牌调试开关
+  - [x] Enemy 回合开始打印 AI 手牌和法力
+  - [x] AI 避免主动自伤、优先高费出牌、普通伤害优先打英雄
+- [x] 阶段 3.4：第一版评估函数
+  - [x] `Evaluator.cs`
+  - [x] `EvaluationResult.cs`
+  - [x] AI 行动日志显示评分变化和评分明细
+- [x] 阶段 3.5：快照模拟基础链路
+  - [x] `GameStateSnapshot.cs`
+  - [x] `PlayerSnapshot.cs`
+  - [x] `MinionSnapshot.cs`
+  - [x] `BoardSnapshot.cs`
+  - [x] `SnapshotAction.cs`
+  - [x] `SnapshotActionMapper.cs`
+  - [x] `SnapshotSimulator.cs`
+  - [x] 真实评分 vs 快照评分验证入口
+  - [x] 合法动作快照模拟后评分日志入口
 
 ## 当前停靠点
 
@@ -257,8 +275,11 @@ docs: 文档更新     → docs: 补充架构说明
 - 阶段 2.10.3 已完成：动作类型、动作数据和合法动作生成器已写入，Console 验证入口已加入。
 - 阶段 3.0 / 3.1 已完成：Enemy AI 可以在自己的回合自动枚举并执行合法动作。
 - 阶段 3.2 已完成：AI 第一版动作选择策略和选择原因日志已写入。
+- 阶段 3.3 已完成：AI 调试验证入口和第一轮策略微调已写入。
+- 阶段 3.4 已完成：评估函数、评分明细和 AI 行动评分日志已写入。
+- 阶段 3.5 当前基础链路已完成：快照数据、真实动作到快照动作映射、单步快照模拟、真实/快照评分对比和模拟后评分日志均已写入并通过 Unity 编译检查。
 - UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
-- 下一步：继续打磨 AI 出牌和攻击顺序，再进入评估函数。
+- 下一步：观察快照模拟评分日志，把 `ActionSelector` 从规则优先级逐步过渡到评分优先级。
 
 ## 开发阶段速览
 
