@@ -56,22 +56,27 @@ public class ActionSelector
 
     /// <summary>
     /// 查找能直接击杀敌方随从的动作。
-    /// 这是阶段性简化：只判断本次动作能否造成足够伤害，不计算随从交换是否亏赚。
+    /// 这是阶段性简化：只在能击杀的动作里做简单排序，不计算随从交换是否亏赚。
     /// </summary>
     private bool TryFindKillMinionAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
     {
         selectedAction = null;
+        int selectedScore = int.MinValue;
 
         for (int i = 0; i < legalActions.Count; i++)
         {
             GameAction action = legalActions[i];
             if (!CanKillMinion(action)) continue;
 
-            selectedAction = action;
-            return true;
+            int actionScore = GetKillMinionScore(action);
+            if (selectedAction == null || actionScore > selectedScore)
+            {
+                selectedAction = action;
+                selectedScore = actionScore;
+            }
         }
 
-        return false;
+        return selectedAction != null;
     }
 
     /// <summary>
@@ -149,6 +154,22 @@ public class ActionSelector
             GameActionType.PlaySpellOnMinion => 1,
             _ => 0,
         };
+    }
+
+    /// <summary>
+    /// 给击杀敌方随从的动作一个简单分数。
+    /// 优先处理攻击力高的敌方随从；伤害溢出越少，分数越高。
+    /// </summary>
+    private int GetKillMinionScore(GameAction action)
+    {
+        if (action == null || action.TargetMinion == null) return int.MinValue;
+
+        int damage = GetMinionDamage(action);
+        int overkillDamage = damage - action.TargetMinion.CurrentHealth;
+        int threatScore = action.TargetMinion.Attack * 100;
+        int overkillPenalty = overkillDamage * 10;
+
+        return threatScore - overkillPenalty;
     }
 
     /// <summary>

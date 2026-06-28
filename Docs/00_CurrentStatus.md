@@ -10,11 +10,11 @@
 当前停靠点：
 
 ```text
-阶段 3.2 当前链路已写入：Enemy AI 自动行动、基础动作选择、选择原因日志
+阶段 3.3 当前链路已写入：Enemy AI 自动行动、基础动作选择、选择原因日志、AI 调试验证入口
 当前重点：阶段 3 AI 基础策略打磨
-已完成：动作建模 -> 合法动作生成 -> 统一执行入口 -> AI 自动回合 -> 选择原因日志
+已完成：动作建模 -> 合法动作生成 -> 统一执行入口 -> AI 自动回合 -> 选择原因日志 -> 调试验证入口
 暂缓：UI 拆分 -> UI 复用刷新
-下一步：根据 Play 模式验证结果，继续调整 AI 出牌和攻击顺序
+下一步：根据 Play 模式验证结果，继续调整 AI 解场和攻击顺序
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -45,6 +45,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 阶段 3.0 / 3.1 基础 AI 行动已经写入：新增 `AIController` 和 `ActionSelector`，Enemy 回合开始后会复用 `GameActionGenerator` 生成合法动作，再通过 `GameManager.ExecuteAction(GameAction)` 执行动作，直到结束回合、游戏结束或达到行动上限。
 
 阶段 3.2 第一版动作选择策略已经写入：`ActionSelector` 会优先选择可击杀敌方英雄的动作，其次选择可击杀敌方随从的动作，再选择可出牌动作，最后按固定优先级兜底。`AIActionSelection` 和 `AIActionSelectionReason` 会记录 AI 选择原因，`AIController` 在 Console 中输出单行 AI 行动日志，包含行动、理由和结果。
+
+阶段 3.3 AI 策略验证入口已经写入：`GameManager` 增加 `Disable Deck Shuffle For Debug` 和 `Log AI Hand On Turn Start` 调试开关；`Player` 支持关闭创建时洗牌，方便用 Inspector 中的 Enemy Deck Data 稳定复现 AI 起手。`ActionSelector` 已调整为避免主动伤害自己、优先打高费牌、非击杀法术优先打敌方英雄，并在多个可击杀随从中优先处理高攻击力、低伤害溢出的目标。
 
 ## 当前可玩内容
 
@@ -193,6 +195,8 @@ AI 行动原因日志
 - `GameManager` 已新增 `Log Legal Actions On Turn Start` 调试开关，用于 Play Mode Console 验证动作生成结果。
 - `AIController` 已能在 Enemy 回合自动连续执行动作，直到结束回合、游戏结束或达到行动上限。
 - `ActionSelector` 已能按基础策略选择动作，并通过 `AIActionSelectionReason` 输出选择原因。
+- `GameManager` 已提供 AI 调试开关，可以关闭洗牌并在 Enemy 回合开始打印 AI 手牌和当前法力。
+- `ActionSelector` 已完成阶段 3.3 第一轮策略微调：避免自伤、优先高费出牌、普通伤害优先打英雄、解场优先高攻击力目标。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -401,7 +405,8 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 ```text
 阶段 3.0 / 3.1：AI 基础行动和自动回合已写入
 阶段 3.2：基础动作选择和选择原因日志已写入
-下一步：继续根据 Play 模式表现调整 AI 策略顺序
+阶段 3.3：AI 调试验证入口和第一轮策略微调已写入
+下一步：继续根据 Play 模式表现调整 AI 解场和攻击顺序
 
 UI 拆分 / UI 复用刷新：
 暂缓到功能更完整后统一整理。
