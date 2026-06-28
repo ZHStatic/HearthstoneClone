@@ -76,27 +76,79 @@ public class ActionSelector
 
     /// <summary>
     /// 查找可以打出的手牌动作。
-    /// 费用、目标、战场格子等合法性已经由 GameActionGenerator 处理，这里只识别动作类型。
+    /// 费用、目标、战场格子等合法性已经由 GameActionGenerator 处理。
+    /// AI 选择时还要排除“合法但明显伤害自己”的目标，例如把伤害法术打到自己英雄或自己随从。
+    /// 如果有多张牌可以打，优先选择费用更高的牌，让 AI 更接近“尽量利用当前法力”的行为。
     /// </summary>
     private bool TryFindPlayableCardAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
     {
         selectedAction = null;
+        int selectedScore = int.MinValue;
 
         for (int i = 0; i < legalActions.Count; i++)
         {
             GameAction action = legalActions[i];
             if (action == null) continue;
+            if (!IsUsefulPlayableCardAction(action)) continue;
 
-            if (action.ActionType == GameActionType.PlayMinionCard ||
-                action.ActionType == GameActionType.PlaySpellOnHero ||
-                action.ActionType == GameActionType.PlaySpellOnMinion)
+            int actionScore = GetPlayableCardScore(action);
+            if (selectedAction == null || actionScore > selectedScore)
             {
                 selectedAction = action;
-                return true;
+                selectedScore = actionScore;
             }
         }
 
-        return false;
+        return selectedAction != null;
+    }
+
+    /// <summary>
+    /// 判断一条出牌动作是否值得 AI 主动选择。
+    /// 当前阶段只支持随从牌和伤害法术，所以伤害法术默认只打敌方目标。
+    /// </summary>
+    private bool IsUsefulPlayableCardAction(GameAction action)
+    {
+        if (action == null) return false;
+
+        return action.ActionType switch
+        {
+            GameActionType.PlayMinionCard => true,
+            GameActionType.PlaySpellOnHero => !IsTargetOwnedByActor(action),
+            GameActionType.PlaySpellOnMinion => !IsTargetOwnedByActor(action),
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// 给可出牌动作一个简单分数。
+    /// 当前不是完整评估函数，只用费用近似节奏价值；同费用时优先打随从。
+    /// 对非击杀伤害法术，优先打敌方英雄，避免因为动作生成顺序而随便打高血随从。
+    /// </summary>
+    private int GetPlayableCardScore(GameAction action)
+    {
+        if (action == null || action.Card == null) return int.MinValue;
+
+        int costScore = action.Card.CurrentCost * 10;
+        int typeScore = action.ActionType == GameActionType.PlayMinionCard ? 3 : 0;
+        int targetScore = GetPlayableTargetScore(action);
+
+        return costScore + typeScore + targetScore;
+    }
+
+    /// <summary>
+    /// 给出牌动作的目标一个简单分数。
+    /// 斩杀和击杀随从已经在更高优先级处理；这里主要处理“不能击杀时打谁更合理”。
+    /// </summary>
+    private int GetPlayableTargetScore(GameAction action)
+    {
+        if (action == null) return 0;
+
+        return action.ActionType switch
+        {
+            GameActionType.PlaySpellOnHero => 2,
+            GameActionType.PlaySpellOnMinion => 1,
+            _ => 0,
+        };
     }
 
     /// <summary>
@@ -130,7 +182,7 @@ public class ActionSelector
     private bool CanKillHero(GameAction action)
     {
         if (action == null || action.TargetHero == null) return false;
-        if (action.Actor != null && action.TargetHero == action.Actor.Hero) return false;
+        if (IsTargetOwnedByActor(action)) return false;
 
         int damage = GetHeroDamage(action);
         return damage > 0 && damage >= action.TargetHero.CurrentHealth;
@@ -143,10 +195,24 @@ public class ActionSelector
     private bool CanKillMinion(GameAction action)
     {
         if (action == null || action.TargetMinion == null) return false;
-        if (action.Actor != null && action.TargetMinion.Owner == action.Actor) return false;
+        if (IsTargetOwnedByActor(action)) return false;
 
         int damage = GetMinionDamage(action);
         return damage > 0 && damage >= action.TargetMinion.CurrentHealth;
+    }
+
+    /// <summary>
+    /// 判断动作目标是否属于动作发起者。
+    /// 用于避免 AI 把伤害打到自己英雄或自己随从身上。
+    /// </summary>
+    private bool IsTargetOwnedByActor(GameAction action)
+    {
+        if (action == null || action.Actor == null) return false;
+
+        if (action.TargetHero != null && action.TargetHero == action.Actor.Hero) return true;
+        if (action.TargetMinion != null && action.TargetMinion.Owner == action.Actor) return true;
+
+        return false;
     }
 
     /// <summary>
@@ -197,8 +263,8 @@ public class ActionSelector
         {
             GameActionType.AttackHero => 50,
             GameActionType.AttackMinion => 40,
-            GameActionType.PlaySpellOnHero => 30,
-            GameActionType.PlaySpellOnMinion => 25,
+            GameActionType.PlaySpellOnHero => IsTargetOwnedByActor(action) ? -10 : 30,
+            GameActionType.PlaySpellOnMinion => IsTargetOwnedByActor(action) ? -10 : 25,
             GameActionType.PlayMinionCard => 20,
             GameActionType.EndTurn => 0,
             _ => -1,
