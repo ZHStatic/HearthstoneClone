@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HearthstoneClone · 项目全景</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#3D3226',
+    primaryBorderColor: '#D97706',
+    primaryTextColor: '#F5F0E8',
+    secondaryColor: '#292420',
+    tertiaryColor: '#1C1917',
+    lineColor: '#8B7355',
+    textColor: '#F5F0E8',
+    fontSize: '14px',
+    fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif'
+  },
+  flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20 },
+  classDiagram: { useMaxWidth: true, padding: 20 },
+  sequence: { useMaxWidth: true, mirrorActors: false, padding: 20 }
+});
+</script>
+<style>
+/* ============================================================
+   Claude Theme · Warm Amber Palette · High Contrast
+   ============================================================ */
+:root {
+  --bg:           #1C1917;
+  --bg-alt:       #1F1C1A;
+  --surface:      #292420;
+  --surface-hov:  #302B25;
+  --surface2:     #332E28;
+  --elevated:     #3D3630;
+  --border:       #4A4038;
+  --border-light: #3D3530;
+
+  --text:         #F0EBE0;
+  --text-bright:  #FFFAF0;
+  --text2:        #B8AFA0;
+  --text3:        #8B8070;
+
+  --accent:       #F59E0B;
+  --accent-dim:   #D97706;
+  --accent-light: #FBBF24;
+  --accent-glow:  rgba(245,158,11,0.15);
+
+  --green:        #86C98C;
+  --green-dim:    #5A9E62;
+  --yellow:       #F0C862;
+  --red:          #E0556A;
+  --purple:       #B992D4;
+  --blue:         #7DAFDF;
+  --orange:       #F09050;
+
+  --radius:       14px;
+  --radius-sm:    8px;
+  --shadow:       0 2px 16px rgba(0,0,0,.35);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,.5);
+  --transition:   0.2s cubic-bezier(.4,0,.2,1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  scroll-padding-top: 70px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  padding-bottom: 100px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ===== Top Navigation ===== */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(28,25,23,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; gap: 2px;
+  padding: 10px 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.topbar a {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 16px;
+  border-radius: 24px; font-size: .84rem; font-weight: 500;
+  color: var(--text2); text-decoration: none;
+  white-space: nowrap; transition: var(--transition);
+  letter-spacing: 0.01em;
+}
+.topbar a:hover { background: var(--surface2); color: var(--text); }
+.topbar a.active {
+  background: var(--accent);
+  color: #1C1917;
+  font-weight: 650;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* ===== Main Content ===== */
+main { max-width: 1040px; margin: 0 auto; padding: 32px 24px 0; }
+
+/* ===== Header ===== */
+.page-header {
+  margin-bottom: 40px; padding: 36px 0 28px;
+  border-bottom: 2px solid var(--border);
+}
+.page-header h1 {
+  font-size: 2.2rem; font-weight: 800; color: var(--text-bright);
+  letter-spacing: -0.02em; display: flex; align-items: center; gap: 12px;
+}
+.page-header h1 .icon { font-size: 2rem; }
+.page-header .sub {
+  display: block; font-size: 1rem; color: var(--accent-light); font-weight: 500;
+  margin-top: 6px; letter-spacing: 0.02em;
+}
+.page-header .meta {
+  display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap;
+}
+.page-header .meta span {
+  font-size: .82rem; color: var(--text3);
+  background: var(--surface); padding: 4px 12px; border-radius: 20px;
+}
+
+/* ===== Section Headers ===== */
+h2 {
+  font-size: 1.55rem; font-weight: 750; margin: 52px 0 22px;
+  padding-bottom: 0; color: var(--text-bright);
+  display: flex; align-items: center; gap: 10px;
+  letter-spacing: -0.01em;
+}
+h2::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+  margin-left: 2px;
+}
+h2 .sec-icon { font-size: 1.4rem; }
+
+h3 {
+  font-size: 1.2rem; font-weight: 650; margin: 0 0 12px;
+  color: var(--accent-light);
+}
+
+h4 {
+  font-size: 1rem; font-weight: 600; margin: 20px 0 8px;
+  color: var(--text);
+}
+
+p { margin: 8px 0; }
+strong { color: var(--text-bright); font-weight: 600; }
+
+/* ===== Cards ===== */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px 24px; margin: 18px 0;
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+.card:hover { border-color: var(--border); }
+.card.accent-top { border-top: 3px solid var(--accent); }
+.card.green-top { border-top: 3px solid var(--green); }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px; margin: 18px 0;
+}
+
+/* ===== Tables ===== */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 14px 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: .88rem; line-height: 1.6;
+}
+thead th {
+  padding: 12px 16px; text-align: left;
+  background: var(--surface2); color: var(--accent-light);
+  font-weight: 650; font-size: .8rem; text-transform: uppercase;
+  letter-spacing: 0.04em; border-bottom: 2px solid var(--accent-dim);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 10px 16px; border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+}
+tbody tr { transition: var(--transition); }
+tbody tr:hover td { background: var(--surface-hov); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ===== Collapsible Details ===== */
+details { margin: 10px 0; }
+details > summary {
+  cursor: pointer; padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  font-weight: 600; font-size: .95rem;
+  color: var(--accent-light);
+  user-select: none; list-style: none;
+  transition: var(--transition);
+}
+details > summary:hover { background: var(--surface-hov); border-color: var(--accent-dim); }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: '▸'; display: inline-block; width: 20px;
+  transition: transform .2s; font-size: .75rem; color: var(--accent);
+}
+details[open] > summary::before { transform: rotate(90deg); }
+details[open] > summary {
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom-color: transparent;
+}
+details .content {
+  padding: 12px 18px 18px;
+  border: 1px solid var(--border-light); border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--bg-alt);
+}
+
+/* ===== Callout Boxes ===== */
+.box {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  padding: 14px 18px; margin: 14px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: .9rem;
+}
+.box.tip  { border-color: var(--green); }
+.box.warn { border-color: var(--yellow); }
+.box.note { border-color: var(--purple); }
+.box.info { border-color: var(--blue); }
+
+/* ===== Tags ===== */
+.tag {
+  display: inline-block; padding: 3px 10px; border-radius: 14px;
+  font-size: .75rem; font-weight: 650; margin: 0 4px 4px 0;
+  letter-spacing: 0.02em;
+}
+.tag-core  { background: #7DAFDF20; color: var(--blue); }
+.tag-ai    { background: #86C98C20; color: var(--green); }
+.tag-sim   { background: #B992D420; color: var(--purple); }
+.tag-ui    { background: #F0905020; color: var(--orange); }
+.tag-pat   { background: #F0C86220; color: var(--yellow); }
+
+/* ===== Mermaid Container ===== */
+.mermaid-wrap {
+  background: var(--bg-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 20px; margin: 16px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Formula Card ===== */
+.formula-box {
+  background: linear-gradient(135deg, #2A2318 0%, #1F1C17 100%);
+  border: 2px solid var(--accent-dim);
+  border-radius: var(--radius); padding: 24px; margin: 16px 0;
+  text-align: center;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", monospace;
+  box-shadow: inset 0 0 40px var(--accent-glow);
+}
+.formula-box .big {
+  font-size: 1.35rem; color: var(--accent-light); font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.formula-box .detail {
+  font-size: .88rem; color: var(--text2); margin-top: 10px;
+  line-height: 2; font-family: inherit;
+}
+
+/* ===== Score Bars ===== */
+.score-bar {
+  display: flex; align-items: center; gap: 12px; margin: 8px 0;
+}
+.score-bar .label {
+  min-width: 90px; text-align: right; font-size: .84rem;
+  color: var(--text2); font-weight: 500;
+}
+.score-bar .track {
+  flex: 1; height: 10px; background: var(--surface2);
+  border-radius: 5px; overflow: hidden;
+}
+.score-bar .fill {
+  height: 100%; border-radius: 5px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ===== Pattern Cards ===== */
+.pattern-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px;
+  border: 1px solid var(--border-light);
+  border-top: 3px solid var(--accent);
+  transition: var(--transition);
+}
+.pattern-card:hover { border-top-color: var(--accent-light); box-shadow: var(--shadow); }
+.pattern-card .pat-name {
+  font-size: 1.05rem; font-weight: 700; color: var(--accent-light);
+}
+.pattern-card .pat-where {
+  font-size: .82rem; color: var(--text3); margin: 6px 0 2px;
+}
+.pattern-card .pat-why {
+  font-size: .88rem; margin: 8px 0;
+}
+.pattern-card .pat-why strong { color: var(--text-bright); }
+.pattern-card pre {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px; overflow-x: auto;
+  font-size: .8rem; margin-top: 10px;
+  line-height: 1.6;
+}
+.pattern-card pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ===== Code ===== */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", monospace;
+  font-size: .84rem; background: var(--surface2); color: var(--accent-light);
+  padding: 2px 7px; border-radius: 4px;
+}
+pre code { background: none; padding: 0; color: var(--text); }
+
+/* ===== Special Sections ===== */
+.section-intro {
+  font-size: 1rem; color: var(--text2);
+  margin-bottom: 8px; max-width: 720px;
+}
+
+/* ===== Footer ===== */
+footer {
+  text-align: center; color: var(--text3); font-size: .82rem;
+  margin-top: 64px; padding: 28px 20px;
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { color: var(--accent-light); text-decoration: underline; }
+footer p { margin: 4px 0; }
+
+/* ================================================================
+   RESPONSIVE — Mobile First Adjustments
+   ================================================================ */
+@media (max-width: 768px) {
+  html { font-size: 15px; scroll-padding-top: 60px; }
+  .page-header { padding: 24px 0 20px; }
+  .page-header h1 { font-size: 1.6rem; }
+  .page-header h1 .icon { font-size: 1.5rem; }
+  .page-header .sub { font-size: .9rem; }
+  h2 { font-size: 1.3rem; margin-top: 40px; }
+  h2 .sec-icon { font-size: 1.2rem; }
+  h3 { font-size: 1.1rem; }
+
+  .topbar { padding: 6px 10px; gap: 1px; }
+  .topbar a { padding: 6px 11px; font-size: .76rem; border-radius: 18px; }
+
+  main { padding: 16px 14px 0; }
+  .card { padding: 16px; margin: 12px 0; }
+  .card-grid { grid-template-columns: 1fr; gap: 12px; }
+  .mermaid-wrap { padding: 10px; margin: 10px 0; }
+  .formula-box { padding: 16px; }
+  .formula-box .big { font-size: 1.1rem; }
+
+  table { font-size: .78rem; }
+  thead th, tbody td { padding: 8px 10px; }
+
+  .pattern-card { padding: 16px; }
+  .pattern-card pre { padding: 10px; font-size: .74rem; }
+}
+
+/* Extra small phones */
+@media (max-width: 400px) {
+  html { font-size: 14px; }
+  .topbar a { padding: 5px 8px; font-size: .7rem; gap: 2px; }
+  main { padding: 12px 8px 0; }
+  .page-header h1 { font-size: 1.4rem; }
+  .card { padding: 12px; }
+  .formula-box .big { font-size: .95rem; }
+}
+
+/* ===== Print ===== */
+@media print {
+  .topbar { display: none; }
+  body { background: #fff; color: #222; }
+  .card, .mermaid-wrap { box-shadow: none; border: 1px solid #ccc; background: #fff; }
+  h2, h3 { color: #333; }
+  footer { color: #666; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== Navigation ========== -->
+<nav class="topbar" id="topbar">
+  <a href="#overview">📋 速览</a>
+  <a href="#architecture">🏗️ 分层</a>
+  <a href="#dependencies">🔗 依赖</a>
+  <a href="#dataflow">🔄 数据流</a>
+  <a href="#ai">🤖 AI</a>
+  <a href="#patterns">📐 模式</a>
+  <a href="#files">📁 文件</a>
+</nav>
+
+<main>
+
+<!-- ================================================================ -->
+<header class="page-header">
+  <h1><span class="icon">🧙</span>HearthstoneClone</h1>
+  <span class="sub">单人版炉石传说核心对战 · Unity 2D · 求职 Demo</span>
+  <div class="meta">
+    <span>Unity 2020.3.48f1</span>
+    <span>C# · UGUI · ScriptableObject</span>
+    <span>阶段 3 进行中</span>
+    <span>更新于 2026-06-28</span>
+  </div>
+</header>
+
+<!-- ================================================================ -->
+<!-- 1. 项目速览 -->
+<!-- ================================================================ -->
+<section id="overview">
+<h2><span class="sec-icon">📋</span>1. 项目速览</h2>
+<p class="section-intro">先看清全貌，再深入细节。知道什么做了、什么没做，比知道怎么做的更重要。</p>
+
+<div class="card-grid">
+  <div class="card accent-top">
+    <h3>🎯 一句话定位</h3>
+    <p>单人 vs AI 的炉石传说核心对战体验，<strong>50–100 张卡牌、5–10 个关键词</strong>，ScriptableObject 驱动数据，事件系统解耦效果，<strong>面试官 5 分钟能看懂架构</strong>。</p>
+  </div>
+  <div class="card accent-top">
+    <h3>⚙️ 技术栈</h3>
+    <table>
+      <tr><td>引擎</td><td><strong>Unity 2020.3.48f1c1</strong> · 2D Built‑In RP</td></tr>
+      <tr><td>语言</td><td><strong>C#</strong>（.NET Standard 2.0）</td></tr>
+      <tr><td>数据</td><td>ScriptableObject 卡牌模板</td></tr>
+      <tr><td>UI</td><td>UGUI（Canvas + Prefab）</td></tr>
+      <tr><td>架构</td><td>事件驱动 + 快照模拟 AI</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>📐 范围边界 — 做 vs 不做</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th width="50%">✅ 做（核心体验）</th><th width="50%">❌ 不做（超出 Demo 范围）</th></tr></thead>
+    <tbody>
+      <tr><td>随从 / 法术 / 武器卡</td><td>联网对战 / 服务器</td></tr>
+      <tr><td>5–10 个核心关键词（冲锋/嘲讽/圣盾）</td><td>天梯 / 竞技场 / 冒险模式</td></tr>
+      <tr><td>英雄技能</td><td>商店 / 充值 / 任务系统</td></tr>
+      <tr><td>5 套预制套牌</td><td>100+ 卡牌（50–100 即可）</td></tr>
+      <tr><td>单人 vs AI 对战（快照模拟评估）</td><td>自定义美术（色块 + 免费素材）</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>🗺️ 开发阶段总览</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>阶段</th><th>内容</th><th>时间</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>1.0 – 1.5</td><td>最小原型：随从召唤 / 攻击 / 胜负 + 展示打磨</td><td>4–5 周</td><td>✅</td></tr>
+      <tr><td>2.1 – 2.8</td><td>法术 + 5 个关键词 + 事件系统</td><td>6–8 周</td><td>✅</td></tr>
+      <tr><td>2.9 – 2.10</td><td>战斗日志 + 操作结果标准化 + 动作建模</td><td>2–3 周</td><td>✅</td></tr>
+      <tr><td><strong>3.0 – 3.6</strong></td><td><strong>AI 对手：AIController → ActionSelector → Evaluator → 快照模拟</strong></td><td><strong>4–6 周</strong></td><td>🔄</td></tr>
+      <tr><td>4</td><td>套牌构筑 + UI 打磨</td><td>4–6 周</td><td>⏳</td></tr>
+      <tr><td>5</td><td>求职包装（视频 / 博客 / README）</td><td>2–3 周</td><td>⏳</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 2. 架构分层 -->
+<!-- ================================================================ -->
+<section id="architecture">
+<h2><span class="sec-icon">🏗️</span>2. 架构分层</h2>
+<p class="section-intro">项目严格遵循<strong>单向依赖</strong>：上层可以引用下层，下层绝不引用上层。这张图是理解整个项目的钥匙。</p>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+    subgraph UI["🎨 UI 层 — 显示 & 交互"]
+        direction LR
+        UIC["<b>GameUIController</b><br/>UI 中枢，桥接 Core"]
+        Views["<b>CardView / MinionView</b><br/>HandView / BoardView"]
+        Fmt["<b>KeywordTextFormatter</b><br/>静态工具：关键词→中文"]
+    end
+
+    subgraph AI_D["🧠 AI 决策层 — 选动作"]
+        direction LR
+        AIC["<b>AIController</b><br/>回合循环控制"]
+        AS["<b>ActionSelector</b><br/>三级选择策略"]
+        EV["<b>Evaluator</b><br/>局面评分函数"]
+    end
+
+    subgraph AI_S["📊 AI 模拟层 — 快照世界"]
+        direction LR
+        Sn["<b>GameStateSnapshot</b><br/>PlayerSnapshot<br/>BoardSnapshot<br/>MinionSnapshot"]
+        Map["<b>SnapshotActionMapper</b><br/>真实动作 → 快照动作"]
+        Sim["<b>SnapshotSimulator</b><br/>纯函数模拟引擎"]
+    end
+
+    subgraph Core["⚙️ Core 层 — 游戏规则（不依赖任何上层）"]
+        direction LR
+        GM["<b>GameManager</b><br/>回合/出牌/攻击/死亡"]
+        Ent["<b>实体</b><br/>Player · Hero · Board<br/>Card · CardData · Minion"]
+        Evt["<b>事件</b><br/>GameEventBus<br/>MinionDied"]
+        Act["<b>动作</b><br/>GameAction<br/>GameActionGenerator<br/>GameActionResult"]
+        Log["<b>日志</b><br/>BattleLogger<br/>BattleLogEntry"]
+    end
+
+    UI --> Core
+    AI_D --> Core
+    AI_D --> AI_S
+    AI_S -.->|"<i>只读枚举<br/>不引用对象</i>"| Core
+</pre>
+</div>
+
+<div class="box note">
+  <strong>🔑 四条核心规则：</strong><br>
+  ① UI 层只调用 <code>GameManager.Try...Detailed()</code>，不直接改 Core 状态<br>
+  ② Core 层绝不引用 UI 或 AI 层的任何类<br>
+  ③ Snapshot 类不引用任何真实的 <code>Player</code> / <code>Minion</code> / <code>Card</code> 对象，只复制数据到 int/bool 字段<br>
+  ④ <code>SnapshotSimulator</code> 是<strong>纯函数</strong>：输入一个快照 → 返回一个新快照，绝不修改输入
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 3. 类依赖关系图 -->
+<!-- ================================================================ -->
+<section id="dependencies">
+<h2><span class="sec-icon">🔗</span>3. 类依赖关系图</h2>
+<p class="section-intro">每一条箭头都代表一个类「知道」另一个类。箭头越多 = 耦合越重。<strong>GameManager 是枢纽，所有东西都围着它转。</strong></p>
+
+<h3>3.1 Core 层 — 实体 / 动作 / 事件 / 日志</h3>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+classDiagram
+    direction TB
+
+    class GameManager {
+        +Player Player
+        +Player Enemy
+        +Board Board
+        +GameEventBus EventBus
+        +BattleLogger BattleLogger
+        +int TurnNumber
+        +bool IsGameOver
+        StartNewGame()
+        TryPlayMinionCardDetailed()
+        TryPlaySpellCardOnMinionDetailed()
+        TryPlaySpellCardOnHeroDetailed()
+        TryAttackMinionDetailed()
+        TryAttackHeroDetailed()
+        EndTurn()
+        ExecuteAction(GameAction)
+    }
+
+    class Player {
+        +Hero Hero
+        +IReadOnlyList~Card~ Hand
+        +IReadOnlyList~Card~ Deck
+        +int CurrentMana
+        +int MaxMana
+        DrawCard() Card
+        PayMana(int) bool
+    }
+
+    class Hero {
+        +string Name
+        +int MaxHealth
+        +int CurrentHealth
+        +bool IsDead
+        TakeDamage(int) int
+        Heal(int) int
+    }
+
+    class Board {
+        +int MaxMinionsPerSide
+        SummonMinion(Minion, Player)
+        RemoveMinion(Minion) bool
+        GetMinions(Player) List~Minion~
+    }
+
+    class Minion {
+        +int Attack
+        +int CurrentHealth
+        +int MaxHealth
+        +bool CanAttack
+        +bool IsDead
+        +Player Owner
+        +CardData CardData
+        TakeDamage(int) int
+        HasKeyword(KeywordType) bool
+    }
+
+    class Card {
+        +CardData CardData
+        +int CurrentCost
+        +Player Owner
+    }
+
+    class CardData {
+        +string CardName
+        +int Cost
+        +CardType Type
+        +int Attack
+        +int Health
+        +KeywordType[] Keywords
+        +BattlecryType Battlecry
+        +DeathrattleType Deathrattle
+    }
+
+    class GameEventBus {
+        Subscribe(GameEventType, Action~GameEvent~)
+        Publish(GameEvent)
+    }
+
+    class GameEvent {
+        +GameEventType Type
+        +Minion TargetMinion
+    }
+
+    class GameAction {
+        +GameActionType ActionType
+        +Card Card
+        +Minion Attacker
+        +Minion TargetMinion
+        +Hero TargetHero
+        +Player Actor
+    }
+
+    class GameActionGenerator {
+        GenerateLegalActions(GameManager)$ List~GameAction~
+    }
+
+    class GameActionResult {
+        +bool Success
+        +bool Failed
+        +string Message
+        +GameActionFailureReason FailureReason
+    }
+
+    class BattleLogger {
+        AddEntry(BattleLogEntry)
+        GetEntries() IReadOnlyList
+        Clear()
+    }
+
+    class BattleLogEntry {
+        +BattleLogEntryType Type
+        +string Message
+    }
+
+    GameManager --> Player : 创建/持有
+    GameManager --> Board : 创建/持有
+    GameManager --> GameEventBus : 创建/持有
+    GameManager --> BattleLogger : 创建/持有
+    GameManager ..> GameActionGenerator : 调用静态方法
+    GameManager ..> GameAction : 执行
+    GameManager ..> GameActionResult : 返回操作结果
+
+    Player --> Hero : 持有
+    Player --> Card : 手牌/牌库
+
+    Board --> Minion : 管理列表
+    Minion ..> CardData : 只读引用模板
+    Minion ..> Player : 归属引用
+    Card ..> CardData : 只读引用模板
+
+    GameAction ..> Card : 引用
+    GameAction ..> Minion : 引用
+    GameAction ..> Hero : 引用
+
+    GameEventBus ..> GameEvent : 发布
+</pre>
+</div>
+
+<h3>3.2 AI 层 — 决策 + 快照模拟</h3>
+<div class="mermaid-wrap">
+<pre class="mermaid">
+classDiagram
+    direction TB
+
+    class AIController {
+        -GameManager gameManager
+        -ActionSelector actionSelector
+        -Evaluator evaluator
+        -Player controlledPlayer
+        +TakeTurn()
+        -ExecuteNextAction() GameAction
+    }
+
+    class ActionSelector {
+        +SelectAction(actions, gm, evaluator) AIActionSelection
+        -TryFindLethalAction() bool
+        -TryFindBestEvaluatedAction() bool
+        -SelectHighestPriorityAction() GameAction
+    }
+
+    class Evaluator {
+        +Evaluate(Player, Player, Board) int
+        +Evaluate(GameStateSnapshot, int) int
+        +EvaluateDetailed(Player, Player, Board) EvaluationResult
+        +EvaluateDetailed(GameStateSnapshot, int) EvaluationResult
+    }
+
+    class AIActionSelection {
+        +GameAction Action
+        +AIActionSelectionReason Reason
+        +EvaluationResult SimulatedEvaluation
+    }
+
+    class EvaluationResult {
+        +int HeroHealthScore
+        +int HandScore
+        +int BoardScore
+        +int TotalScore
+        +ToDebugText() string
+    }
+
+    class GameStateSnapshot {
+        +PlayerSnapshot Player
+        +PlayerSnapshot Enemy
+        +BoardSnapshot Board
+        +int CurrentPlayerIndex
+        +FromGameManager(GameManager)$ GameStateSnapshot
+    }
+
+    class PlayerSnapshot {
+        +int HeroHealth
+        +int CurrentMana
+        +int MaxMana
+        +int HandCount
+        +int DeckCount
+        +FromPlayer(Player)$ PlayerSnapshot
+    }
+
+    class BoardSnapshot {
+        +GetMinions(int playerIndex) IReadOnlyList~MinionSnapshot~
+        +FromBoard(Board, Player, Player)$ BoardSnapshot
+    }
+
+    class MinionSnapshot {
+        +int Attack
+        +int CurrentHealth
+        +int MaxHealth
+        +bool CanAttack
+        +bool IsDead
+        +bool HasTaunt
+        +bool HasDivineShield
+        +bool HasCharge
+        +FromMinion(Minion)$ MinionSnapshot
+    }
+
+    class SnapshotAction {
+        +SnapshotActionType Type
+        +int CardIndex
+        +int SourceMinionIndex
+        +int TargetMinionIndex
+    }
+
+    class SnapshotActionMapper {
+        +TryMap(GameAction, GameManager, out SnapshotAction)$ bool
+    }
+
+    class SnapshotSimulator {
+        +Simulate(GameStateSnapshot, SnapshotAction)$ GameStateSnapshot
+    }
+
+    AIController --> ActionSelector : 持有
+    AIController --> Evaluator : 持有
+    AIController ..> GameActionGenerator : 调用
+    AIController ..> AIActionSelection : 读取选择结果
+
+    ActionSelector ..> GameStateSnapshot : 创建快照
+    ActionSelector ..> SnapshotActionMapper : 映射动作
+    ActionSelector ..> SnapshotSimulator : 模拟执行
+    ActionSelector ..> Evaluator : 评分快照
+    ActionSelector --> AIActionSelection : 返回选择
+
+    GameStateSnapshot --> PlayerSnapshot : 包含 x2
+    GameStateSnapshot --> BoardSnapshot : 包含
+    BoardSnapshot --> MinionSnapshot : 包含列表
+
+    SnapshotActionMapper ..> SnapshotAction : 创建
+    SnapshotSimulator ..> GameStateSnapshot : 输入 / 输出
+    SnapshotSimulator ..> SnapshotAction : 输入
+
+    Evaluator ..> GameStateSnapshot : 评估快照
+    Evaluator ..> EvaluationResult : 返回评分
+</pre>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 4. 核心数据流 -->
+<!-- ================================================================ -->
+<section id="dataflow">
+<h2><span class="sec-icon">🔄</span>4. 核心数据流</h2>
+
+<div class="card accent-top">
+  <h3>4.1 卡牌的三层生命周期</h3>
+  <p>这是项目中最容易混淆的概念：<strong>模板、手牌实例、战场实体是三个不同的东西</strong>，分别解决不同的问题。</p>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    CD("<b>📄 CardData</b><br/><br/>ScriptableObject<br/>Unity 资产文件<br/><br/>策划配置：<br/>卡名 / 费用 / 攻击 / 血量<br/>关键词 / 战吼 / 亡语<br/><br/><i>一套数据，多处复用</i>")
+    C("<b>🃏 Card</b><br/><br/>C# 运行时对象<br/>手牌中的实例<br/><br/>动态状态：<br/>CurrentCost（可变）<br/>Owner（归属玩家）<br/><br/><i>费用可被法术修改</i>")
+    M("<b>⚔️ Minion</b><br/><br/>C# 运行时对象<br/>战场上的实体<br/><br/>实时状态：<br/>CurrentHealth（可变）<br/>CanAttack / IsDead<br/>Keywords（从模板复制）<br/><br/><i>血量会变、会死亡</i>")
+
+    CD -->|"new Card(cardData)"| C
+    C -->|"Board.SummonMinion()"| M
+    M -.->|"只读引用"| CD
+</pre>
+</div>
+
+<div class="box tip">
+  <strong>💡 为什么分三层？</strong><br>
+  <code>CardData</code> 是策划配置（一个 asset 可以生成无数张卡），<code>Card</code> 是手牌临时状态（费用可以被修改），<code>Minion</code> 是战场实时状态（血量会变、会死亡）。如果混在一起，就无法实现「减费法术」或「同一张卡打出多个随从」。
+</div>
+
+<div class="card accent-top">
+  <h3>4.2 GameAction 生命周期 — AI 和玩家走同一条路</h3>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    GEN["<b>① 生成合法动作</b><br/>GameActionGenerator.GenerateLegalActions()<br/><br/>扫描手牌：哪些能出？目标是谁？<br/>扫描战场：哪些随从能攻击？嘲讽限制？<br/>始终包含 EndTurn"]
+    SEL["<b>② 选择动作</b><br/><br/>玩家：GameUIController 处理点击<br/>AI：ActionSelector 三级策略"]
+    EXE["<b>③ 执行动作</b><br/>GameManager.ExecuteAction()<br/><br/>switch ActionType →<br/>调用对应的 Try...Detailed()"]
+    VAL["<b>④ 验证合法性</b><br/><br/>费用够吗？目标合法吗？<br/>游戏结束了吗？"]
+    RES["<b>⑤ 结算效果</b><br/><br/>伤害 → 关键词抵消 →<br/>死亡清理 → 亡语事件"]
+    LOG["<b>⑥ 记录结果</b><br/><br/>BattleLogger.AddEntry()<br/>返回 GameActionResult"]
+
+    GEN --> SEL
+    SEL --> EXE
+    EXE --> VAL
+    VAL -->|"✅ 通过"| RES
+    VAL -->|"❌ 失败"| LOG
+    RES --> LOG
+    LOG -->|"返回结果"| SEL
+</pre>
+</div>
+
+<div class="card accent-top">
+  <h3>4.3 事件总线 — 当前最简形态（只有 MinionDied）</h3>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+sequenceDiagram
+    participant GM as GameManager
+    participant BUS as GameEventBus
+    participant DR as ResolveDeathrattle
+
+    GM->>GM: CleanupDeadMinions()<br/>遍历战场找 IsDead 随从
+    GM->>BUS: Publish(MinionDied, minion)
+    Note over BUS: Dictionary 查找<br/>MinionDied 的所有订阅者
+    BUS->>DR: 调用 ResolveDeathrattleOnMinionDied()
+    Note over DR: 检查 minion.CardData.DeathrattleType<br/>执行亡语效果（如对敌方英雄伤害）
+    GM->>GM: Board.RemoveMinion(minion)
+    Note over GM: ⚠️ 亡语结算完毕后才移除<br/>保证亡语能读到随从数据
+</pre>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 5. AI 系统深度解析 -->
+<!-- ================================================================ -->
+<section id="ai">
+<h2><span class="sec-icon">🤖</span>5. AI 系统深度解析</h2>
+<p class="section-intro">这是阶段 3 的核心，也是当前最复杂的部分。<strong>如果你只能弄懂一块，就弄懂这块。</strong></p>
+
+<div class="box warn">
+  <strong>🧭 阅读导航：</strong>先看 5.1 整体流程图 → 再看 5.2 三级策略 → 再看 5.3 快照三层体系 → 最后看 5.4 评分公式。
+</div>
+
+<!-- 5.1 -->
+<div class="card accent-top">
+  <h3>5.1 AI 决策完整流程</h3>
+  <p>Enemy 回合开始 → 循环执行动作 → 直到选择 EndTurn 或达到上限。</p>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    START(["<b>🔁 Enemy 回合开始</b><br/>AIController.TakeTurn()"])
+
+    LOOP{"<b>还有行动次数？</b><br/>上限 20 次 / 回合"}
+
+    GEN["<b>① 生成合法动作</b><br/>GameActionGenerator<br/>扫描手牌 + 战场<br/>返回 List&lt;GameAction&gt;"]
+
+    SEL["<b>② 选择动作</b><br/>ActionSelector.SelectAction()<br/>三级漏斗筛选"]
+
+    EXE["<b>③ 执行动作</b><br/>GameManager.ExecuteAction()<br/>返回 GameActionResult"]
+
+    CHECK{"<b>执行成功？</b>"}
+
+    LOG["<b>📝 打印 AI 日志</b><br/>动作 + 理由 + 模拟评分<br/>+ 真实评分前后变化"]
+
+    NEXT{"<b>是 EndTurn？<br/>游戏结束？</b>"}
+
+    STOP(["<b>✅ AI 回合结束</b>"])
+
+    START --> LOOP
+    LOOP -->|"✅ 还有次数"| GEN
+    LOOP -->|"❌ 达到上限"| STOP
+    GEN --> SEL
+    SEL --> EXE
+    EXE --> CHECK
+    CHECK -->|"✅ 成功"| LOG
+    CHECK -->|"❌ 失败<br/>跳过，继续尝试"| LOOP
+    LOG --> NEXT
+    NEXT -->|"否"| LOOP
+    NEXT -->|"是"| STOP
+</pre>
+</div>
+
+<!-- 5.2 -->
+<div class="card accent-top">
+  <h3>5.2 ActionSelector 三级漏斗策略</h3>
+  <p>不是一条规则到底，而是<strong>先看能不能杀 → 再看能不能赚 → 最后兜底</strong>。每一级都是独立的策略，可以单独修改。</p>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TD
+    INPUT["<b>输入：合法动作列表</b>"]
+
+    L1{"<b>① 斩杀检测</b><br/>TryFindLethalAction()<br/><br/>简单伤害 ≥ 英雄血量？"}
+    L1_OUT["<b>🎯 直接斩杀！</b><br/>理由：Lethal<br/>（最高优先级，无条件执行）"]
+
+    L2{"<b>② 快照模拟评分</b><br/>TryFindBestEvaluatedAction()"}
+
+    SNAP["<b>📸 创建当前局面快照</b><br/>GameStateSnapshot.FromGameManager()"]
+
+    LOOP_ACT["<b>🔁 逐个模拟每个合法动作</b>"]
+    MAP["<b>🗺️ 映射到快照动作</b><br/>SnapshotActionMapper.TryMap()"]
+    SIM["<b>🧪 快照世界执行</b><br/>SnapshotSimulator.Simulate()"]
+    SCORE["<b>📊 评估模拟结果</b><br/>Evaluator.EvaluateDetailed()"]
+    FILTER{"<b>评分 ≥ 当前分 - 3？</b><br/>AllowedScoreLoss = 3"}
+    PICK["<b>✅ 选评分最高的动作</b>"]
+    REASON1["理由：HighestEvaluationScore<br/>（没亏分，评分最高）"]
+    REASON2["理由：AcceptableScoreLoss<br/>（小亏 ≤ 3 分，换节奏）"]
+
+    L3{"<b>③ 兜底优先级</b><br/>SelectHighestPriorityAction()"}
+    L3_OUT["<b>📋 固定优先级排序：</b><br/>攻击英雄 (50) > 攻击随从 (40)<br/>> 法术打英雄 (30) > 法术打随从 (25)<br/>> 出随从 (20) > 结束回合 (0)"]
+    NO_ACT["<b>😞 没有可接受的主动动作</b><br/>→ 选择 EndTurn<br/>理由：NoProfitableActionEndTurn"]
+
+    INPUT --> L1
+    L1 -->|"找到"| L1_OUT
+    L1 -->|"未找到"| L2
+    L2 --> SNAP --> LOOP_ACT
+    LOOP_ACT --> MAP --> SIM --> SCORE --> FILTER
+    FILTER -->|"通过"| PICK
+    FILTER -->|"不通过"| LOOP_ACT
+    PICK -->|"评分 ≥ 当前"| REASON1
+    PICK -->|"评分 &lt; 当前但 ≥ -3"| REASON2
+    PICK -->|"无主动动作可选"| NO_ACT
+    L2 -->|"快照模拟不可用<br/>（罕见情况）"| L3
+    L3 --> L3_OUT
+</pre>
+</div>
+
+<!-- 5.3 -->
+<div class="card accent-top">
+  <h3>5.3 快照模拟三层体系</h3>
+  <p>AI 不能直接在真实游戏上「试走」——试完没法回退。所以设计了三层结构。</p>
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th width="10%">层</th><th width="25%">类</th><th width="35%">职责</th><th width="30%">一句话</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="tag tag-sim">数据</span></td>
+      <td><code>GameStateSnapshot</code><br/><code>PlayerSnapshot</code><br/><code>BoardSnapshot</code><br/><code>MinionSnapshot</code></td>
+      <td>把真实游戏状态「拍照」成纯数据副本</td>
+      <td>所有字段都是 int / bool / List，<strong>不引用任何真实对象</strong></td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-ai">映射</span></td>
+      <td><code>SnapshotActionMapper</code></td>
+      <td>把真实动作翻译成快照世界的动作</td>
+      <td>对象引用 → 索引数字<br/>（Card → CardIndex，Minion → MinionIndex）</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-core">模拟</span></td>
+      <td><code>SnapshotSimulator</code></td>
+      <td>在快照世界上执行动作，返回新快照</td>
+      <td><strong>纯函数</strong>：输入不变，输出全新对象</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    REAL["<b>🎮 真实游戏状态</b><br/><br/>GameManager<br/>Player / Board / Minion"]
+    SNAP["<b>📸 GameStateSnapshot</b><br/><br/>纯数据副本<br/>int / bool / List"]
+    ACT_REAL["<b>🎯 GameAction</b><br/><br/>引用 Card / Minion"]
+    ACT_SNAP["<b>🗺️ SnapshotAction</b><br/><br/>索引数字<br/>CardIndex / MinionIndex"]
+    RESULT["<b>📊 模拟后快照</b><br/><br/>新的 GameStateSnapshot<br/>原快照不变"]
+    SCORE["<b>📈 评分</b><br/><br/>EvaluationResult<br/>Hero + Hand + Board"]
+
+    REAL -->|"FromGameManager()"| SNAP
+    ACT_REAL -->|"SnapshotActionMapper.TryMap()"| ACT_SNAP
+    SNAP -->|"SnapshotSimulator.Simulate()"| RESULT
+    ACT_SNAP -->|"SnapshotSimulator.Simulate()"| RESULT
+    RESULT -->|"Evaluator.EvaluateDetailed()"| SCORE
+</pre>
+</div>
+
+<div class="box info">
+  <strong>🔑 为什么快照里用索引而不用引用？</strong><br>
+  快照模拟会「杀死」随从或「打出」手牌，对象数量会变。用索引（int）可以安全地表达「第 3 张手牌」或「第 2 个敌方随从」。用引用（Card 对象）的话，模拟中对象可能变成 null 或指向错误的东西——索引没有这个问题。
+</div>
+
+<div class="card">
+  <h3>快照模拟覆盖范围</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th width="50%">✅ 当前已模拟</th><th width="50%">❌ 当前未模拟（后续扩展）</th></tr></thead>
+    <tbody>
+      <tr><td>出随从牌（扣费、减手牌、加 MinionSnapshot+keywords）</td><td>多步搜索（只看当前一步）</td></tr>
+      <tr><td>战吼：对敌方英雄伤害、抽牌</td><td>完整战吼链（只模拟一层）</td></tr>
+      <tr><td>法术打随从（伤害、死亡清理、亡语触发）</td><td>嘲讽目标验证（快照中忽略）</td></tr>
+      <tr><td>法术打英雄（伤害）</td><td>友方目标法术（Mapper 只映射敌方）</td></tr>
+      <tr><td>随从互撞（互相伤害、死亡清理）</td><td>手牌质量评估（只看数量）</td></tr>
+      <tr><td>随从打英雄</td><td></td></tr>
+      <tr><td>EndTurn（切玩家、涨法力、抽牌、刷新攻击权限）</td><td></td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- 5.4 -->
+<div class="card accent-top">
+  <h3>5.4 Evaluator 评分公式</h3>
+  <p>AI 用同一套公式评估<strong>真实局面</strong>和<strong>快照局面</strong>。正分 = 被评估方有优势。</p>
+</div>
+
+<div class="formula-box">
+  <div class="big">TotalScore = HeroHealthScore + HandScore + BoardScore</div>
+  <div class="detail">
+    HeroHealthScore = (己方英雄血量 − 敌方英雄血量) × <strong>2</strong><br>
+    HandScore = (己方手牌数 − 敌方手牌数) × <strong>4</strong><br>
+    BoardScore = 己方场面价值 − 敌方场面价值
+  </div>
+</div>
+
+<div class="formula-box">
+  <div class="big">单个随从价值 = 攻击力 × 5 + 当前血量 × 3 + 关键词加分</div>
+  <div class="detail">
+    嘲讽 Taunt：<strong>+3</strong> &nbsp;|&nbsp;
+    圣盾 DivineShield：<strong>+5</strong> &nbsp;|&nbsp;
+    冲锋 Charge：<strong>+2</strong>
+  </div>
+</div>
+
+<div class="card">
+  <h4>评分权重直观对比（典型中期场面）</h4>
+  <div class="score-bar">
+    <span class="label">英雄血量差</span>
+    <div class="track"><div class="fill" style="width:25%"></div></div>
+    <span style="font-size:.82rem;color:var(--text3)">×2 · 波动范围小</span>
+  </div>
+  <div class="score-bar">
+    <span class="label">手牌数量差</span>
+    <div class="track"><div class="fill" style="width:20%"></div></div>
+    <span style="font-size:.82rem;color:var(--text3)">×4 · 只看数量</span>
+  </div>
+  <div class="score-bar">
+    <span class="label">场面随从差</span>
+    <div class="track"><div class="fill" style="width:55%"></div></div>
+    <span style="font-size:.82rem;color:var(--text3)">攻 × 5 + 血 × 3 · 影响最大</span>
+  </div>
+  <p style="margin-top:12px;font-size:.85rem;color:var(--text2);">
+    💡 <strong>场面是评分的主导因素。</strong>一个 3/4 随从 = 3×5 + 4×3 = <strong>27 分</strong>，相当于 13 点血量差或 6 张手牌差。
+  </p>
+</div>
+
+<div class="card">
+  <h3>5.5 AI 选择原因速查</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>枚举值</th><th>含义</th><th>触发条件</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>Lethal</code></td>
+        <td><strong>斩杀</strong></td>
+        <td>动作伤害 ≥ 敌方英雄当前血量（且目标不是自己英雄）</td>
+      </tr>
+      <tr>
+        <td><code>HighestEvaluationScore</code></td>
+        <td><strong>最优评分</strong></td>
+        <td>模拟后评分 ≥ 当前评分，且是候选中最高的</td>
+      </tr>
+      <tr>
+        <td><code>AcceptableScoreLoss</code></td>
+        <td><strong>可接受亏分</strong></td>
+        <td>模拟后评分 &lt; 当前评分，但损失 ≤ 3 分（用小亏换节奏）</td>
+      </tr>
+      <tr>
+        <td><code>NoProfitableActionEndTurn</code></td>
+        <td><strong>无利可图</strong></td>
+        <td>所有主动动作评分损失都 &gt; 3 分，只能结束回合</td>
+      </tr>
+      <tr>
+        <td><code>FallbackPriority</code></td>
+        <td><strong>兜底优先级</strong></td>
+        <td>快照模拟不可用（Mapper 失败等罕见情况），退回固定排序</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="box warn" style="margin-top:16px;">
+    <strong>🎯 AllowedScoreLoss = 3</strong> 是当前最关键的调参入口。<br>
+    设为 <strong>0</strong>：AI 绝对不主动亏分 → 过于保守，几乎只会 EndTurn<br>
+    设为 <strong>10</strong>：AI 愿意接受明显亏损 → 过于激进，可能送怪<br>
+    <strong>当前 = 3</strong>：折中值，允许用很小的代价换场面节奏。后续根据测试调整。
+  </div>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 6. 设计模式速查 -->
+<!-- ================================================================ -->
+<section id="patterns">
+<h2><span class="sec-icon">📐</span>6. 设计模式速查表</h2>
+<p class="section-intro">这些不是死记硬背的「八股」，而是反复出现的<strong>解题套路</strong>。看懂它们，代码就不再是一团乱麻。</p>
+
+<div class="card-grid">
+
+  <div class="pattern-card">
+    <div class="pat-name">🏭 Factory Method · 工厂方法</div>
+    <div class="pat-where"><span class="tag tag-sim">Snapshot 系列</span> 所有 <code>FromXxx()</code> 静态方法</div>
+    <div class="pat-why"><strong>解决什么问题：</strong>创建对象的过程很复杂（要从多个地方收集数据、做防御性拷贝），把这些逻辑封装在一个方法里，调用方一行搞定。</div>
+    <pre><code>// 一行调用，内部做了十几个字段的复制
+GameStateSnapshot snap = GameStateSnapshot.FromGameManager(gm);
+MinionSnapshot ms = MinionSnapshot.FromMinion(minion);
+BoardSnapshot bs = BoardSnapshot.FromBoard(board, p1, p2);</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">📸 Snapshot / Memento · 快照 / 备忘录</div>
+    <div class="pat-where"><span class="tag tag-sim">AI 模拟层</span> GameStateSnapshot 全系列</div>
+    <div class="pat-why"><strong>解决什么问题：</strong>AI 需要「试走」一步看结果，但不能真的改游戏状态。拍一张快照 → 在副本上试 → 试完扔掉副本。真实状态纹丝不动。</div>
+    <pre><code>// 真实状态完全不受影响
+var copy = GameStateSnapshot.FromGameManager(gm);
+var result = SnapshotSimulator.Simulate(copy, action);
+// copy 还是原样，result 是全新的快照</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">🔒 Immutable Object · 不可变对象</div>
+    <div class="pat-where"><span class="tag tag-sim">所有 Snapshot 类</span> <span class="tag tag-core">GameAction</span> <span class="tag tag-core">GameActionResult</span></div>
+    <div class="pat-why"><strong>解决什么问题：</strong>对象创建后不能修改。任何「修改」都返回新对象。避免了「A 改了共享数据导致 B 出 bug」的连锁反应——这在 AI 模拟中尤其致命。</div>
+    <pre><code>// GameAction 创建后不可改，没有 setter
+var action = GameAction.CreatePlayMinionCard(card, player);
+// 没有 action.Card = otherCard; 这种写法
+
+// SnapshotSimulator 也是：输入不变，返回新快照</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">📡 Event Bus / Observer · 事件总线 / 观察者</div>
+    <div class="pat-where"><span class="tag tag-core">GameEventBus</span> ← MinionDied → GameManager 订阅</div>
+    <div class="pat-why"><strong>解决什么问题：</strong>「随从死亡」的触发方式有很多（攻击、法术、战吼…），但触发者不需要知道谁关心死亡事件（亡语）。发布方和订阅方完全解耦。</div>
+    <pre><code>// 发布方：我只管喊一声
+EventBus.Publish(new GameEvent(MinionDied, deadMinion));
+
+// 订阅方：我只管收到后做什么
+EventBus.Subscribe(MinionDied, ResolveDeathrattleOnMinionDied);</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">🎯 Strategy · 策略模式</div>
+    <div class="pat-where"><span class="tag tag-ai">ActionSelector</span> 三级选择</div>
+    <div class="pat-why"><strong>解决什么问题：</strong>选动作的逻辑有三个版本（斩杀 / 评分 / 兜底），每个版本独立封装。改评分阈值不影响斩杀逻辑，加新策略不影响旧策略。</div>
+    <pre><code>// 三个策略独立，按优先级依次尝试
+if (TryFindLethalAction(...))           return;
+if (TryFindBestEvaluatedAction(...))    return;
+return SelectHighestPriorityAction(...);</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">⚡ Command · 命令模式（简化）</div>
+    <div class="pat-where"><span class="tag tag-core">GameAction</span> + <code>ExecuteAction()</code></div>
+    <div class="pat-why"><strong>解决什么问题：</strong>把「做什么」和「怎么做」分开。GameAction 只描述意图（打哪张牌、打谁），GameManager 负责执行。AI 和玩家 UI <strong>共用同一条执行链路</strong>。</div>
+    <pre><code>// AI 和 UI 都用完全相同的代码执行动作
+GameAction action = GameAction.CreateAttackMinion(attacker, target);
+GameActionResult result = gm.ExecuteAction(action);</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">📋 Template / Instance · 模板与实例分离</div>
+    <div class="pat-where"><span class="tag tag-core">CardData (SO)</span> → Card / Minion</div>
+    <div class="pat-why"><strong>解决什么问题：</strong>卡牌的固定属性只配一次（CardData），运行时实例各管各的状态（CurrentCost、CurrentHealth），互不干扰。这是卡牌游戏最基本的数据架构。</div>
+    <pre><code>// 同一个 CardData 可以生成多张独立的 Card
+Card c1 = new Card(cardData);  // CurrentCost = 3
+Card c2 = new Card(cardData);  // CurrentCost = 3
+c1.CurrentCost = 2;            // 只影响 c1，c2 不受影响</code></pre>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pat-name">📦 Partial Class · 分部类</div>
+    <div class="pat-where"><span class="tag tag-core">GameManager.cs</span> + GameManager.BattleLog.cs</div>
+    <div class="pat-why"><strong>解决什么问题：</strong>GameManager 太长（几百行），用 partial class 把日志相关方法拆分到独立文件。编译时合并成一个类。<strong>注意：这只是文件级别的组织手段，不是真正的职责分离。</strong></div>
+    <pre><code>// GameManager.cs — 回合流程、出牌、攻击、死亡清理
+public partial class GameManager : MonoBehaviour { ... }
+
+// GameManager.BattleLog.cs — 日志记录、伤害 helper
+public partial class GameManager { ... }</code></pre>
+  </div>
+
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 7. 文件索引 -->
+<!-- ================================================================ -->
+<section id="files">
+<h2><span class="sec-icon">📁</span>7. 文件索引</h2>
+<p class="section-intro">快速定位代码的目录。每个文件一行，一句话说清职责。</p>
+
+<details open>
+  <summary>⚙️ Core 层 — 实体 & 卡牌（7 个文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>Core/Entities/Hero.cs</code></td><td>英雄：血量、受伤、治疗、死亡判定</td><td><span class="tag tag-core">实体</span></td></tr>
+      <tr><td><code>Core/Entities/Minion.cs</code></td><td>随从运行时：攻击、血量、关键词、受伤、死亡</td><td><span class="tag tag-core">实体</span></td></tr>
+      <tr><td><code>Core/Entities/Player.cs</code></td><td>玩家资源：英雄、手牌、牌库、法力、抽牌/出牌</td><td><span class="tag tag-core">实体</span></td></tr>
+      <tr><td><code>Core/Entities/Board.cs</code></td><td>战场：双方随从列表、召唤/移除、站位管理</td><td><span class="tag tag-core">实体</span></td></tr>
+      <tr><td><code>Core/Cards/Card.cs</code></td><td>运行时卡牌实例：引用 CardData + 动态 CurrentCost</td><td><span class="tag tag-core">卡牌</span></td></tr>
+      <tr><td><code>Core/Cards/CardData.cs</code></td><td>ScriptableObject 卡牌模板：名称/费用/攻击/血量/关键词</td><td><span class="tag tag-core">卡牌</span></td></tr>
+      <tr><td><code>Core/Cards/CardType.cs</code></td><td>枚举：Minion / Spell</td><td><span class="tag tag-core">枚举</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>⚙️ Core 层 — 效果枚举 & 事件系统（7 个文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>Core/Effects/KeywordType.cs</code></td><td>枚举：Charge / Taunt / DivineShield</td><td><span class="tag tag-core">枚举</span></td></tr>
+      <tr><td><code>Core/Effects/BattlecryType.cs</code></td><td>枚举：DealDamageToEnemyHero / DrawCard</td><td><span class="tag tag-core">枚举</span></td></tr>
+      <tr><td><code>Core/Effects/DeathrattleType.cs</code></td><td>枚举：DealDamageToEnemyHero</td><td><span class="tag tag-core">枚举</span></td></tr>
+      <tr><td><code>Core/Effects/SpellTargetType.cs</code></td><td>枚举：7 种法术目标类型</td><td><span class="tag tag-core">枚举</span></td></tr>
+      <tr><td><code>Core/Events/GameEventType.cs</code></td><td>枚举：MinionDied（当前唯一事件类型）</td><td><span class="tag tag-core">事件</span></td></tr>
+      <tr><td><code>Core/Events/GameEvent.cs</code></td><td>事件数据对象：Type + TargetMinion</td><td><span class="tag tag-core">事件</span></td></tr>
+      <tr><td><code>Core/Events/GameEventBus.cs</code></td><td>发布/订阅事件总线（Dictionary 实现）</td><td><span class="tag tag-core">事件</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>⚙️ Core 层 — 动作系统 & 日志（7 个文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>Core/Actions/GameActionType.cs</code></td><td>枚举：6 种动作类型</td><td><span class="tag tag-core">枚举</span></td></tr>
+      <tr><td><code>Core/Actions/GameAction.cs</code></td><td>动作数据对象：不可变，静态工厂方法创建</td><td><span class="tag tag-core">动作</span></td></tr>
+      <tr><td><code>Core/Actions/GameActionResult.cs</code></td><td>操作结果：Success / FailureReason / Message</td><td><span class="tag tag-core">动作</span></td></tr>
+      <tr><td><code>Core/Actions/GameActionFailureReason.cs</code></td><td>枚举：15 种失败原因</td><td><span class="tag tag-core">枚举</span></td></tr>
+      <tr><td><code>Core/Actions/GameActionGenerator.cs</code></td><td>静态类：从 GameManager 状态生成所有合法动作</td><td><span class="tag tag-core">动作</span></td></tr>
+      <tr><td><code>Core/Logging/BattleLogEntry.cs</code></td><td>日志条目数据 + 18 种日志类型枚举</td><td><span class="tag tag-core">日志</span></td></tr>
+      <tr><td><code>Core/Logging/BattleLogger.cs</code></td><td>日志列表管理（添加/读取/清空）</td><td><span class="tag tag-core">日志</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>⚙️ Core 层 — GameManager（2 个 partial 文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>Core/GameManager.cs</code></td><td>游戏主循环：初始化、回合切换、出牌、攻击、死亡清理、胜负判定、关键词/战吼/亡语结算</td><td><span class="tag tag-core">中枢</span></td></tr>
+      <tr><td><code>Core/GameManager.BattleLog.cs</code></td><td>partial class：战斗日志记录 + 伤害 helper 方法</td><td><span class="tag tag-core">日志</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>🧠 AI 层 — 决策（6 个文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>AI/AIController.cs</code></td><td>AI 回合控制器：循环（生成→选择→执行）+ 日志输出</td><td><span class="tag tag-ai">控制器</span></td></tr>
+      <tr><td><code>AI/ActionSelector.cs</code></td><td>动作选择器：斩杀 → 快照模拟评分 → 兜底优先级</td><td><span class="tag tag-ai">核心策略</span></td></tr>
+      <tr><td><code>AI/Evaluator.cs</code></td><td>局面评估函数：血量差 + 手牌差 + 场面价值</td><td><span class="tag tag-ai">评分</span></td></tr>
+      <tr><td><code>AI/AIActionSelection.cs</code></td><td>选择结果容器：Action + Reason + 可选评分</td><td><span class="tag tag-ai">数据结构</span></td></tr>
+      <tr><td><code>AI/AIActionSelectionReason.cs</code></td><td>枚举：6 种选择原因</td><td><span class="tag tag-ai">枚举</span></td></tr>
+      <tr><td><code>AI/EvaluationResult.cs</code></td><td>评分明细：HeroHealth / Hand / Board / Total</td><td><span class="tag tag-ai">数据结构</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>📊 AI 层 — 快照模拟（7 个文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>AI/Simulation/GameStateSnapshot.cs</code></td><td>游戏状态快照根对象：包含双方玩家快照 + 战场快照 + 当前玩家索引</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/PlayerSnapshot.cs</code></td><td>玩家快照：6 个 int 字段（血量/法力/手牌数等）</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/BoardSnapshot.cs</code></td><td>战场快照：双方 MinionSnapshot 列表 + 防御性拷贝</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/MinionSnapshot.cs</code></td><td>随从快照：9 个字段（攻击/血量/关键词/死亡等）</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/SnapshotAction.cs</code></td><td>快照世界动作：用索引代替对象引用</td><td><span class="tag tag-sim">动作</span></td></tr>
+      <tr><td><code>AI/Simulation/SnapshotActionMapper.cs</code></td><td>真实 GameAction → SnapshotAction 翻译器</td><td><span class="tag tag-sim">映射</span></td></tr>
+      <tr><td><code>AI/Simulation/SnapshotSimulator.cs</code></td><td>快照模拟引擎：纯函数，输入快照 → 返回新快照</td><td><span class="tag tag-sim">引擎</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>🎨 UI 层（6 个文件）</summary>
+  <div class="content">
+    <div class="table-wrap">
+    <table>
+      <tr><th>文件</th><th>职责</th><th>标签</th></tr>
+      <tr><td><code>UI/Controllers/GameUIController.cs</code></td><td>UI 中枢：桥接 Core 和 Views，处理点击/拖拽交互</td><td><span class="tag tag-ui">控制器</span></td></tr>
+      <tr><td><code>UI/Views/CardView.cs</code></td><td>手牌中的单张卡牌显示组件</td><td><span class="tag tag-ui">视图</span></td></tr>
+      <tr><td><code>UI/Views/HandView.cs</code></td><td>手牌区域：管理 CardView 列表的创建/更新</td><td><span class="tag tag-ui">视图</span></td></tr>
+      <tr><td><code>UI/Views/MinionView.cs</code></td><td>战场上单个随从显示 + 选中高亮状态</td><td><span class="tag tag-ui">视图</span></td></tr>
+      <tr><td><code>UI/Views/BoardView.cs</code></td><td>单侧战场：管理 MinionView 列表的创建/更新</td><td><span class="tag tag-ui">视图</span></td></tr>
+      <tr><td><code>UI/Formatters/KeywordTextFormatter.cs</code></td><td>静态工具：KeywordType → 中文显示文本</td><td><span class="tag tag-ui">工具</span></td></tr>
+    </table>
+    </div>
+  </div>
+</details>
+
+</section>
+
+</main>
+
+<footer>
+  <p><strong>HearthstoneClone</strong> · 项目全景文档 · 2026-06-28</p>
+  <p>图表由 <a href="https://mermaid.js.org" target="_blank">Mermaid.js</a> 渲染 · Claude 暖橙主题</p>
+  <p>
+    相关文档：
+    <a href="02_CoreArchitecture.md">Core 架构</a> ·
+    <a href="03_UIArchitecture.md">UI 架构</a> ·
+    <a href="Learning/AISimulationGuide.html">AI 模拟指南</a> ·
+    <a href="00_CurrentStatus.md">当前进度</a>
+  </p>
+</footer>
+
+<script>
+// ---- Active nav highlighting ----
+(function() {
+  var links = document.querySelectorAll('.topbar a');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+  function update() {
+    var scrollY = window.scrollY + 80;
+    var active = null;
+    sections.forEach(function(s) {
+      if (s.el.offsetTop <= scrollY) active = s;
+    });
+    links.forEach(function(a) { a.classList.remove('active'); });
+    if (active) active.link.classList.add('active');
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+
+</body>
+</html>

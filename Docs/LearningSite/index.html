@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HearthstoneClone 阶段 3 AI 学习站</title>
+  <style>
+    :root {
+      --paper: #f7f4ee;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #d8d1c6;
+      --panel: #ffffff;
+      --soft: #ece7dd;
+      --teal: #207f86;
+      --teal-soft: #d8eef0;
+      --rust: #b75f35;
+      --rust-soft: #f3dfd4;
+      --gold: #a87912;
+      --gold-soft: #f3e6bd;
+      --green: #3e7b4f;
+      --green-soft: #dfeedd;
+      --code: #27313d;
+      --shadow: 0 8px 24px rgba(31, 41, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.68;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: var(--teal);
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .side {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--teal);
+      border-radius: 8px;
+      color: var(--teal);
+      font-weight: 800;
+      font-size: 18px;
+      background: var(--teal-soft);
+    }
+
+    .brand strong {
+      font-size: 17px;
+      line-height: 1.3;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .nav a {
+      display: block;
+      padding: 8px 10px;
+      color: var(--ink);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav a:hover {
+      background: var(--soft);
+      text-decoration: none;
+    }
+
+    .main {
+      padding: 28px;
+    }
+
+    .content {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      min-height: 62vh;
+      display: grid;
+      align-items: center;
+      gap: 28px;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      max-width: 760px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .flow-visual {
+      position: relative;
+      min-height: 360px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(32, 127, 134, 0.08) 0 1px, transparent 1px 100%),
+        linear-gradient(180deg, rgba(183, 95, 53, 0.08) 0 1px, transparent 1px 100%),
+        var(--panel);
+      background-size: 28px 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .flow-title {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .node {
+      border: 1px solid var(--line);
+      border-left-width: 5px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 12px 13px;
+      margin-bottom: 10px;
+    }
+
+    .node strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .node span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .node.teal {
+      border-left-color: var(--teal);
+    }
+
+    .node.rust {
+      border-left-color: var(--rust);
+    }
+
+    .node.gold {
+      border-left-color: var(--gold);
+    }
+
+    .node.green {
+      border-left-color: var(--green);
+    }
+
+    section {
+      padding: 52px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    .section-lead {
+      max-width: 820px;
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 8px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag.teal {
+      background: var(--teal-soft);
+      color: #125a60;
+    }
+
+    .tag.rust {
+      background: var(--rust-soft);
+      color: #7e3c20;
+    }
+
+    .tag.gold {
+      background: var(--gold-soft);
+      color: #6c4b08;
+    }
+
+    .tag.green {
+      background: var(--green-soft);
+      color: #275334;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--code);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .step p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .code-line {
+      display: inline-block;
+      margin-top: 7px;
+      padding: 4px 7px;
+      border-radius: 6px;
+      background: var(--code);
+      color: #edf2f7;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .matrix {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    td strong {
+      color: var(--ink);
+    }
+
+    .callout {
+      padding: 18px;
+      border-left: 5px solid var(--rust);
+      border-radius: 8px;
+      background: var(--rust-soft);
+      color: #4f2d1f;
+    }
+
+    .callout p {
+      margin: 0;
+    }
+
+    .tool-row {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr) 130px;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tool-row:last-child {
+      border-bottom: 0;
+    }
+
+    .tool-row strong {
+      font-size: 16px;
+    }
+
+    .tool-row p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status {
+      justify-self: start;
+      min-width: 92px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .status.ready {
+      background: var(--green-soft);
+      color: #275334;
+    }
+
+    .status.todo {
+      background: var(--gold-soft);
+      color: #6c4b08;
+    }
+
+    .reading-list {
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .reading-list li {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .reading-list strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .reading-list span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 28px 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        display: block;
+      }
+
+      .side {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .main {
+        padding: 18px;
+      }
+
+      .hero {
+        min-height: auto;
+        grid-template-columns: 1fr;
+        padding-top: 22px;
+      }
+
+      .grid,
+      .grid.two {
+        grid-template-columns: 1fr;
+      }
+
+      .tool-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .nav {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      .lead {
+        font-size: 16px;
+      }
+
+      .card,
+      .step,
+      .flow-visual {
+        box-shadow: none;
+      }
+
+      .step {
+        grid-template-columns: 36px minmax(0, 1fr);
+        padding: 12px;
+      }
+
+      .num {
+        width: 30px;
+        height: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">
+        <div class="brand-mark">AI</div>
+        <strong>阶段 3 学习站</strong>
+        <span>HearthstoneClone · 手机复盘版</span>
+      </div>
+      <nav class="nav" aria-label="页面目录">
+        <a href="#map">总览地图</a>
+        <a href="#flow">AI 回合流程</a>
+        <a href="#classes">类职责</a>
+        <a href="#patterns">设计模式</a>
+        <a href="#tools">工具路线</a>
+        <a href="#review">复盘清单</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="content">
+        <header class="hero">
+          <div>
+            <h1>把阶段 3 AI 系统拆成能读懂的六块</h1>
+            <p class="lead">这页不是 API 手册，而是面向你每天复盘的项目地图：先看动作从哪里来，再看 AI 怎么选，最后看快照模拟为什么能避免污染真实对局。</p>
+            <div class="chips" aria-label="当前覆盖范围">
+              <span class="chip">阶段 3.0-3.6</span>
+              <span class="chip">手机端优先</span>
+              <span class="chip">不改 Unity 资源</span>
+              <span class="chip">可接入 NDepend / MkDocs</span>
+            </div>
+          </div>
+
+          <div class="flow-visual" aria-label="AI 系统关系图">
+            <p class="flow-title">One Turn Mental Model</p>
+            <div class="node teal">
+              <strong>GameActionGenerator</strong>
+              <span>从真实 Core 状态枚举合法动作</span>
+            </div>
+            <div class="node rust">
+              <strong>ActionSelector</strong>
+              <span>过滤斩杀，逐个模拟，选择高分动作</span>
+            </div>
+            <div class="node gold">
+              <strong>SnapshotSimulator</strong>
+              <span>在快照副本里预演，不碰 GameManager</span>
+            </div>
+            <div class="node green">
+              <strong>Evaluator</strong>
+              <span>把局面拆成英雄、手牌、场面三项评分</span>
+            </div>
+            <div class="node teal">
+              <strong>AIController</strong>
+              <span>拿到结果后调用 ExecuteAction 执行真实动作</span>
+            </div>
+          </div>
+        </header>
+
+        <section id="map">
+          <h2>总览地图</h2>
+          <p class="section-lead">阶段 3 的复杂度来自两个世界同时存在：真实世界负责结算，快照世界负责推演。读代码时先分清“我现在在哪个世界”。</p>
+          <div class="grid">
+            <article class="card">
+              <span class="tag teal">真实世界</span>
+              <h3>Core 状态</h3>
+              <p><code>GameManager</code>、<code>Player</code>、<code>Board</code>、<code>Minion</code> 保存真实对局。只有执行动作时才应该修改它们。</p>
+            </article>
+            <article class="card">
+              <span class="tag rust">决策世界</span>
+              <h3>AI 选择</h3>
+              <p><code>ActionSelector</code> 不执行动作，只比较候选动作。它先保留斩杀硬规则，再用模拟评分选动作。</p>
+            </article>
+            <article class="card">
+              <span class="tag gold">快照世界</span>
+              <h3>脑内推演</h3>
+              <p><code>SnapshotSimulator</code> 把一个 <code>SnapshotAction</code> 应用到快照，返回新的快照，旧快照和真实状态都不变。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="flow">
+          <h2>AI 回合流程</h2>
+          <p class="section-lead">一回合可以按下面 6 步读。每一步只回答一个问题，复杂度就会降下来。</p>
+          <div class="timeline">
+            <div class="step">
+              <div class="num">1</div>
+              <div>
+                <h3>AIController 确认轮到自己</h3>
+                <p>如果游戏已结束、当前玩家不是 AI，直接返回。</p>
+                <span class="code-line">AIController.TakeTurn()</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="num">2</div>
+              <div>
+                <h3>生成当前所有合法动作</h3>
+                <p>这里不做“聪不聪明”的判断，只问规则允许什么。</p>
+                <span class="code-line">GameActionGenerator.GenerateLegalActions(gameManager)</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="num">3</div>
+              <div>
+                <h3>ActionSelector 查找斩杀</h3>
+                <p>斩杀是硬规则，能击杀敌方英雄就优先选。</p>
+                <span class="code-line">TryFindLethalAction(...)</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="num">4</div>
+              <div>
+                <h3>把真实动作翻译成快照动作</h3>
+                <p>真实对象引用不能放进模拟世界，所以要换成索引和数值。</p>
+                <span class="code-line">SnapshotActionMapper.TryMap(...)</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="num">5</div>
+              <div>
+                <h3>模拟每个候选动作并评分</h3>
+                <p>当前允许最多亏 3 分换节奏，避免 AI 因短期评分波动过于保守。</p>
+                <span class="code-line">AllowedScoreLoss = 3</span>
+              </div>
+            </div>
+            <div class="step">
+              <div class="num">6</div>
+              <div>
+                <h3>执行被选中的真实动作</h3>
+                <p>只有这一步会真正改变游戏状态，并让 UI 下一次刷新看到结果。</p>
+                <span class="code-line">gameManager.ExecuteAction(selectedAction)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="classes">
+          <h2>类职责</h2>
+          <p class="section-lead">读一个类之前，先把它归到“生成、选择、模拟、评分、执行”中的一个位置。</p>
+          <div class="matrix">
+            <table>
+              <thead>
+                <tr>
+                  <th>类</th>
+                  <th>一句话职责</th>
+                  <th>它依赖谁</th>
+                  <th>它不应该做什么</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>AIController</strong></td>
+                  <td>AI 回合总调度，循环执行下一步动作。</td>
+                  <td>GameManager、ActionSelector、Evaluator</td>
+                  <td>不自己写动作选择策略，不直接改手牌/场面。</td>
+                </tr>
+                <tr>
+                  <td><strong>GameActionGenerator</strong></td>
+                  <td>从当前真实局面枚举合法动作。</td>
+                  <td>GameManager 的验证方法、当前 Player、Board</td>
+                  <td>不执行动作，不给动作排序，不做 AI 偏好。</td>
+                </tr>
+                <tr>
+                  <td><strong>ActionSelector</strong></td>
+                  <td>从合法动作中选一条。</td>
+                  <td>SnapshotActionMapper、SnapshotSimulator、Evaluator</td>
+                  <td>不修改真实 GameManager，不直接刷新 UI。</td>
+                </tr>
+                <tr>
+                  <td><strong>SnapshotActionMapper</strong></td>
+                  <td>把真实 GameAction 翻译成快照世界能理解的数据。</td>
+                  <td>GameManager、Board、真实 GameAction</td>
+                  <td>不判断动作聪明与否，不执行动作。</td>
+                </tr>
+                <tr>
+                  <td><strong>SnapshotSimulator</strong></td>
+                  <td>在快照副本上模拟动作，返回新快照。</td>
+                  <td>Snapshot 类、SnapshotAction</td>
+                  <td>不引用 UI，不调用真实 GameManager。</td>
+                </tr>
+                <tr>
+                  <td><strong>Evaluator</strong></td>
+                  <td>把局面分解成英雄、手牌、场面三项评分。</td>
+                  <td>真实对象或快照对象的只读状态</td>
+                  <td>不生成动作，不执行动作，不预测多回合。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="patterns">
+          <h2>设计模式和工程思想</h2>
+          <p class="section-lead">这里先不背模式名，先理解它们解决的具体问题。</p>
+          <div class="grid two">
+            <article class="card">
+              <span class="tag gold">Snapshot</span>
+              <h3>快照模式</h3>
+              <p>问题：AI 想知道“如果我这么做会怎样”，但不能真的改游戏。解决：复制一份轻量状态，在副本上推演。</p>
+            </article>
+            <article class="card">
+              <span class="tag teal">Factory Method</span>
+              <h3>工厂方法</h3>
+              <p><code>FromGameManager</code>、<code>FromPlayer</code> 这类方法把“如何从真实对象创建快照”集中起来。</p>
+            </article>
+            <article class="card">
+              <span class="tag rust">Strategy</span>
+              <h3>策略思想</h3>
+              <p><code>ActionSelector</code> 当前是一套选择策略。以后要切换难度，可以把不同策略拆成可替换对象。</p>
+            </article>
+            <article class="card">
+              <span class="tag green">Pure Logic</span>
+              <h3>纯逻辑层</h3>
+              <p>Simulation 不继承 <code>MonoBehaviour</code>，不依赖 Unity 生命周期。这让以后做自动测试更容易。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="tools">
+          <h2>成熟工具路线</h2>
+          <p class="section-lead">当前先用本页承载学习资料。外部工具不是马上全装，而是按用途逐步接进来。</p>
+          <div class="card">
+            <div class="tool-row">
+              <strong>NDepend</strong>
+              <p>用于生成 C# 依赖图、复杂度、依赖矩阵。适合发现“我为什么看不懂”的结构原因。</p>
+              <span class="status todo">待安装</span>
+            </div>
+            <div class="tool-row">
+              <strong>Material for MkDocs</strong>
+              <p>用于把学习资料升级成正式文档站，支持搜索、手机端导航、主题和部署。</p>
+              <span class="status todo">待安装</span>
+            </div>
+            <div class="tool-row">
+              <strong>DocFX</strong>
+              <p>用于生成 C# API 文档。适合作为“查类和方法”的工具，不适合作为第一学习入口。</p>
+              <span class="status todo">候选</span>
+            </div>
+            <div class="tool-row">
+              <strong>Codex browser</strong>
+              <p>用于检查学习站在桌面和手机宽度下是否可读。</p>
+              <span class="status ready">可用</span>
+            </div>
+            <div class="tool-row">
+              <strong>hearthstone-code-review</strong>
+              <p>用于资料更新前做项目巡检，避免学习资料基于错误或已过时的代码结论。</p>
+              <span class="status ready">已使用</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="review">
+          <h2>地铁复盘清单</h2>
+          <p class="section-lead">每次只看一个问题。能口头讲清楚，再去读对应代码。</p>
+          <ul class="reading-list">
+            <li>
+              <strong>5 分钟：动作从哪里来？</strong>
+              <span>读 <code>GameActionGenerator</code>。只记住：它调用验证方法，生成动作，不选择动作。</span>
+            </li>
+            <li>
+              <strong>10 分钟：AI 为什么不直接改真实状态？</strong>
+              <span>读 <code>GameStateSnapshot</code> 和 <code>SnapshotSimulator</code>。重点看复制、模拟、返回新对象。</span>
+            </li>
+            <li>
+              <strong>10 分钟：评分为什么会让 AI 保守？</strong>
+              <span>读 <code>Evaluator</code> 权重，再看 <code>AllowedScoreLoss = 3</code> 为什么是阶段 3.6 的关键调整。</span>
+            </li>
+            <li>
+              <strong>15 分钟：面试怎么讲？</strong>
+              <span>用“合法动作生成 → 快照模拟 → 评分选择 → 真实执行”这条线讲，不要从每个字段开始讲。</span>
+            </li>
+          </ul>
+          <div class="callout" style="margin-top:18px;">
+            <p>更多快照细节已经有旧资料：<a href="../Learning/AISimulationGuide.html">AISimulationGuide.html</a>。这份旧资料适合深读，本页适合日常复盘和作为入口。</p>
+          </div>
+        </section>
+
+        <footer>
+          生成日期：2026-06-28 · 覆盖阶段：3.0-3.6 · 文件：Docs/LearningSite/index.html
+        </footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

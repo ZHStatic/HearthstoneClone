@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Simulation 模块看板</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --surface: #282840;
+    --surface2: #303055;
+    --text: #cdd6f4;
+    --text2: #a6adc8;
+    --accent: #89b4fa;
+    --accent2: #f5c2e7;
+    --green: #a6e3a1;
+    --yellow: #f9e2af;
+    --red: #f38ba8;
+    --blue: #89b4fa;
+    --orange: #fab387;
+    --border: #45475a;
+    --sidebar-w: 260px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    display: flex;
+  }
+
+  /* ── Sidebar ── */
+  nav {
+    position: fixed; top: 0; left: 0;
+    width: var(--sidebar-w); height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 16px;
+    z-index: 10;
+  }
+  nav h2 {
+    font-size: 15px;
+    color: var(--accent);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  nav a {
+    display: block;
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+  }
+  nav a:hover { color: var(--text); background: var(--surface2); }
+  nav a.section { margin-top: 14px; font-weight: 600; color: var(--accent2); font-size: 13px; }
+  nav a.section:first-of-type { margin-top: 0; }
+
+  /* ── Main content ── */
+  main {
+    margin-left: var(--sidebar-w);
+    padding: 40px 48px;
+    max-width: 960px;
+    width: 100%;
+  }
+  h1 { font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+  h1 + p { color: var(--text2); margin-bottom: 36px; }
+  h2 {
+    font-size: 20px;
+    color: var(--accent2);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 16px;
+    color: var(--accent);
+    margin: 28px 0 10px;
+  }
+  h4 {
+    font-size: 14px;
+    color: var(--yellow);
+    margin: 18px 0 8px;
+  }
+  p { margin-bottom: 12px; }
+  a { color: var(--accent); }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  td { vertical-align: top; }
+  tr:nth-child(even) td { background: var(--surface); }
+
+  /* ── Code / pre blocks ── */
+  pre, code {
+    font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 12px;
+  }
+  code {
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--yellow);
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+  pre .kw { color: #cba6f7; }
+  pre .str { color: #a6e3a1; }
+  pre .cmt { color: #6c7086; font-style: italic; }
+  pre .num { color: #fab387; }
+  pre .type { color: #89b4fa; }
+
+  /* ── Special blocks ── */
+  .box {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin: 12px 0 20px;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+  }
+  .box.warn  { border-left-color: var(--yellow); }
+  .box.tip   { border-left-color: var(--green); }
+  .box.danger{ border-left-color: var(--red); }
+
+  /* ── Legend / tag pills ── */
+  .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .tag-data    { background: #1e66f5; color: #fff; }
+  .tag-logic   { background: #df8e1d; color: #fff; }
+  .tag-sim     { background: #40a02b; color: #fff; }
+
+  /* ── Class diagram ── */
+  .dg-container {
+    margin: 16px 0 24px;
+  }
+  /* row */
+  .dg-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+  }
+  /* card */
+  .dg-card {
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 6px;
+    font-size: 12px;
+    line-height: 1.45;
+    min-width: 140px;
+    text-align: center;
+    position: relative;
+  }
+  .dg-card .name {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  .dg-card .sub  {
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .dg-card .members {
+    font-size: 10px;
+    color: #a0a8c0;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .dg-card.dg-real  { border: 2px solid #f38ba8; background: rgba(243,139,168,.08); }
+  .dg-card.dg-data  { border: 2px solid #1e66f5; background: rgba(30,102,245,.08); }
+  .dg-card.dg-logic { border: 2px solid #df8e1d; background: rgba(223,142,29,.08); }
+  .dg-card.dg-sim   { border: 2px solid #40a02b; background: rgba(64,160,43,.08); }
+  .dg-card.dg-aux   { border: 1.5px dashed var(--border); background: var(--surface); }
+  .dg-card.dg-sub   { border: 1.5px solid #1e66f5; background: rgba(30,102,245,.05); border-radius: 6px;
+                       padding: 6px 10px; min-width: auto; font-size: 11px; }
+
+  /* pill badge top-right */
+  .dg-badge {
+    position: absolute; top: -9px; right: -6px;
+    font-size: 10px; padding: 1px 7px; border-radius: 9px;
+    font-weight: 700; letter-spacing: .3px;
+    white-space: nowrap;
+  }
+  .dg-badge.data  { background: #1e66f5; color: #fff; }
+  .dg-badge.logic { background: #df8e1d; color: #fff; }
+  .dg-badge.sim   { background: #40a02b; color: #fff; }
+
+  /* arrow between cards */
+  .dg-arr {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--text2); margin: 0 4px;
+    min-width: 32px; text-align: center;
+    flex-shrink: 0;
+  }
+  .dg-arr.down { font-size: 22px; }
+  .dg-arr-label {
+    font-size: 10px; color: var(--text2); text-align: center;
+    margin: 2px 0; white-space: nowrap;
+  }
+
+  /* stack children vertically under a parent */
+  .dg-stack {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+  }
+  .dg-stack-row {
+    display: flex; align-items: center; justify-content: center; gap: 0;
+  }
+
+  /* bracket group — cards visually grouped */
+  .dg-group {
+    display: flex; flex-direction: column;
+    align-items: center;
+    border: 1px dashed rgba(255,255,255,.12);
+    border-radius: 10px; padding: 12px 18px 10px; margin: 4px;
+    position: relative;
+  }
+  .dg-group-title {
+    position: absolute; top: -9px; left: 14px;
+    font-size: 10px; color: var(--text2); background: var(--bg);
+    padding: 0 8px;
+  }
+
+  /* vertical divider line connecting stacks */
+  .dg-vline {
+    width: 2px; height: 32px;
+    background: linear-gradient(to bottom, var(--border), transparent);
+    margin: 0 auto;
+  }
+  .dg-vline.solid {
+    background: var(--accent);
+  }
+
+  /* overlay arrow label */
+  .dg-flow-label {
+    font-size: 10px; color: var(--accent2); text-align: center;
+    margin: 3px 0; font-style: italic;
+  }
+
+  /* horizontal rule inside diagram */
+  .dg-hr {
+    width: 100%; height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 14px 0;
+  }
+
+  /* mapping mini table inside diagram */
+  .dg-map {
+    display: flex; gap: 16px; align-items: center; justify-content: center;
+    flex-wrap: wrap; font-size: 11px; margin: 6px 0;
+  }
+  .dg-map-col {
+    display: flex; flex-direction: column; gap: 3px;
+    background: var(--surface); border-radius: 6px; padding: 8px 12px;
+    min-width: 180px;
+  }
+  .dg-map-col .hd {
+    font-weight: 700; color: var(--accent); margin-bottom: 4px;
+    border-bottom: 1px solid var(--border); padding-bottom: 4px;
+  }
+  .dg-map-col .item { color: var(--text); font-family: monospace; font-size: 11px; }
+  .dg-map-col .arrow-item { color: var(--accent2); }
+
+  /* dependency rules table */
+  .dg-rules {
+    display: grid; grid-template-columns: auto 1fr 1fr;
+    gap: 1px; background: var(--border); border-radius: 6px;
+    overflow: hidden; margin: 12px 0 20px; font-size: 13px;
+  }
+  .dg-rules > div { background: var(--bg); padding: 7px 12px; }
+  .dg-rules > .hdr { background: var(--surface2); font-weight: 600; color: var(--accent); }
+  .dg-rules .ok { color: var(--green); }
+  .dg-rules .no { color: var(--red); }
+
+  /* ── Timeline ── */
+  .tl-step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .tl-num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: #1e1e2e;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .tl-body { flex: 1; }
+  .tl-body .title { font-weight: 600; color: var(--text); }
+  .tl-body .file  { font-size: 12px; color: var(--accent); }
+  .tl-body .detail{ font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  /* ── Two-column comparison ── */
+  .cmp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 12px 0 20px;
+    font-size: 13px;
+  }
+  .cmp > div { background: var(--bg); padding: 10px 14px; }
+  .cmp > .hdr { background: var(--surface2); font-weight: 600; color: var(--accent); }
+
+  /* ── Field comparison table (real vs snapshot) ── */
+  .field-cmp td:nth-child(3) { color: var(--red); }
+  .field-cmp td:nth-child(4) { color: var(--green); }
+
+  @media (max-width: 768px) {
+    body { flex-direction: column; }
+    nav { position: static; width: 100%; height: auto; }
+    main { margin-left: 0; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav>
+  <h2>AI Simulation 看板</h2>
+  <a href="#overview">0. 概述</a>
+  <a href="#class-diagram" class="section">1. 全景类图</a>
+  <a href="#timeline" class="section">2. 决策时间线</a>
+  <a href="#sim-layer" class="section">3. Simulation 三层拆解</a>
+  <a href="#data-layer">　3.1 数据层 — 快照对象</a>
+  <a href="#map-layer">　3.2 映射层 — SnapshotActionMapper</a>
+  <a href="#exec-layer">　3.3 执行层 — SnapshotSimulator</a>
+  <a href="#walkthrough" class="section">4. 走读实例</a>
+  <a href="#field-cmp" class="section">5. 字段对照</a>
+  <a href="#csharp-ref" class="section">6. 涉及的 C# 知识</a>
+  <a href="#unity-ref" class="section">7. 游戏开发知识</a>
+  <a href="#faq" class="section">8. 面试问答</a>
+  <a href="#glossary" class="section">9. 术语速查</a>
+</nav>
+
+<main>
+
+<h1>AI Simulation 模块看板</h1>
+<p>目标：让 AI 在"做决定之前"<strong>预览每个候选动作后的局面</strong>，选最好的执行，且预览过程<strong>完全不碰真实游戏状态</strong>。</p>
+
+<!-- ═══════════════ 0. OVERVIEW ═══════════════ -->
+<h2 id="overview">0. 概述</h2>
+
+<p>当前 AI 系统分为两大块：</p>
+
+<table>
+  <tr><th>块</th><th>职责</th><th>一句话</th></tr>
+  <tr>
+    <td><strong>决策层</strong></td>
+    <td>AIController / ActionSelector / Evaluator</td>
+    <td>"现在能做什么？选哪个？"</td>
+  </tr>
+  <tr>
+    <td><strong>模拟层</strong></td>
+    <td>GameStateSnapshot / SnapshotActionMapper / SnapshotSimulator</td>
+    <td>"如果选这个，会变成什么样？"</td>
+  </tr>
+</table>
+
+<p>模拟层是这篇文章的主角。它做的是 AI 的"脑内推演"——像下棋时在脑子里想"如果走这一步，会怎样"。</p>
+
+<div class="box">
+  <strong>核心设计思想（四个）</strong><br><br>
+  <strong>① 快照模式 (Snapshot Pattern)</strong> — 拍照而不是改原件<br>
+  <strong>② 不可变拷贝 (Immutable Copy)</strong> — 每次修改都创建新对象，旧对象永不被污染<br>
+  <strong>③ 轻量化 (Lightweight)</strong> — 只抄 AI 评估需要的数据，其余全扔<br>
+  <strong>④ 索引代替引用 (Index over Reference)</strong> — 快照世界里没有真实对象，用"第几个"来定位
+</div>
+
+<!-- ═══════════════ 1. CLASS DIAGRAM ═══════════════ -->
+<h2 id="class-diagram">1. 全景类图</h2>
+
+<div class="dg-container">
+
+  <!-- === ROW: 真实对局 → 动作生成 → 选择 === -->
+  <div class="dg-row">
+    <div class="dg-card dg-real" style="min-width:180px;">
+      <div class="name">GameManager</div>
+      <div class="sub">真实对局状态（唯一的）</div>
+      <div class="members">Player · Enemy · Board · Minions</div>
+    </div>
+
+    <div class="dg-arr">→</div>
+    <div class="dg-stack">
+      <div class="dg-arr-label">生成合法动作</div>
+    </div>
+    <div class="dg-arr">→</div>
+
+    <div class="dg-card dg-logic" style="min-width:180px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">GameActionGenerator</div>
+      <div class="sub">枚举所有合法操作</div>
+      <div class="members">.GenerateLegalActions()</div>
+    </div>
+
+    <div class="dg-arr">→</div>
+    <div class="dg-card dg-logic" style="min-width:170px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">ActionSelector</div>
+      <div class="sub">按策略选最优动作</div>
+      <div class="members">.SelectAction(actions)</div>
+    </div>
+
+    <div class="dg-arr">→</div>
+    <div class="dg-card dg-logic" style="min-width:160px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">AIController</div>
+      <div class="sub">AI 回合总调度</div>
+      <div class="members">.TakeTurn()</div>
+    </div>
+  </div>
+
+  <!-- connector: AI 执行动作回到 GameManager -->
+  <div class="dg-flow-label" style="margin:6px 0 14px;">AIController 拿到选中动作后，调用 GameManager.ExecuteAction() 执行 ← 修改真实对局</div>
+
+  <!-- === 虚线分隔：上半是真实决策流，下半是模拟链路 === -->
+  <div class="dg-hr"></div>
+  <div class="dg-flow-label">▼ 以下为 Simulation 模拟链路（AI 的"脑内推演"）</div>
+
+  <!-- === ROW: 拍快照 → 模拟器 → 评估 === -->
+  <div class="dg-row" style="margin-top:10px;">
+    <!-- 快照根对象 -->
+    <div class="dg-card dg-data" style="min-width:180px;">
+      <span class="dg-badge data">数据层</span>
+      <div class="name">GameStateSnapshot</div>
+      <div class="sub">整局快照的"根"</div>
+      <div class="members">FromGameManager()</div>
+    </div>
+  </div>
+
+  <div class="dg-vline"></div>
+
+  <!-- 快照内部结构 -->
+  <div class="dg-group">
+    <div class="dg-group-title">GameStateSnapshot 内部包含</div>
+    <div class="dg-stack-row">
+      <div class="dg-card dg-sub">
+        <div class="name">PlayerSnapshot</div>
+        <div class="members">HeroHealth · Mana · HandCount</div>
+      </div>
+      <div class="dg-card dg-sub" style="margin-left:10px;">
+        <div class="name">PlayerSnapshot</div>
+        <div class="members">(敌方，字段同上)</div>
+      </div>
+      <div class="dg-card dg-sub" style="margin-left:10px;">
+        <div class="name">BoardSnapshot</div>
+        <div class="members">PlayerMinions · EnemyMinions</div>
+      </div>
+    </div>
+    <div class="dg-stack-row" style="margin-top:4px;">
+      <div class="dg-card dg-sub" style="border-style:dashed;">
+        <div class="name">MinionSnapshot</div>
+        <div class="members">Attack · HP · CanAttack · HasTaunt<br>HasDivineShield · HasCharge</div>
+      </div>
+      <div style="margin-left:8px; font-size:10px; color:var(--text2);">× N</div>
+    </div>
+  </div>
+
+  <div class="dg-vline"></div>
+
+  <!-- 模拟器 + 评估 -->
+  <div class="dg-row">
+    <div class="dg-card dg-sim" style="min-width:200px;">
+      <span class="dg-badge sim">模拟层</span>
+      <div class="name">SnapshotSimulator</div>
+      <div class="sub">核心推演引擎（全 static）</div>
+      <div class="members">.Simulate(旧快照, 动作) → 新快照</div>
+    </div>
+
+    <div class="dg-arr">→</div>
+
+    <div class="dg-card dg-logic" style="min-width:180px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">Evaluator</div>
+      <div class="sub">对新快照打分</div>
+      <div class="members">.Evaluate(snapshot) → int<br>.EvaluateDetailed() → 评分明细</div>
+    </div>
+  </div>
+
+  <!-- 评分反馈到选择 -->
+  <div class="dg-flow-label" style="margin:8px 0;">▲ 评分结果反馈给 ActionSelector，选出最优动作</div>
+
+  <div class="dg-hr"></div>
+
+  <!-- === 辅助类 === -->
+  <div class="dg-flow-label">辅助类</div>
+
+  <div class="dg-row" style="margin-top:6px;">
+    <!-- SnapshotActionMapper -->
+    <div class="dg-card dg-sim" style="min-width:360px;">
+      <span class="dg-badge sim">模拟层</span>
+      <div class="name">SnapshotActionMapper</div>
+      <div class="sub">真实动作 → 快照动作 的翻译器（全 static）</div>
+      <div class="members">.TryMap(GameAction, gm, out SnapshotAction) → bool</div>
+      <div class="dg-map" style="margin-top:8px;">
+        <div class="dg-map-col">
+          <div class="hd">输入：GameAction</div>
+          <div class="item">Attacker: Minion 引用</div>
+          <div class="item">TargetMinion: Minion 引用</div>
+          <div class="item">TargetHero: Hero 引用</div>
+          <div class="item">Card: Card 引用</div>
+          <div class="item">Actor: Player 引用</div>
+        </div>
+        <div style="font-size:20px; color:var(--accent2);">→</div>
+        <div class="dg-map-col">
+          <div class="hd">输出：SnapshotAction</div>
+          <div class="item">AttackerIndex: int (-1=无)</div>
+          <div class="item">TargetMinionIndex: int</div>
+          <div class="item">TargetsHero: bool</div>
+          <div class="item">CardCost · CardAttack · SpellDamage</div>
+          <div class="item">ActorIndex: 0 或 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dg-row" style="margin-top:8px;">
+    <div class="dg-card dg-logic" style="min-width:180px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">AIActionSelection</div>
+      <div class="sub">选择结果包</div>
+      <div class="members">Action + Reason</div>
+    </div>
+    <div class="dg-card dg-logic" style="min-width:170px; margin-left:12px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">EvaluationResult</div>
+      <div class="sub">评分明细包</div>
+      <div class="members">HeroScore · HandScore<br>BoardScore · TotalScore</div>
+    </div>
+    <div class="dg-card dg-logic" style="min-width:170px; margin-left:12px;">
+      <span class="dg-badge logic">逻辑层</span>
+      <div class="name">AIActionSelectionReason</div>
+      <div class="sub">选择原因枚举</div>
+      <div class="members">Lethal · KillEnemyMinion<br>PlayCard · FallbackPriority</div>
+    </div>
+  </div>
+
+</div>
+
+<h3>调用方向规则</h3>
+
+<div class="dg-rules">
+  <div class="hdr">调用者</div><div class="hdr">可以调用</div><div class="hdr">不能调用</div>
+  <div>逻辑层 (AIController 等)</div>
+  <div class="ok">✓ 数据层（读快照）<br>✓ 模拟层（做推演）<br>✓ 真实 GameManager（执行动作）</div>
+  <div class="no">—</div>
+  <div>模拟层 (SnapshotSimulator)</div>
+  <div class="ok">✓ 数据层（读/写快照副本）</div>
+  <div class="no">✗ 真实 GameManager<br>✗ 逻辑层<br>✗ UI</div>
+  <div>数据层 (Snapshot 类)</div>
+  <div class="ok">（纯数据，无方法调用）</div>
+  <div class="no">✗ 不调用任何人</div>
+</div>
+
+<!-- ═══════════════ 2. TIMELINE ═══════════════ -->
+<h2 id="timeline">2. AI 决策完整时间线</h2>
+
+<p>从"轮到 Enemy"到"AI 执行完一个动作"的全流程。</p>
+
+<div class="tl-step">
+  <div class="tl-num">1</div>
+  <div class="tl-body">
+    <div class="title">轮到敌方回合</div>
+    <div class="file">GameManager.EndTurn() → StartTurn(enemy)</div>
+    <div class="detail">敌方补法力、抽牌。CurrentPlayer 切换为 Enemy。</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">2</div>
+  <div class="tl-body">
+    <div class="title">AI 接管</div>
+    <div class="file">AIController.TakeTurn()</div>
+    <div class="detail">开始循环：生成动作 → 选择 → 执行，直到选了 EndTurn 或达到上限。</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">3</div>
+  <div class="tl-body">
+    <div class="title">枚举合法动作</div>
+    <div class="file">GameActionGenerator.GenerateLegalActions(gameManager)</div>
+    <div class="detail">扫描手牌（费用够不够）、场上随从（能不能攻击）、英雄技能等，生成合法动作列表。<br>
+    例如：[打出石牙野猪, 野猪攻击敌方英雄, 野猪攻击嘲讽龟, 结束回合]</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">4</div>
+  <div class="tl-body">
+    <div class="title">选择动作</div>
+    <div class="file">ActionSelector.SelectAction(legalActions)</div>
+    <div class="detail"><strong>当前策略（规则优先级）：</strong><br>
+    ① 能斩杀英雄 → 选它<br>
+    ② 能击杀敌方随从 → 选威胁最大的<br>
+    ③ 有可出手牌 → 选费用最高的<br>
+    ④ 兜底 → 按固定优先级（攻英雄 > 攻随从 > 出随从 > 结束回合）<br><br>
+    <strong>未来策略（评分驱动）：</strong>对每个候选动作做快照模拟 → 评分 → 选分最高的。</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">5</div>
+  <div class="tl-body">
+    <div class="title">【可选】快照模拟 + 评分（当前仅用于日志对比）</div>
+    <div class="file">GameStateSnapshot.FromGameManager() → SnapshotSimulator.Simulate() → Evaluator.Evaluate()</div>
+    <div class="detail">这是 Simulation 模块登场的位置。目前主要用于验证"快照评分和真实评分是否一致"，不参与实际决策。</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">6</div>
+  <div class="tl-body">
+    <div class="title">执行动作</div>
+    <div class="file">GameManager.ExecuteAction(selectedAction)</div>
+    <div class="detail">统一执行入口。分发到具体的 Try...Detailed 方法。</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">7</div>
+  <div class="tl-body">
+    <div class="title">记录日志</div>
+    <div class="file">AIController 拼接单行日志输出到 Console</div>
+    <div class="detail">格式：AI 行动：xxx | 理由：xxx | 评分：xxx → xxx | 结果：xxx</div>
+  </div>
+</div>
+
+<div class="tl-step">
+  <div class="tl-num">8</div>
+  <div class="tl-body">
+    <div class="title">循环或结束</div>
+    <div class="detail">如果执行的是 EndTurn → 退出循环。否则回到步骤 3 继续生成动作（因为局面变了）。</div>
+  </div>
+</div>
+
+<!-- ═══════════════ 3. THREE LAYERS ═══════════════ -->
+<h2 id="sim-layer">3. Simulation 三层拆解</h2>
+
+<h3 id="data-layer">3.1 数据层 — 快照对象</h3>
+
+<p>这四个类的共同特点：<strong>只存数据，没有行为方法</strong>。所有属性 <code>private set</code>，创建后不可修改（Immutable）。</p>
+
+<h4>GameStateSnapshot — 整局快照的"根"</h4>
+<pre>
+<span class="cmt">// 文件：Assets/Scripts/AI/Simulation/GameStateSnapshot.cs</span>
+
+<span class="kw">public class</span> <span class="type">GameStateSnapshot</span>
+{
+    <span class="kw">public const int</span> PlayerIndex = 0;   <span class="cmt">// 用 0/1 代替真实 Player 引用</span>
+    <span class="kw">public const int</span> EnemyIndex  = 1;
+
+    <span class="kw">public int</span> CurrentPlayerIndex;        <span class="cmt">// 当前是谁的回合（0 或 1）</span>
+    <span class="kw">public</span> <span class="type">PlayerSnapshot</span> Player;           <span class="cmt">// 玩家状态</span>
+    <span class="kw">public</span> <span class="type">PlayerSnapshot</span> Enemy;            <span class="cmt">// 敌方状态</span>
+    <span class="kw">public</span> <span class="type">BoardSnapshot</span> Board;             <span class="cmt">// 双方战场</span>
+}
+</pre>
+
+<table>
+  <tr><th>方法</th><th>用途</th></tr>
+  <tr><td><code>FromGameManager(GameManager)</code></td><td><strong>工厂方法</strong>：从真实对局拍一张快照</td></tr>
+  <tr><td><code>GetCurrentPlayer()</code></td><td>返回当前回合玩家的 PlayerSnapshot</td></tr>
+  <tr><td><code>GetOpponentPlayer()</code></td><td>返回对手的 PlayerSnapshot</td></tr>
+</table>
+
+<h4>PlayerSnapshot — 玩家状态的 6 个 int</h4>
+<pre>
+<span class="kw">public class</span> <span class="type">PlayerSnapshot</span>
+{
+    <span class="cmt">// 6 个字段，全部是 int。没有 Hero 引用，没有 Card 列表。</span>
+    <span class="kw">public int</span> HeroHealth;      <span class="cmt">// 当前血量</span>
+    <span class="kw">public int</span> HeroMaxHealth;   <span class="cmt">// 最大血量</span>
+    <span class="kw">public int</span> CurrentMana;     <span class="cmt">// 当前剩余法力</span>
+    <span class="kw">public int</span> MaxMana;         <span class="cmt">// 最大法力水晶</span>
+    <span class="kw">public int</span> HandCount;       <span class="cmt">// 手牌<strong>数量</strong>（不知道是什么牌！）</span>
+    <span class="kw">public int</span> DeckCount;       <span class="cmt">// 牌库<strong>数量</strong></span>
+}
+</pre>
+
+<div class="box tip">
+  <strong>为什么丢弃具体手牌信息？</strong><br>
+  当前评估只看"有几张牌"，不看"是什么牌"。评估公式是 <code>手牌数差 × 4</code>。<br>
+  如果以后要评估手牌质量（比如手里有 AOE），就需要扩展快照，记录每张牌的 CardData 引用或摘要。
+</div>
+
+<h4>MinionSnapshot — 随从状态的 7 个字段</h4>
+<pre>
+<span class="kw">public class</span> <span class="type">MinionSnapshot</span>
+{
+    <span class="cmt">// 7 个字段。没有 CardData 引用，没有 Owner 引用，没有战吼/亡语效果。</span>
+    <span class="kw">public int</span>  Attack;
+    <span class="kw">public int</span>  CurrentHealth;
+    <span class="kw">public int</span>  MaxHealth;
+    <span class="kw">public bool</span> CanAttack;           <span class="cmt">// 本回合是否能攻击</span>
+    <span class="kw">public bool</span> HasTaunt;            <span class="cmt">// 是否有嘲讽</span>
+    <span class="kw">public bool</span> HasDivineShield;     <span class="cmt">// 是否有圣盾</span>
+    <span class="kw">public bool</span> HasCharge;           <span class="cmt">// 是否有冲锋</span>
+}
+</pre>
+
+<h4>BoardSnapshot — 双方随从列表</h4>
+<pre>
+<span class="kw">public class</span> <span class="type">BoardSnapshot</span>
+{
+    <span class="kw">private readonly</span> List&lt;<span class="type">MinionSnapshot</span>&gt; playerMinions;  <span class="cmt">// 己方随从</span>
+    <span class="kw">private readonly</span> List&lt;<span class="type">MinionSnapshot</span>&gt; enemyMinions;   <span class="cmt">// 敌方随从</span>
+
+    <span class="cmt">// 对外只暴露 IReadOnlyList，外部不能 Add/Remove</span>
+    <span class="kw">public</span> IReadOnlyList&lt;<span class="type">MinionSnapshot</span>&gt; PlayerMinions;
+    <span class="kw">public</span> IReadOnlyList&lt;<span class="type">MinionSnapshot</span>&gt; EnemyMinions;
+}
+</pre>
+
+<div class="box">
+  <strong>BoardSnapshot 构造器里的 CopyMinions 在干什么？</strong><br>
+  这是<strong>防御性拷贝</strong>——构造器收到外部传入的 List 后，不直接存引用，而是复制一份。<br>
+  这样外部后续修改它自己的 List（比如 Clear），不会污染 BoardSnapshot 内部的数据。<br>
+  类比：收到一份名单，自己抄一份存档，别人事后在他的名单上乱画，不影响你的存档。
+</div>
+
+<h3 id="map-layer">3.2 映射层 — SnapshotActionMapper</h3>
+
+<p>职责：<strong>把真实 GameAction（包含 Minion/Card/Hero 引用）翻译成 SnapshotAction（只有索引和数值）。</strong></p>
+
+<pre>
+  输入（真实世界）                         输出（快照世界）
+
+  GameAction                               SnapshotAction
+  ├ ActionType: AttackMinion               ├ ActionType: AttackMinion
+  ├ Attacker: &lt;Minion对象引用&gt;      →      ├ AttackerIndex: 2  (己方列表第3个)
+  ├ TargetMinion: &lt;Minion对象引用&gt;  →      ├ TargetMinionIndex: 0 (对方列表第1个)
+  ├ Actor: &lt;Player对象引用&gt;         →      ├ ActorIndex: 1 (Enemy)
+  └ (没有数值字段)                          ├ CardCost: 0
+                                            ├ CardAttack: 0
+                                            └ SpellDamage: 0
+</pre>
+
+<p>核心翻译过程（以攻击为例）：</p>
+<pre>
+<span class="cmt">// SnapshotActionMapper.TryMapAttackMinion</span>
+<span class="kw">int</span> attackerIndex = FindMinionIndex(board, actor, action.Attacker);
+<span class="cmt">// ↑ 在真实己方场面里找到"攻击者"是第几个随从 → 比如第3个，索引就是2</span>
+
+<span class="kw">int</span> targetIndex = FindMinionIndex(board, opponent, action.TargetMinion);
+<span class="cmt">// ↑ 在真实对方场面里找到"目标"是第几个随从 → 比如第1个，索引就是0</span>
+
+<span class="kw">return</span> SnapshotAction.CreateAttackMinion(actorIndex: 1, attackerIndex: 2, targetIndex: 0);
+<span class="cmt">// ↑ 构造一个只有索引的快照动作</span>
+</pre>
+
+<table>
+  <tr><th>TryMap 能翻译哪些动作</th><th>当前不能翻译的</th></tr>
+  <tr>
+    <td>
+      PlayMinionCard（费用/攻击/血量）<br>
+      PlaySpellOnMinion（费用/伤害/目标索引）<br>
+      PlaySpellOnHero（费用/伤害）<br>
+      AttackMinion（攻击者索引/目标索引）<br>
+      AttackHero（攻击者索引）<br>
+      EndTurn
+    </td>
+    <td>
+      友方目标法术（当前只支持敌方目标）<br>
+      治疗、Buff、AOE<br>
+      战吼、亡语（快照目前不模拟）<br>
+      找不到索引的动作（返回 false）
+    </td>
+  </tr>
+</table>
+
+<h3 id="exec-layer">3.3 执行层 — SnapshotSimulator</h3>
+
+<p>职责：<strong>输入旧快照 + 快照动作 → 输出新快照。不修改输入。</strong></p>
+
+<pre>
+<span class="kw">public static class</span> <span class="type">SnapshotSimulator</span>   <span class="cmt">// ← 全静态类，纯工具箱</span>
+{
+    <span class="kw">public static</span> <span class="type">GameStateSnapshot</span> Simulate(
+        <span class="type">GameStateSnapshot</span> state,
+        <span class="type">SnapshotAction</span> action)
+    {
+        <span class="cmt">// 第一步：把 state 里的所有东西深复制一份</span>
+        <span class="type">PlayerSnapshot</span> player = CopyPlayer(state.Player);
+        <span class="type">PlayerSnapshot</span> enemy  = CopyPlayer(state.Enemy);
+        List&lt;<span class="type">MinionSnapshot</span>&gt; players = CopyMinions(state.Board.PlayerMinions);
+        List&lt;<span class="type">MinionSnapshot</span>&gt; enemies = CopyMinions(state.Board.EnemyMinions);
+
+        <span class="cmt">// 第二步：在副本上执行动作（用 switch 分发到具体模拟方法）</span>
+
+        <span class="cmt">// 第三步：用修改后的副本构造新快照返回</span>
+        <span class="kw">return new</span> <span class="type">GameStateSnapshot</span>(currentPlayer, player, enemy,
+                                <span class="kw">new</span> <span class="type">BoardSnapshot</span>(players, enemies));
+    }
+    <span class="cmt">// 旧的 state 完好无损！可以继续用于模拟下一个候选动作。</span>
+}
+</pre>
+
+<p>每个"修改"方法都遵循<strong>不修改输入，返回新对象</strong>的规则：</p>
+
+<pre>
+<span class="cmt">// 扣血方法：不改旧 minion，创建新的返回</span>
+<span class="kw">private static</span> <span class="type">MinionSnapshot</span> DamageMinion(<span class="type">MinionSnapshot</span> minion, <span class="kw">int</span> damage)
+{
+    <span class="kw">if</span> (damage &lt;= 0) <span class="kw">return</span> minion;                <span class="cmt">// 没伤害就不变</span>
+
+    <span class="kw">if</span> (minion.HasDivineShield)                   <span class="cmt">// 有圣盾 → 抵消伤害，移除圣盾</span>
+        <span class="kw">return new</span> <span class="type">MinionSnapshot</span>(attack, hp, hp, canAttack,
+                                hasTaunt, <strong>false</strong>, hasCharge);
+
+    <span class="kw">return new</span> <span class="type">MinionSnapshot</span>(attack, <strong>hp - damage</strong>, hp, ...);
+    <span class="cmt">//                           ↑ 只有血量变了，其余字段原样复制</span>
+}
+</pre>
+
+<div class="box">
+  <strong>当前模拟什么 / 不模拟什么：</strong><br>
+  ✅ 伤害、死亡移除、圣盾抵消、费用消耗、手牌数-1、不能再次攻击<br>
+  ❌ 战吼效果、亡语效果、冲锋（新随从默认不能攻击）、嘲讽限制（攻击时不检查）、友方法术目标
+</div>
+
+<!-- ═══════════════ 4. WALKTHROUGH ═══════════════ -->
+<h2 id="walkthrough">4. 走读实例</h2>
+
+<p>假设当前局面，AI 持有法术"火花"（2费造成3点伤害），候选动作是"对敌方嘲讽龟释放火花"。下面完整走一遍快照模拟流程：</p>
+
+<pre>
+  初始真实局面：
+    玩家英雄 30血，场上 [3/2 野猪]
+    敌方英雄 28血，场上 [2/3 嘲讽龟]（嘲讽、圣盾）
+    AI 手牌："火花" (2费 造成3伤)
+    AI 法力：4
+
+  ═══════════════════════════════════════════════════════════════
+
+  <strong>Step 1：拍快照</strong>
+  GameStateSnapshot.FromGameManager(gameManager)
+    → GameStateSnapshot {
+        CurrentPlayerIndex: 1 (Enemy),
+        Player:  PlayerSnapshot { HeroHealth:30, HandCount:..., ... },
+        Enemy:   PlayerSnapshot { HeroHealth:28, CurrentMana:4, HandCount:3, ... },
+        Board:   BoardSnapshot {
+          PlayerMinions: [ MinionSnapshot{Attack:3, HP:2, CanAttack:true, ...} ],
+          EnemyMinions:  [ MinionSnapshot{Attack:2, HP:3, HasTaunt:true, HasDivineShield:true} ]
+        }
+      }
+
+  <strong>Step 2：映射动作</strong>
+  SnapshotActionMapper.TryMap(火花打嘲讽龟的GameAction, ...)
+    → 找到敌方Index=1，嘲讽龟在敌方场面索引=0
+    → SnapshotAction {
+        ActionType: PlaySpellOnMinion,
+        ActorIndex: 1 (Enemy),
+        CardCost: 2,
+        SpellDamage: 3,
+        TargetMinionIndex: 0
+      }
+
+  <strong>Step 3：模拟执行</strong>
+  SnapshotSimulator.Simulate(快照, 快照动作)
+
+    3a. 深拷贝快照（以防修改污染原快照）
+        enemy  = CopyPlayer(state.Enemy)    → {HeroHealth:28, Mana:4, Hand:3}
+        enemyMinions = CopyMinions(...)      → [ {2/3 嘲讽圣盾} ]（全新列表+全新对象）
+
+    3b. 扣费用：enemy.Mana 从 4 → 2
+        enemy.HandCount 从 3 → 2
+
+    3c. 对目标随从造成 3 点伤害
+        target = enemyMinions[0]  → {2/3, HasDivineShield:true}
+        DamageMinion(target, 3)
+          → HasDivineShield = true → 抵消本次伤害，移除圣盾
+          → 返回新 MinionSnapshot {2/3, HasDivineShield:false}
+        enemyMinions[0] = 返回值
+
+    3d. 检查死亡（没有随从死亡，不删除）
+
+    3e. 返回新快照
+
+  <strong>Step 4：评分</strong>
+  Evaluator.EvaluateDetailed(新快照, Enemy视角)
+
+    敌方视角看新快照：
+      英雄血量差 = 28 - 30 = -2  → -2 × 2 = -4
+      手牌差     = 2 - 对手手牌数  → 按公式算
+      场面差：
+        敌方场面: [2/3 嘲讽龟 无圣盾] → 2×5 + 3×3 + 3(嘲讽) = 22
+        己方场面: [3/2 野猪]          → 3×5 + 2×3 = 21
+        场面差 = 22 - 21 = 1
+
+    EvaluationResult { TotalScore: -3 + 手牌分 + 1 }
+</pre>
+
+<div class="box tip">
+  <strong>关键观察：</strong>整个过程只有最后一步"评分"是 AI 做决策用的。前 3 步全是数据搬运——拍快照、翻译动作、在副本上执行。<strong>真正的 GameManager 从头到尾没被碰过。</strong>
+</div>
+
+<!-- ═══════════════ 5. FIELD COMPARISON ═══════════════ -->
+<h2 id="field-cmp">5. 真实对象 vs 快照对象 — 字段对照表</h2>
+
+<h3>Player vs PlayerSnapshot</h3>
+<table class="field-cmp">
+  <tr><th>真实 Player 有什么</th><th>快照 PlayerSnapshot 有什么</th><th>丢弃了什么</th><th>为什么能丢弃</th></tr>
+  <tr>
+    <td>Hero (引用)</td><td>HeroHealth, HeroMaxHealth (int)</td><td>Hero 对象</td><td>AI 只需知道血量数字</td>
+  </tr>
+  <tr>
+    <td>Hand (List&lt;Card&gt;)</td><td>HandCount (int)</td><td>具体手牌列表</td><td>当前评估只看数量</td>
+  </tr>
+  <tr>
+    <td>Deck (List&lt;Card&gt;)</td><td>DeckCount (int)</td><td>具体牌库列表</td><td>AI 不需要知道牌库内容</td>
+  </tr>
+  <tr>
+    <td>CurrentMana / MaxMana</td><td>CurrentMana / MaxMana</td><td>(保留)</td><td>评估法力效率需要</td>
+  </tr>
+  <tr>
+    <td>法力水晶增长逻辑</td><td>—</td><td>所有方法</td><td>模拟器自己处理法力变化</td>
+  </tr>
+</table>
+
+<h3>Minion vs MinionSnapshot</h3>
+<table class="field-cmp">
+  <tr><th>真实 Minion 有什么</th><th>快照 MinionSnapshot 有什么</th><th>丢弃了什么</th><th>为什么能丢弃</th></tr>
+  <tr>
+    <td>CardData (引用)</td><td>—</td><td>卡牌模板</td><td>模拟不需要名字/卡图/描述</td>
+  </tr>
+  <tr>
+    <td>Owner (Player引用)</td><td>—</td><td>所属玩家</td><td>快照用列表归属区分敌我</td>
+  </tr>
+  <tr>
+    <td>Keywords (List&lt;KeywordType&gt;)</td><td>HasTaunt / HasDivineShield / HasCharge (bool)</td><td>关键词列表</td><td>展开成3个bool更易模拟</td>
+  </tr>
+  <tr>
+    <td>Attack / CurrentHealth / MaxHealth</td><td>Attack / CurrentHealth / MaxHealth</td><td>(保留)</td><td>评估和模拟都需要</td>
+  </tr>
+  <tr>
+    <td>CanAttack</td><td>CanAttack</td><td>(保留)</td><td>模拟攻击后需要设为false</td>
+  </tr>
+  <tr>
+    <td>战吼/亡语效果逻辑</td><td>—</td><td>所有效果</td><td>第一版不模拟战吼亡语</td>
+  </tr>
+</table>
+
+<h3>GameAction vs SnapshotAction</h3>
+<table class="field-cmp">
+  <tr><th>真实 GameAction 有什么</th><th>快照 SnapshotAction 有什么</th><th>为什么改</th></tr>
+  <tr>
+    <td>ActionType</td><td>ActionType</td><td>(保留)</td>
+  </tr>
+  <tr>
+    <td>Actor (Player引用)</td><td>ActorIndex (0或1)</td><td>快照里没有Player对象，用索引</td>
+  </tr>
+  <tr>
+    <td>Card (Card引用)</td><td>CardCost / CardAttack / CardHealth / SpellDamage</td><td>把引用解开成具体数值</td>
+  </tr>
+  <tr>
+    <td>Attacker (Minion引用)</td><td>AttackerIndex (int)</td><td>快照里没有Minion对象，用列表索引定位</td>
+  </tr>
+  <tr>
+    <td>TargetMinion (Minion引用)</td><td>TargetMinionIndex (int)</td><td>同上</td>
+  </tr>
+  <tr>
+    <td>TargetHero (Hero引用)</td><td>TargetsHero (bool)</td><td>快照里英雄信息在PlayerSnapshot.HeroHealth里</td>
+  </tr>
+</table>
+
+<!-- ═══════════════ 6. C# KNOWLEDGE ═══════════════ -->
+<h2 id="csharp-ref">6. 涉及的 C# 知识（本项目应用方式）</h2>
+
+<h3>6.1 static 类 / 静态方法</h3>
+<p>详细讲解见 <a href="CSharpNotes.md">CSharpNotes.md: ref 参数</a> 末尾的"当前规则"部分。这里只补充本项目的应用场景。</p>
+<table>
+  <tr><th>类</th><th>为什么用 static</th></tr>
+  <tr><td><code>SnapshotSimulator</code></td><td>纯函数：输入→计算→输出，不需要"记住"任何状态</td></tr>
+  <tr><td><code>SnapshotActionMapper</code></td><td>纯翻译器：给定一个真实动作，输出一个快照动作</td></tr>
+</table>
+<p>调用时直接 <code>SnapshotSimulator.Simulate(state, action)</code>，不需要 <code>new SnapshotSimulator()</code>。</p>
+
+<h3>6.2 ref 参数</h3>
+<p>详细讲解见 <a href="CSharpNotes.md">CSharpNotes.md: ref 参数</a>。本项目在 <code>SnapshotSimulator</code> 中的典型用法：</p>
+<pre>
+<span class="cmt">// 不用 ref：子方法改了 player，调用方看不见</span>
+<span class="kw">void</span> Foo(<span class="type">PlayerSnapshot</span> player) {
+    player = <span class="kw">new</span> <span class="type">PlayerSnapshot</span>(...);  <span class="cmt">// 只改了局部变量</span>
+}
+
+<span class="cmt">// 用 ref：子方法改了 player，调用方的变量也跟着变</span>
+<span class="kw">void</span> Foo(<span class="kw">ref</span> <span class="type">PlayerSnapshot</span> player) {
+    player = <span class="kw">new</span> <span class="type">PlayerSnapshot</span>(...);  <span class="cmt">// 调用方的 player 也变了</span>
+}
+</pre>
+<p>因为 PlayerSnapshot 是不可变对象（改不了字段，只能创建新对象替换），所以需要 <code>ref</code> 来让子方法能替换调用方的变量。</p>
+
+<h3>6.3 private set（只读属性）</h3>
+<p>详细讲解见 <a href="CSharpNotes.md">CSharpNotes.md: 属性和 private set</a>。</p>
+<p>所有快照类都用这个模式：</p>
+<pre>
+<span class="kw">public int</span> HeroHealth { <span class="kw">get</span>; <span class="kw">private set</span>; }
+<span class="cmt">//      ↑ 外部能读                 ↑ 只有构造器能写</span>
+</pre>
+<p>这样创建后就不能被意外修改，保证了<strong>不可变性</strong>。</p>
+
+<h3>6.4 IReadOnlyList&lt;T&gt; vs List&lt;T&gt;</h3>
+<p>详细讲解见 <a href="CSharpNotes.md">CSharpNotes.md: IReadOnlyList 表示外部只读</a>。</p>
+<pre>
+<span class="cmt">// BoardSnapshot 内部用 List（可以 Add/Remove）</span>
+<span class="kw">private readonly</span> List&lt;<span class="type">MinionSnapshot</span>&gt; playerMinions;
+
+<span class="cmt">// 对外暴露 IReadOnlyList（只能读 Count 和 [索引]）</span>
+<span class="kw">public</span> IReadOnlyList&lt;<span class="type">MinionSnapshot</span>&gt; PlayerMinions => playerMinions;
+</pre>
+
+<h3>6.5 防御性拷贝</h3>
+<pre>
+<span class="cmt">// BoardSnapshot 构造器：把外部传入的列表复制一份，存自己的副本</span>
+<span class="kw">public</span> BoardSnapshot(IReadOnlyList&lt;<span class="type">MinionSnapshot</span>&gt; player, IReadOnlyList&lt;<span class="type">MinionSnapshot</span>&gt; enemy)
+{
+    <span class="kw">this</span>.playerMinions = CopyMinions(player);  <span class="cmt">// 抄一份，不存引用</span>
+    <span class="kw">this</span>.enemyMinions  = CopyMinions(enemy);
+}
+</pre>
+<p>目的：即使调用方事后修改了它自己的 List，BoardSnapshot 内部不受影响。</p>
+
+<h3>6.6 工厂方法 (Factory Method)</h3>
+<p>以 <code>FromXxx</code> 命名的静态方法，负责创建对象：</p>
+<pre>
+<span class="type">GameStateSnapshot</span>.FromGameManager(gm)   <span class="cmt">// 从 GameManager 创建快照</span>
+<span class="type">PlayerSnapshot</span>.FromPlayer(p)            <span class="cmt">// 从 Player 创建快照</span>
+<span class="type">MinionSnapshot</span>.FromMinion(m)            <span class="cmt">// 从 Minion 创建快照</span>
+<span class="type">BoardSnapshot</span>.FromBoard(b, p, e)         <span class="cmt">// 从 Board 创建快照</span>
+</pre>
+<p>好处：构造逻辑集中在 From 方法里，调用方只需要传源对象，不需要知道快照内部怎么组织数据。</p>
+
+<!-- ═══════════════ 7. GAME DEV KNOWLEDGE ═══════════════ -->
+<h2 id="unity-ref">7. 游戏开发知识</h2>
+
+<h3>7.1 为什么 Simulation 不用 MonoBehaviour</h3>
+<p>所有 Simulation 类都是纯 C# 类（不继承 MonoBehaviour），原因：</p>
+<ul>
+  <li><strong>不需要挂到 GameObject 上</strong> — 它们不在场景里显示，也不需要 Inspector 配置</li>
+  <li><strong>不需要 Update/FixedUpdate</strong> — 模拟是同步的即时计算，不需要帧循环</li>
+  <li><strong>可以被快速创建和销毁</strong> — AI 可能对 10+ 个候选动作分别模拟，如果用 MonoBehaviour 会很慢</li>
+  <li><strong>纯数据 + 纯逻辑</strong> — 更适合做单元测试（以后如果写测试，纯 C# 类比 MonoBehaviour 容易测得多）</li>
+</ul>
+
+<div class="box tip">
+  <strong>面试可讲：</strong>"AI 模拟层用的是纯数据对象，不依赖 Unity 生命周期。这有两个好处：一是模拟速度快（每帧可以做几十次推演），二是未来要写自动化测试时不需要启动 Unity。"
+</div>
+
+<h3>7.2 数据层和表现层分离</h3>
+<p>这是游戏开发中的核心架构原则，本项目有两层分离：</p>
+
+<pre>
+  ┌─────────────────────────────────────────────────────┐
+  │  第一层分离：Core ↔ UI                              │
+  │                                                     │
+  │  Core（规则）           UI（显示）                   │
+  │  ├ GameManager          ├ GameUIController           │
+  │  ├ Player / Board       ├ CardView / HandView        │
+  │  ├ Minion / Hero        ├ BoardView / MinionView     │
+  │  └ Evaluator            └ HeroView                   │
+  │                                                     │
+  │  规则：Core 不依赖 UI，UI 可以读 Core。               │
+  ├─────────────────────────────────────────────────────┤
+  │  第二层分离：真实对象 ↔ 快照对象                      │
+  │                                                     │
+  │  真实对象（唯一）        快照对象（AI 脑内副本）      │
+  │  ├ Player               ├ PlayerSnapshot            │
+  │  ├ Minion               ├ MinionSnapshot            │
+  │  ├ Board                ├ BoardSnapshot             │
+  │  └ GameAction           └ SnapshotAction            │
+  │                                                     │
+  │  原则：真实对象只有一个。快照可以有很多，互不干扰。    │
+  └─────────────────────────────────────────────────────┘
+</pre>
+
+<h3>7.3 "轻量化快照"是游戏 AI 的通用做法</h3>
+<p>不只是炉石 AI 这么做。很多游戏都用类似思路：</p>
+
+<table>
+  <tr><th>游戏类型</th><th>真实世界</th><th>快照/模拟世界</th></tr>
+  <tr>
+    <td>炉石类卡牌</td>
+    <td>GameManager（场上所有对象）</td>
+    <td>GameStateSnapshot（血量/攻击/法力/手牌数）</td>
+  </tr>
+  <tr>
+    <td>围棋/国际象棋</td>
+    <td>棋盘对象</td>
+    <td>FEN 字符串 / BitBoard 64位整数</td>
+  </tr>
+  <tr>
+    <td>RTS（星际争霸）</td>
+    <td>完整游戏状态</td>
+    <td>简化的单位/资源摘要（仅 AI 需要的数据）</td>
+  </tr>
+  <tr>
+    <td>MOBA（王者/英雄联盟）</td>
+    <td>完整对局状态</td>
+    <td>双方等级/经济/位置/塔血量摘要</td>
+  </tr>
+</table>
+
+<p>共性：<strong>真实状态很重（很多对象、很多关系），模拟只需要其中一小部分。</strong>把这一小部分复制出来、快速推演，是 AI 决策的标准做法。</p>
+
+<h3>7.4 阶段性简化 vs 最终架构</h3>
+
+<div class="box warn">
+  <strong>当前是阶段性简化，不是成熟项目最终做法。</strong><br><br>
+  当前的取舍：<br>
+  • 快照不模拟战吼/亡语（复杂度高，当前 AI 还用规则选动作）<br>
+  • 手牌只知道数量（不知道具体牌，评估函数简单）<br>
+  • 嘲讽在模拟时不检查（模拟攻击时不做目标合法性过滤）<br>
+  • Simulator 里扣血/死亡/圣盾的处理是硬编码的（几个 if）
+</div>
+
+<p>面试时这样说：</p>
+<blockquote style="border-left:3px solid var(--accent2); padding-left:14px; color:var(--text2); margin: 12px 0;">
+"快照模拟是第一版，目标是验证'脱离真实状态做推演'这条链路能跑通。目前模拟的粒度和评估函数匹配——评估只看攻击/血量/关键词/手牌数，所以快照就存这些。后续评估变复杂（比如考虑战吼价值），快照再跟着扩展。这样做的好处是每一阶段只增加能解释清楚的复杂度。"
+</blockquote>
+
+<!-- ═══════════════ 8. INTERVIEW FAQ ═══════════════ -->
+<h2 id="faq">8. 面试问答</h2>
+
+<div class="box">
+  <strong>Q: 为什么不直接在真实对象上模拟？模拟完再撤回不就行了？</strong><br><br>
+  <strong>A:</strong> 撤回很危险。游戏里有事件系统（比如随从死亡触发亡语），模拟一次可能触发一连串连锁效果，撤回时要把所有状态倒回去——血量、法力、手牌、场面、事件订阅、日志……任何一个漏了就是 bug。而且 Unity UI 是实时刷新的，真实状态每变一次 UI 就会闪一下。快照方案更安全：<strong>副本上随便折腾，不影响真实对局一分一毫。</strong>
+</div>
+
+<div class="box">
+  <strong>Q: 快照不模拟战吼亡语，AI 的评分不就偏了吗？</strong><br><br>
+  <strong>A:</strong> 对，这是当前版本的已知局限。分两步看：① 当前 AI 选择动作时<strong>还没用评分驱动</strong>，仍用规则优先级（斩杀 > 解场 > 出牌），所以评分偏差暂不影响决策。② 后续切换到评分驱动时，会优先把战吼亡语加到模拟器里——评估函数和模拟精度要配套升级。
+</div>
+
+<div class="box">
+  <strong>Q: 为什么用索引而不是引用？</strong><br><br>
+  <strong>A:</strong> 快照世界里没有真实对象——PlayerSnapshot 不是一个 Player，MinionSnapshot 不是一个 Minion。如果 SnapshotAction 存 MinionSnapshot 引用，那还说得通；但它需要表达"攻击者是我方场面第几个随从"，而快照里的列表是独立的。用索引最直接：<code>我方场面列表[attackerIndex]</code> 就能拿到攻击者快照。
+</div>
+
+<div class="box">
+  <strong>Q: 以后评估函数变复杂，快照要跟着加多少东西？</strong><br><br>
+  <strong>A:</strong> 看需要什么。比如要评估"手里有没有 AOE"，快照就得知道手牌里每张牌的类型和伤害值。要评估"场上随从的战吼价值"，就得在 GenerateLegalActions 层面算好（因为战吼是一次性的，出牌时就触发了），或者在快照里记录"这个随从有战吼，效果是 X"。关键是<strong>按需扩展</strong>——评估需要什么数据，快照就抄什么数据，不超前设计。
+</div>
+
+<!-- ═══════════════ 9. GLOSSARY ═══════════════ -->
+<h2 id="glossary">9. 术语速查</h2>
+
+<table>
+  <tr><th>术语</th><th>含义</th><th>对应文件/类型</th></tr>
+  <tr>
+    <td><strong>Snapshot (快照)</strong></td>
+    <td>真实游戏状态的一份轻量副本。只包含 AI 需要的数据，不引用真实对象。</td>
+    <td>GameStateSnapshot / PlayerSnapshot / MinionSnapshot / BoardSnapshot</td>
+  </tr>
+  <tr>
+    <td><strong>Simulate (模拟)</strong></td>
+    <td>在快照上执行一个动作，返回模拟后的新快照。不修改真实状态，也不修改旧快照。</td>
+    <td>SnapshotSimulator.Simulate()</td>
+  </tr>
+  <tr>
+    <td><strong>Evaluate (评估)</strong></td>
+    <td>给一个局面打分，正分表示某方优势。支持真实局面和快照局面两种输入。</td>
+    <td>Evaluator.Evaluate() / EvaluateDetailed()</td>
+  </tr>
+  <tr>
+    <td><strong>GameAction (真实动作)</strong></td>
+    <td>描述一个玩家可以执行的操作（出牌、攻击、结束回合等）。包含对真实对象的引用。</td>
+    <td>GameAction</td>
+  </tr>
+  <tr>
+    <td><strong>SnapshotAction (快照动作)</strong></td>
+    <td>快照世界的"动作"。用索引和数值代替对象引用。</td>
+    <td>SnapshotAction</td>
+  </tr>
+  <tr>
+    <td><strong>Map (映射)</strong></td>
+    <td>把真实动作翻译成快照动作的过程。</td>
+    <td>SnapshotActionMapper.TryMap()</td>
+  </tr>
+  <tr>
+    <td><strong>LegalAction (合法动作)</strong></td>
+    <td>在当前局面下，规则允许执行的动作。AI 从中选择。</td>
+    <td>GameActionGenerator.GenerateLegalActions()</td>
+  </tr>
+  <tr>
+    <td><strong>Immutable (不可变)</strong></td>
+    <td>对象创建后不能修改。要"改"只能创建新对象。快照对象都用这个模式。</td>
+    <td>所有 Snapshot 类（private set + 无公开修改方法）</td>
+  </tr>
+  <tr>
+    <td><strong>Defensive Copy (防御性拷贝)</strong></td>
+    <td>收到外部传入的集合时，复制一份自己存，不直接存引用。</td>
+    <td>BoardSnapshot.CopyMinions()</td>
+  </tr>
+  <tr>
+    <td><strong>Factory Method (工厂方法)</strong></td>
+    <td>以 FromXxx 命名的静态方法，负责创建对象。</td>
+    <td>GameStateSnapshot.FromGameManager() / PlayerSnapshot.FromPlayer() 等</td>
+  </tr>
+</table>
+
+<hr style="border:none; border-top:1px solid var(--border); margin:48px 0 24px;">
+<p style="color:var(--text2); font-size:12px;">
+  编写日期：2026-06-28 &nbsp;|&nbsp; 覆盖阶段：3.5（快照模拟基础链路已完成）<br>
+  相关文件：<code>Assets/Scripts/AI/Simulation/</code> 下全部 .cs 文件 + <code>Assets/Scripts/AI/Evaluator.cs</code> + <code>Assets/Scripts/AI/ActionSelector.cs</code> + <code>Assets/Scripts/AI/AIController.cs</code>
+</p>
+
+</main>
+</body>
+</html>
