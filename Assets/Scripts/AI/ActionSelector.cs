@@ -179,21 +179,48 @@ public class ActionSelector
     private GameAction SelectHighestPriorityAction(IReadOnlyList<GameAction> legalActions)
     {
         GameAction selectedAction = null;
-        int selectedPriority = int.MinValue;
+        int selectedScore = int.MinValue;
 
         for (int i = 0; i < legalActions.Count; i++)
         {
             GameAction candidate = legalActions[i];
-            int candidatePriority = GetActionPriority(candidate);
+            int candidateScore = GetFallbackActionScore(candidate);
 
-            if (selectedAction == null || candidatePriority > selectedPriority)
+            if (selectedAction == null || candidateScore > selectedScore)
             {
                 selectedAction = candidate;
-                selectedPriority = candidatePriority;
+                selectedScore = candidateScore;
             }
         }
 
         return selectedAction;
+    }
+
+    /// <summary>
+    /// 返回兜底阶段使用的动作分数。
+    /// 动作类型优先级仍然是主体，同类型动作再用少量附加分排序。
+    /// </summary>
+    private int GetFallbackActionScore(GameAction action)
+    {
+        int actionPriority = GetActionPriority(action);
+        if (actionPriority == int.MinValue) return int.MinValue;
+
+        return actionPriority * 1000 + GetAttackActionScore(action);
+    }
+
+    /// <summary>
+    /// 给攻击动作一个兜底附加分。
+    /// 能打英雄时仍然优先打英雄；如果只能攻击随从，则优先攻击攻击力高的敌方随从。
+    /// </summary>
+    private int GetAttackActionScore(GameAction action)
+    {
+        if (action == null) return 0;
+
+        return action.ActionType switch
+        {
+            GameActionType.AttackMinion => action.TargetMinion != null ? action.TargetMinion.Attack : 0,
+            _ => 0,
+        };
     }
 
     /// <summary>
