@@ -337,9 +337,9 @@ Enemy 回合开始
 1. 能击杀敌方英雄，仍然优先斩杀
 2. 其他合法动作先映射到快照动作，并在快照上单步模拟
 3. 用 Evaluator 从当前 AI 视角评估模拟后局面
-4. 非 EndTurn 的主动动作必须不降低评分，才进入候选
+4. 非 EndTurn 的主动动作必须在允许亏分范围内，才进入候选
 5. 如果有主动候选，选择模拟后评分最高的动作
-6. 如果没有不降分主动动作，选择 EndTurn
+6. 如果没有进入允许范围的主动动作，选择 EndTurn
 7. 如果快照模拟无法选出动作，才按固定优先级兜底
 ```
 
@@ -356,7 +356,7 @@ Enemy 回合开始
 -> SnapshotActionMapper.TryMap(action, snapshot)
 -> SnapshotSimulator.Simulate(snapshot, snapshotAction)
 -> Evaluator.EvaluateDetailed(simulatedSnapshot, perspectivePlayerId)
--> ActionSelector 选择不降分的最高分动作，或在没有收益时结束回合
+-> ActionSelector 选择允许范围内的最高分动作，或在没有合适动作时结束回合
 ```
 
 这条链路的意义：
@@ -365,6 +365,8 @@ Enemy 回合开始
 - `SnapshotSimulator` 只负责“假设执行这个动作后会变成什么局面”，不修改真实游戏。
 - `GameManager` 当前只提供调试开关，用于对比真实评分和快照评分，以及打印每个合法动作模拟后的评分。
 - `ActionSelector` 使用模拟评分选择动作，但不直接执行真实规则。
+- 当前出随从模拟已经能复制嘲讽、圣盾、冲锋，并模拟“对敌方英雄造成伤害”和“抽牌”两类无目标战吼。
+- 当前死亡模拟已经能在移除死亡随从前结算一层“对死亡随从拥有者的敌方英雄造成伤害”的亡语。
 - `EndTurn` 快照会模拟对手回合开始的关键状态变化：抽牌、法力刷新、随从恢复攻击。
 
 ## 当前阶段性简化

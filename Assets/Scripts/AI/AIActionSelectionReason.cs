@@ -20,7 +20,12 @@ public enum AIActionSelectionReason
     HighestEvaluationScore,
 
     /// <summary>
-    /// 没有找到不降低评分的主动动作，所以选择结束回合。
+    /// 选择这个动作是因为它只会造成可接受的小幅评分下降，用来换取节奏。
+    /// </summary>
+    AcceptableScoreLoss,
+
+    /// <summary>
+    /// 没有找到评分在可接受范围内的主动动作，所以选择结束回合。
     /// </summary>
     NoProfitableActionEndTurn,
 

@@ -34,7 +34,7 @@ public static class SnapshotSimulator
                     SimulateSpellOnHero(action, ref player, ref enemy);
                     break;
                 case GameActionType.AttackMinion:
-                    SimulateAttackMinion(action, playerMinions, enemyMinions);
+                    SimulateAttackMinion(action, ref player, ref enemy, playerMinions, enemyMinions);
                     break;
                 case GameActionType.AttackHero:
                     SimulateAttackHero(action, ref player, ref enemy, playerMinions, enemyMinions);
@@ -61,16 +61,57 @@ public static class SnapshotSimulator
 
         actor = SpendCard(actor, action.CardCost);
 
-        // 第一版不模拟召唤关键词、战吼和亡语；新随从默认本回合不能攻击。
+        // 当前模拟关键词、无目标战吼和一层亡语伤害，更复杂的死亡连锁后续再补。
         actorMinions.Add(new MinionSnapshot(
             action.CardAttack,
             action.CardHealth,
             action.CardHealth,
-            false,
-            false,
-            false,
-            false));
+            action.CardHasCharge,
+            action.CardHasTaunt,
+            action.CardHasDivineShield,
+            action.CardHasCharge,
+            action.DeathrattleType,
+            action.DeathrattleValue));
 
+        SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
+        ResolveBattlecry(action, ref player, ref enemy);
+    }
+
+    private static void ResolveBattlecry(
+        SnapshotAction action,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
+    {
+        if (action == null) return;
+
+        switch (action.BattlecryType)
+        {
+            case BattlecryType.DealDamageToEnemyHero:
+                DamageOpponentHeroForBattlecry(action, ref player, ref enemy);
+                break;
+            case BattlecryType.DrawCard:
+                DrawCardsForBattlecryOwner(action, ref player, ref enemy);
+                break;
+        }
+    }
+
+    private static void DamageOpponentHeroForBattlecry(
+        SnapshotAction action,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
+    {
+        PlayerSnapshot opponent = GetPlayer(GetOpponentIndex(action.ActorIndex), player, enemy);
+        opponent = DamageHero(opponent, action.BattlecryValue);
+        SetPlayer(GetOpponentIndex(action.ActorIndex), opponent, ref player, ref enemy);
+    }
+
+    private static void DrawCardsForBattlecryOwner(
+        SnapshotAction action,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
+    {
+        PlayerSnapshot actor = GetPlayer(action.ActorIndex, player, enemy);
+        actor = DrawCards(actor, action.BattlecryValue);
         SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
     }
 
@@ -89,7 +130,11 @@ public static class SnapshotSimulator
         SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
 
         targetMinions[action.TargetMinionIndex] = DamageMinion(targetMinions[action.TargetMinionIndex], action.SpellDamage);
-        RemoveDeadMinions(targetMinions);
+        ResolveDeathrattlesAndRemoveDeadMinions(
+            targetMinions,
+            GetOpponentIndex(action.ActorIndex),
+            ref player,
+            ref enemy);
     }
 
     private static void SimulateSpellOnHero(
@@ -163,8 +208,42 @@ public static class SnapshotSimulator
             player.DeckCount - 1);
     }
 
+    private static PlayerSnapshot DrawCards(PlayerSnapshot player, int drawCount)
+    {
+        PlayerSnapshot result = player;
+
+        for (int i = 0; i < drawCount; i++)
+        {
+            result = DrawOneCard(result);
+        }
+
+        return result;
+    }
+
+    private static PlayerSnapshot DrawOneCard(PlayerSnapshot player)
+    {
+        if (player == null) return new PlayerSnapshot(0, 0, 0, 0, 0, 0);
+        if (player.DeckCount <= 0) return player;
+
+        int handCount = player.HandCount;
+        if (handCount < Player.MaxHandSize)
+        {
+            handCount++;
+        }
+
+        return new PlayerSnapshot(
+            player.HeroHealth,
+            player.HeroMaxHealth,
+            player.CurrentMana,
+            player.MaxMana,
+            handCount,
+            player.DeckCount - 1);
+    }
+
     private static void SimulateAttackMinion(
         SnapshotAction action,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy,
         List<MinionSnapshot> playerMinions,
         List<MinionSnapshot> enemyMinions)
     {
@@ -184,8 +263,16 @@ public static class SnapshotSimulator
         actorMinions[action.AttackerIndex] = damagedAttacker;
         opponentMinions[action.TargetMinionIndex] = damagedTarget;
 
-        RemoveDeadMinions(actorMinions);
-        RemoveDeadMinions(opponentMinions);
+        ResolveDeathrattlesAndRemoveDeadMinions(
+            actorMinions,
+            action.ActorIndex,
+            ref player,
+            ref enemy);
+        ResolveDeathrattlesAndRemoveDeadMinions(
+            opponentMinions,
+            GetOpponentIndex(action.ActorIndex),
+            ref player,
+            ref enemy);
     }
 
     private static void SimulateAttackHero(
@@ -247,7 +334,9 @@ public static class SnapshotSimulator
                 minion.CanAttack,
                 minion.HasTaunt,
                 false,
-                minion.HasCharge);
+                minion.HasCharge,
+                minion.DeathrattleType,
+                minion.DeathrattleValue);
         }
 
         return new MinionSnapshot(
@@ -257,7 +346,9 @@ public static class SnapshotSimulator
             minion.CanAttack,
             minion.HasTaunt,
             minion.HasDivineShield,
-            minion.HasCharge);
+            minion.HasCharge,
+            minion.DeathrattleType,
+            minion.DeathrattleValue);
     }
 
     private static MinionSnapshot SetCanAttack(MinionSnapshot minion, bool canAttack)
@@ -271,7 +362,9 @@ public static class SnapshotSimulator
             canAttack,
             minion.HasTaunt,
             minion.HasDivineShield,
-            minion.HasCharge);
+            minion.HasCharge,
+            minion.DeathrattleType,
+            minion.DeathrattleValue);
     }
 
     private static void SetMinionsCanAttack(List<MinionSnapshot> minions, bool canAttack)
@@ -314,7 +407,9 @@ public static class SnapshotSimulator
                 minion.CanAttack,
                 minion.HasTaunt,
                 minion.HasDivineShield,
-                minion.HasCharge));
+                minion.HasCharge,
+                minion.DeathrattleType,
+                minion.DeathrattleValue));
         }
 
         return copy;
@@ -346,7 +441,11 @@ public static class SnapshotSimulator
             : playerMinions;
     }
 
-    private static void RemoveDeadMinions(List<MinionSnapshot> minions)
+    private static void ResolveDeathrattlesAndRemoveDeadMinions(
+        List<MinionSnapshot> minions,
+        int ownerIndex,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
     {
         if (minions == null) return;
 
@@ -354,9 +453,37 @@ public static class SnapshotSimulator
         {
             if (minions[i] == null || minions[i].IsDead)
             {
+                ResolveDeathrattle(minions[i], ownerIndex, ref player, ref enemy);
                 minions.RemoveAt(i);
             }
         }
+    }
+
+    private static void ResolveDeathrattle(
+        MinionSnapshot minion,
+        int ownerIndex,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
+    {
+        if (minion == null) return;
+
+        switch (minion.DeathrattleType)
+        {
+            case DeathrattleType.DealDamageToEnemyHero:
+                DamageOpponentHeroForDeathrattle(minion, ownerIndex, ref player, ref enemy);
+                break;
+        }
+    }
+
+    private static void DamageOpponentHeroForDeathrattle(
+        MinionSnapshot minion,
+        int ownerIndex,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
+    {
+        PlayerSnapshot opponent = GetPlayer(GetOpponentIndex(ownerIndex), player, enemy);
+        opponent = DamageHero(opponent, minion.DeathrattleValue);
+        SetPlayer(GetOpponentIndex(ownerIndex), opponent, ref player, ref enemy);
     }
 
     private static bool IsValidIndex(IReadOnlyList<MinionSnapshot> minions, int index)

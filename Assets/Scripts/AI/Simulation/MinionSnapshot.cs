@@ -40,6 +40,16 @@ public class MinionSnapshot
     public bool HasCharge { get; private set; }
 
     /// <summary>
+    /// 亡语类型。
+    /// </summary>
+    public DeathrattleType DeathrattleType { get; private set; }
+
+    /// <summary>
+    /// 亡语通用数值。
+    /// </summary>
+    public int DeathrattleValue { get; private set; }
+
+    /// <summary>
     /// 当前是否已经死亡。
     /// </summary>
     public bool IsDead => CurrentHealth <= 0;
@@ -51,7 +61,9 @@ public class MinionSnapshot
         bool canAttack,
         bool hasTaunt,
         bool hasDivineShield,
-        bool hasCharge)
+        bool hasCharge,
+        DeathrattleType deathrattleType,
+        int deathrattleValue)
     {
         Attack = ClampNonNegative(attack);
         MaxHealth = ClampNonNegative(maxHealth);
@@ -60,6 +72,8 @@ public class MinionSnapshot
         HasTaunt = hasTaunt;
         HasDivineShield = hasDivineShield;
         HasCharge = hasCharge;
+        DeathrattleType = deathrattleType;
+        DeathrattleValue = ClampNonNegative(deathrattleValue);
     }
 
     /// <summary>
@@ -79,7 +93,9 @@ public class MinionSnapshot
             minion.CanAttack,
             minion.HasKeyword(KeywordType.Taunt),
             minion.HasKeyword(KeywordType.DivineShield),
-            minion.HasKeyword(KeywordType.Charge));
+            minion.HasKeyword(KeywordType.Charge),
+            minion.CardData != null ? minion.CardData.DeathrattleType : DeathrattleType.None,
+            minion.CardData != null ? minion.CardData.DeathrattleValue : 0);
     }
 
     private static int ClampNonNegative(int value)

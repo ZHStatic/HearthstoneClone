@@ -36,6 +36,41 @@ public class SnapshotAction
     public int SpellDamage { get; private set; }
 
     /// <summary>
+    /// 打出的随从牌是否带有嘲讽。
+    /// </summary>
+    public bool CardHasTaunt { get; private set; }
+
+    /// <summary>
+    /// 打出的随从牌是否带有圣盾。
+    /// </summary>
+    public bool CardHasDivineShield { get; private set; }
+
+    /// <summary>
+    /// 打出的随从牌是否带有冲锋。
+    /// </summary>
+    public bool CardHasCharge { get; private set; }
+
+    /// <summary>
+    /// 打出的随从牌拥有的战吼类型。
+    /// </summary>
+    public BattlecryType BattlecryType { get; private set; }
+
+    /// <summary>
+    /// 战吼通用数值。
+    /// </summary>
+    public int BattlecryValue { get; private set; }
+
+    /// <summary>
+    /// 打出的随从牌拥有的亡语类型。
+    /// </summary>
+    public DeathrattleType DeathrattleType { get; private set; }
+
+    /// <summary>
+    /// 亡语通用数值。
+    /// </summary>
+    public int DeathrattleValue { get; private set; }
+
+    /// <summary>
     /// 攻击动作中，攻击随从在己方场面列表里的索引。
     /// 非攻击动作使用 -1 表示没有攻击者。
     /// </summary>
@@ -59,6 +94,13 @@ public class SnapshotAction
         int cardAttack,
         int cardHealth,
         int spellDamage,
+        bool cardHasTaunt,
+        bool cardHasDivineShield,
+        bool cardHasCharge,
+        BattlecryType battlecryType,
+        int battlecryValue,
+        DeathrattleType deathrattleType,
+        int deathrattleValue,
         int attackerIndex,
         int targetMinionIndex,
         bool targetsHero)
@@ -70,6 +112,13 @@ public class SnapshotAction
         CardAttack = ClampNonNegative(cardAttack);
         CardHealth = ClampNonNegative(cardHealth);
         SpellDamage = ClampNonNegative(spellDamage);
+        CardHasTaunt = cardHasTaunt;
+        CardHasDivineShield = cardHasDivineShield;
+        CardHasCharge = cardHasCharge;
+        BattlecryType = battlecryType;
+        BattlecryValue = ClampNonNegative(battlecryValue);
+        DeathrattleType = deathrattleType;
+        DeathrattleValue = ClampNonNegative(deathrattleValue);
         AttackerIndex = attackerIndex;
         TargetMinionIndex = targetMinionIndex;
         TargetsHero = targetsHero;
@@ -78,7 +127,18 @@ public class SnapshotAction
     /// <summary>
     /// 创建“打出随从牌”的快照动作。
     /// </summary>
-    public static SnapshotAction CreatePlayMinion(int actorIndex, int cardCost, int cardAttack, int cardHealth)
+    public static SnapshotAction CreatePlayMinion(
+        int actorIndex,
+        int cardCost,
+        int cardAttack,
+        int cardHealth,
+        bool cardHasTaunt,
+        bool cardHasDivineShield,
+        bool cardHasCharge,
+        BattlecryType battlecryType,
+        int battlecryValue,
+        DeathrattleType deathrattleType,
+        int deathrattleValue)
     {
         return new SnapshotAction(
             GameActionType.PlayMinionCard,
@@ -87,6 +147,13 @@ public class SnapshotAction
             cardAttack,
             cardHealth,
             0,
+            cardHasTaunt,
+            cardHasDivineShield,
+            cardHasCharge,
+            battlecryType,
+            battlecryValue,
+            deathrattleType,
+            deathrattleValue,
             -1,
             -1,
             false);
@@ -104,6 +171,13 @@ public class SnapshotAction
             0,
             0,
             spellDamage,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
+            0,
             -1,
             targetMinionIndex,
             false);
@@ -121,6 +195,13 @@ public class SnapshotAction
             0,
             0,
             spellDamage,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
+            0,
             -1,
             -1,
             true);
@@ -137,6 +218,13 @@ public class SnapshotAction
             0,
             0,
             0,
+            0,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
             0,
             attackerIndex,
             targetMinionIndex,
@@ -155,6 +243,13 @@ public class SnapshotAction
             0,
             0,
             0,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
+            0,
             attackerIndex,
             -1,
             true);
@@ -171,6 +266,13 @@ public class SnapshotAction
             0,
             0,
             0,
+            0,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
             0,
             -1,
             -1,

@@ -6,9 +6,11 @@ using System.Collections.Generic;
 /// </summary>
 public class ActionSelector
 {
+    private const int AllowedScoreLoss = 3;
+
     /// <summary>
     /// 从合法动作中选择一条动作。
-    /// 当前策略：先保留斩杀硬规则；其余主动动作必须在快照模拟后不降低评分，否则选择结束回合。
+    /// 当前策略：先保留斩杀硬规则；其余主动动作可以接受小幅亏分，避免 AI 过于保守。
     /// 这里接收的动作必须已经由 GameActionGenerator 验证过合法性。
     /// </summary>
     public AIActionSelection SelectAction(
@@ -62,8 +64,8 @@ public class ActionSelector
     }
 
     /// <summary>
-    /// 用当前局面的快照逐个模拟合法动作，选择模拟后不降分的最高分主动动作。
-    /// 如果没有任何主动动作能保持或提高评分，就选择结束回合。
+    /// 用当前局面的快照逐个模拟合法动作，选择模拟后评分最高且不超过亏分阈值的主动动作。
+    /// 如果没有任何主动动作进入可接受范围，就选择结束回合。
     /// 这是阶段性简化，不是成熟项目最终做法：当前只看一步，不搜索后续回合，也不完整模拟战吼和亡语。
     /// </summary>
     private bool TryFindBestEvaluatedAction(
@@ -112,7 +114,7 @@ public class ActionSelector
                 continue;
             }
 
-            if (evaluationScore < currentEvaluationScore)
+            if (evaluationScore < currentEvaluationScore - AllowedScoreLoss)
             {
                 continue;
             }
@@ -130,7 +132,9 @@ public class ActionSelector
 
         if (selectedAction != null)
         {
-            selectedReason = AIActionSelectionReason.HighestEvaluationScore;
+            selectedReason = selectedEvaluationScore < currentEvaluationScore
+                ? AIActionSelectionReason.AcceptableScoreLoss
+                : AIActionSelectionReason.HighestEvaluationScore;
             return true;
         }
 

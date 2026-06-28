@@ -45,12 +45,20 @@ public static class SnapshotActionMapper
 
         if (action.Card == null || action.Card.CardData == null) return false;
 
-        // 召唤模拟只需要费用、攻击和生命值；战吼、亡语和关键词模拟后续再补。
+        CardData cardData = action.Card.CardData;
+
         snapshotAction = SnapshotAction.CreatePlayMinion(
             actorIndex,
             action.Card.CurrentCost,
-            action.Card.CardData.Attack,
-            action.Card.CardData.Health);
+            cardData.Attack,
+            cardData.Health,
+            cardData.HasKeyword(KeywordType.Taunt),
+            cardData.HasKeyword(KeywordType.DivineShield),
+            cardData.HasKeyword(KeywordType.Charge),
+            cardData.BattlecryType,
+            cardData.BattlecryValue,
+            cardData.DeathrattleType,
+            cardData.DeathrattleValue);
         return true;
     }
 

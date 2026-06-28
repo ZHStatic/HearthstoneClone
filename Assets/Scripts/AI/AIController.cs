@@ -124,7 +124,8 @@ public class AIController
         {
             AIActionSelectionReason.Lethal => "这个动作可以击杀敌方英雄。",
             AIActionSelectionReason.HighestEvaluationScore => "这个动作不降低评分，并且在候选动作里模拟后评分最高。",
-            AIActionSelectionReason.NoProfitableActionEndTurn => "没有找到不降低评分的主动动作，选择结束回合。",
+            AIActionSelectionReason.AcceptableScoreLoss => "这个动作会小幅降低评分，但仍在可接受范围内，用来换取节奏。",
+            AIActionSelectionReason.NoProfitableActionEndTurn => "没有找到评分在可接受范围内的主动动作，选择结束回合。",
             AIActionSelectionReason.FallbackPriority => "没有命中特殊策略，按固定优先级选择。",
             _ => "没有明确选择原因。",
         };
