@@ -40,7 +40,7 @@ public static class SnapshotSimulator
                     SimulateAttackHero(action, ref player, ref enemy, playerMinions, enemyMinions);
                     break;
                 case GameActionType.EndTurn:
-                    currentPlayerIndex = GetOpponentIndex(currentPlayerIndex);
+                    SimulateEndTurn(ref currentPlayerIndex, ref player, ref enemy, playerMinions, enemyMinions);
                     break;
             }
         }
@@ -105,6 +105,62 @@ public static class SnapshotSimulator
 
         SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
         SetPlayer(GetOpponentIndex(action.ActorIndex), opponent, ref player, ref enemy);
+    }
+
+    private static void SimulateEndTurn(
+        ref int currentPlayerIndex,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy,
+        List<MinionSnapshot> playerMinions,
+        List<MinionSnapshot> enemyMinions)
+    {
+        currentPlayerIndex = GetOpponentIndex(currentPlayerIndex);
+
+        PlayerSnapshot nextPlayer = GetPlayer(currentPlayerIndex, player, enemy);
+        nextPlayer = StartTurnPlayer(nextPlayer);
+        SetPlayer(currentPlayerIndex, nextPlayer, ref player, ref enemy);
+
+        List<MinionSnapshot> nextPlayerMinions = GetMinions(currentPlayerIndex, playerMinions, enemyMinions);
+        SetMinionsCanAttack(nextPlayerMinions, true);
+    }
+
+    private static PlayerSnapshot StartTurnPlayer(PlayerSnapshot player)
+    {
+        if (player == null) return new PlayerSnapshot(0, 0, 0, 0, 0, 0);
+
+        int maxMana = player.MaxMana < Player.MaxManaCap
+            ? player.MaxMana + 1
+            : player.MaxMana;
+
+        PlayerSnapshot refreshedPlayer = new PlayerSnapshot(
+            player.HeroHealth,
+            player.HeroMaxHealth,
+            maxMana,
+            maxMana,
+            player.HandCount,
+            player.DeckCount);
+
+        return DrawCardForTurnStart(refreshedPlayer);
+    }
+
+    private static PlayerSnapshot DrawCardForTurnStart(PlayerSnapshot player)
+    {
+        if (player == null) return new PlayerSnapshot(0, 0, 0, 0, 0, 0);
+        if (player.DeckCount <= 0) return player;
+
+        int handCount = player.HandCount;
+        if (handCount < Player.MaxHandSize)
+        {
+            handCount++;
+        }
+
+        return new PlayerSnapshot(
+            player.HeroHealth,
+            player.HeroMaxHealth,
+            player.CurrentMana,
+            player.MaxMana,
+            handCount,
+            player.DeckCount - 1);
     }
 
     private static void SimulateAttackMinion(
@@ -216,6 +272,16 @@ public static class SnapshotSimulator
             minion.HasTaunt,
             minion.HasDivineShield,
             minion.HasCharge);
+    }
+
+    private static void SetMinionsCanAttack(List<MinionSnapshot> minions, bool canAttack)
+    {
+        if (minions == null) return;
+
+        for (int i = 0; i < minions.Count; i++)
+        {
+            minions[i] = SetCanAttack(minions[i], canAttack);
+        }
     }
 
     private static PlayerSnapshot CopyPlayer(PlayerSnapshot player)

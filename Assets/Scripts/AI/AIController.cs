@@ -49,7 +49,7 @@ public class AIController
     private GameAction ExecuteNextAction()
     {
         List<GameAction> legalActions = GameActionGenerator.GenerateLegalActions(gameManager);
-        AIActionSelection selection = actionSelector.SelectAction(legalActions);
+        AIActionSelection selection = actionSelector.SelectAction(legalActions, gameManager, evaluator);
         GameAction selectedAction = selection?.Action;
 
         if (selectedAction == null)
@@ -64,7 +64,13 @@ public class AIController
 
         GameActionResult result = gameManager.ExecuteAction(selectedAction);
         EvaluationResult scoreAfterAction = GetCurrentEvaluationResult();
-        string logText = BuildActionLogText(actionText, reasonText, GetActionResultText(result), scoreBeforeAction, scoreAfterAction);
+        string logText = BuildActionLogText(
+            actionText,
+            reasonText,
+            GetActionResultText(result),
+            selection.SimulatedEvaluation,
+            scoreBeforeAction,
+            scoreAfterAction);
         if (result.Failed)
         {
             Debug.LogWarning(logText);
@@ -80,14 +86,20 @@ public class AIController
     /// 构建单条 AI 日志。
     /// Unity Console 列表对多行日志显示不稳定，所以这里保持一行展示。
     /// </summary>
-    private string BuildActionLogText(string actionText, string reasonText, string resultText, EvaluationResult scoreBeforeAction, EvaluationResult scoreAfterAction)
+    private string BuildActionLogText(
+        string actionText,
+        string reasonText,
+        string resultText,
+        EvaluationResult simulatedEvaluation,
+        EvaluationResult scoreBeforeAction,
+        EvaluationResult scoreAfterAction)
     {
-        return $"AI 行动：{actionText} | 理由：{reasonText} | 评分：{GetEvaluationDebugText(scoreBeforeAction)} -> {GetEvaluationDebugText(scoreAfterAction)} | 结果：{resultText}";
+        return $"AI 行动：{actionText} | 理由：{reasonText} | 模拟评分：{GetEvaluationDebugText(simulatedEvaluation)} | 真实评分：{GetEvaluationDebugText(scoreBeforeAction)} -> {GetEvaluationDebugText(scoreAfterAction)} | 结果：{resultText}";
     }
 
     /// <summary>
     /// 从当前 AI 控制的玩家视角读取局面评分明细。
-    /// 当前评分只用于日志观察，不影响动作选择。
+    /// 当前评分用于日志观察；ActionSelector 也会用同一个 Evaluator 评估快照模拟结果。
     /// </summary>
     private EvaluationResult GetCurrentEvaluationResult()
     {
@@ -104,15 +116,15 @@ public class AIController
 
     /// <summary>
     /// 把 AI 选择原因转换成适合 Console 阅读的中文文本。
-    /// 这里只解释当前规则型策略；评分函数当前只用于日志观察。
+    /// 这里只解释 AI 当前选择动作的直接原因。
     /// </summary>
     private string GetSelectionReasonText(AIActionSelectionReason reason)
     {
         return reason switch
         {
             AIActionSelectionReason.Lethal => "这个动作可以击杀敌方英雄。",
-            AIActionSelectionReason.KillEnemyMinion => "这个动作可以击杀敌方随从。",
-            AIActionSelectionReason.PlayCard => "当前没有击杀机会，优先打出可用手牌。",
+            AIActionSelectionReason.HighestEvaluationScore => "这个动作不降低评分，并且在候选动作里模拟后评分最高。",
+            AIActionSelectionReason.NoProfitableActionEndTurn => "没有找到不降低评分的主动动作，选择结束回合。",
             AIActionSelectionReason.FallbackPriority => "没有命中特殊策略，按固定优先级选择。",
             _ => "没有明确选择原因。",
         };

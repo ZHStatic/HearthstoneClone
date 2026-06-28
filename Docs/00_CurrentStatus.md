@@ -5,16 +5,16 @@
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数和快照模拟基础链路。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路和评分优先级动作选择收口。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
 
 当前停靠点：
 
 ```text
-阶段 3.5 当前链路已写入：Enemy AI 自动行动、基础动作选择、评分函数、快照模拟、模拟后评分日志
-当前重点：阶段 3 AI 从规则优先级过渡到评分优先级
-已完成：动作建模 -> 合法动作生成 -> 统一执行入口 -> AI 自动回合 -> 选择原因日志 -> 调试验证入口 -> 评估函数 -> 快照模拟
+阶段 3.6 已收口：Enemy AI 自动行动、评分函数、快照模拟、模拟评分日志、评分优先级动作选择
+当前重点：观察评分优先级 AI 是否过于保守
+已完成：动作建模 -> 合法动作生成 -> 统一执行入口 -> AI 自动回合 -> 选择原因日志 -> 调试验证入口 -> 评估函数 -> 快照模拟 -> 评分优先级选择 -> 最小收益门槛
 暂缓：UI 拆分 -> UI 复用刷新
-下一步：观察快照模拟评分日志，把 ActionSelector 从规则优先级逐步过渡到评分优先级
+下一步：根据实战日志调整 Evaluator 权重，或加入“允许小亏换节奏”的阈值
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -52,6 +52,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 
 阶段 3.5 快照模拟基础链路已经写入：新增 `GameStateSnapshot`、`PlayerSnapshot`、`MinionSnapshot`、`BoardSnapshot`、`SnapshotAction`、`SnapshotActionMapper` 和 `SnapshotSimulator`。`GameManager` 新增真实评分 vs 快照评分验证入口，以及合法动作快照模拟后评分日志入口；Unity 编译检查已通过。
 
+阶段 3.6 评分优先级动作选择已经收口：`ActionSelector` 先保留斩杀硬规则，其余动作通过 `SnapshotSimulator` 单步模拟并由 `Evaluator` 评分；`AIActionSelection` 会携带被选动作的模拟评分，`AIController` 日志会同时显示模拟评分和真实执行前后评分。`SnapshotSimulator` 的 `EndTurn` 已补齐对手回合开始的关键状态变化，包括抽牌、法力刷新和随从恢复攻击。AI 当前只主动执行不降低评分的动作，如果没有不降分动作就结束回合。
+
 ## 当前可玩内容
 
 当前已验证 Play 模式能完成：
@@ -78,6 +80,8 @@ AI 行动原因日志
 AI 评分明细日志
 快照评分验证日志
 合法动作快照模拟评分日志
+AI 被选动作模拟评分日志
+AI 评分优先级动作选择
 ```
 
 当前测试卡牌：
@@ -126,9 +130,9 @@ AI 评分明细日志
 | 文件 | 职责 |
 |------|------|
 | `AI/AIController.cs` | AI 回合控制器，负责生成合法动作、选择动作、执行动作并打印 AI 日志 |
-| `AI/ActionSelector.cs` | AI 动作选择器，按斩杀、解场、出牌、兜底优先级选择动作 |
-| `AI/AIActionSelection.cs` | AI 动作选择结果，包含最终动作和选择原因 |
-| `AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于说明斩杀、解场、出牌或兜底选择 |
+| `AI/ActionSelector.cs` | AI 动作选择器，保留斩杀硬规则，其余动作按快照模拟评分选择，并用最小收益门槛避免主动亏分 |
+| `AI/AIActionSelection.cs` | AI 动作选择结果，包含最终动作、选择原因和可选模拟评分 |
+| `AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于说明斩杀、评分最高动作、无收益结束回合或兜底选择 |
 | `AI/Evaluator.cs` | AI 局面评估函数，可以评分真实局面和快照局面 |
 | `AI/EvaluationResult.cs` | 评分明细结果，记录英雄血量、手牌、场面和总分 |
 | `AI/Simulation/GameStateSnapshot.cs` | 对局快照根对象，用于脱离真实局面做模拟 |
@@ -137,7 +141,7 @@ AI 评分明细日志
 | `AI/Simulation/BoardSnapshot.cs` | 战场快照，保存双方随从列表 |
 | `AI/Simulation/SnapshotAction.cs` | 快照动作，描述可以在快照上模拟的动作 |
 | `AI/Simulation/SnapshotActionMapper.cs` | 将真实 `GameAction` 映射成快照动作 |
-| `AI/Simulation/SnapshotSimulator.cs` | 单步快照模拟器，执行快照动作并返回新快照 |
+| `AI/Simulation/SnapshotSimulator.cs` | 单步快照模拟器，执行快照动作并返回新快照；`EndTurn` 会模拟回合开始的关键状态变化 |
 
 ### UI 层
 
@@ -218,6 +222,10 @@ AI 评分明细日志
 - `SnapshotActionMapper` 和 `SnapshotSimulator` 已能完成真实动作到快照动作的映射和单步模拟。
 - `GameManager` 已提供快照评分验证和合法动作模拟后评分日志开关。
 - 阶段 3.5 相关脚本已通过 Unity 编译检查。
+- `ActionSelector` 已从规则优先级过渡到评分优先级：除斩杀外，会根据快照模拟后评分选择动作。
+- `AIActionSelection` 已能携带被选动作的模拟评分，`AIController` 日志会显示模拟评分和真实评分变化。
+- `SnapshotSimulator` 的 `EndTurn` 已补齐对手回合开始的抽牌、法力刷新和随从恢复攻击。
+- AI 当前只主动执行不降低评分的动作；如果没有不降分主动动作，会选择结束回合。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -429,7 +437,8 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 阶段 3.3：AI 调试验证入口和第一轮策略微调已写入
 阶段 3.4：评估函数和评分明细已写入
 阶段 3.5：快照数据、动作映射、单步模拟和调试验证入口已写入
-下一步：观察快照模拟评分日志，把 ActionSelector 从规则优先级逐步过渡到评分优先级
+阶段 3.6：评分优先级选择、被选动作模拟评分日志、EndTurn 快照修正和最小收益门槛已写入
+下一步：观察 AI 是否过于保守，再决定调整 Evaluator 权重或加入允许小亏阈值
 
 UI 拆分 / UI 复用刷新：
 暂缓到功能更完整后统一整理。

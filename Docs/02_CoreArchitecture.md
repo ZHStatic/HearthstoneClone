@@ -72,14 +72,14 @@ Core 不依赖 UI
 | 类 | 文件 | 当前职责 |
 |----|------|----------|
 | `AIController` | `Assets/Scripts/AI/AIController.cs` | AI 回合控制器，生成合法动作、选择动作、执行动作并打印日志 |
-| `ActionSelector` | `Assets/Scripts/AI/ActionSelector.cs` | 基础动作选择器，按斩杀、解场、出牌、兜底优先级选择动作 |
-| `AIActionSelection` | `Assets/Scripts/AI/AIActionSelection.cs` | AI 选择结果，包含最终动作和选择原因 |
-| `AIActionSelectionReason` | `Assets/Scripts/AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于解释当前动作来源 |
+| `ActionSelector` | `Assets/Scripts/AI/ActionSelector.cs` | 动作选择器，保留斩杀硬规则，其余动作按快照模拟评分选择，并用最小收益门槛避免主动亏分 |
+| `AIActionSelection` | `Assets/Scripts/AI/AIActionSelection.cs` | AI 选择结果，包含最终动作、选择原因和可选模拟评分 |
+| `AIActionSelectionReason` | `Assets/Scripts/AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于解释斩杀、评分最高动作、无收益结束回合或兜底选择 |
 | `Evaluator` | `Assets/Scripts/AI/Evaluator.cs` | 局面评估函数，支持真实局面和快照局面的评分 |
 | `EvaluationResult` | `Assets/Scripts/AI/EvaluationResult.cs` | 评分明细结果，保存英雄血量、手牌、场面和总分 |
 | `GameStateSnapshot` | `Assets/Scripts/AI/Simulation/GameStateSnapshot.cs` | 对局快照根对象，用于脱离真实局面做模拟 |
 | `SnapshotActionMapper` | `Assets/Scripts/AI/Simulation/SnapshotActionMapper.cs` | 把真实 `GameAction` 映射成快照动作 |
-| `SnapshotSimulator` | `Assets/Scripts/AI/Simulation/SnapshotSimulator.cs` | 在快照上执行单步动作并返回新快照 |
+| `SnapshotSimulator` | `Assets/Scripts/AI/Simulation/SnapshotSimulator.cs` | 在快照上执行单步动作并返回新快照，`EndTurn` 会模拟回合开始的关键状态变化 |
 
 ## 依赖关系
 
@@ -315,32 +315,39 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 
 ## 阶段 3 AI 基础链路
 
-当前 AI 第一版先追求可观察、可调试。阶段 3.4/3.5 已补上评估函数和快照模拟基础链路，但正式选择动作时仍主要依赖规则优先级，搜索暂未开始。
+当前 AI 先追求可观察、可调试。阶段 3.4/3.5 已补上评估函数和快照模拟基础链路，阶段 3.6 已让 `ActionSelector` 从规则优先级过渡到评分优先级。搜索暂未开始。
 
 ```text
 Enemy 回合开始
 -> AIController.TakeTurn()
 -> GameActionGenerator.GenerateLegalActions(gameManager)
 -> ActionSelector.SelectAction(legalActions)
--> AIActionSelection(Action + Reason)
+-> GameStateSnapshot.FromGameManager(gameManager)
+-> SnapshotActionMapper.TryMap(action, gameManager, out snapshotAction)
+-> SnapshotSimulator.Simulate(snapshot, snapshotAction)
+-> Evaluator.EvaluateDetailed(simulatedState, currentPlayerIndex)
+-> AIActionSelection(Action + Reason + SimulatedEvaluation)
 -> GameManager.ExecuteAction(action)
--> Console 输出 AI 行动、理由、结果和评分变化
+-> Console 输出 AI 行动、理由、模拟评分、真实评分变化和结果
 ```
 
-当前动作选择顺序：
+当前动作选择策略：
 
 ```text
-1. 能击杀敌方英雄，优先斩杀
-2. 能击杀敌方随从，优先解场
-3. 没有击杀机会时，优先打出可用手牌
-4. 没命中特殊策略时，按固定动作优先级兜底
+1. 能击杀敌方英雄，仍然优先斩杀
+2. 其他合法动作先映射到快照动作，并在快照上单步模拟
+3. 用 Evaluator 从当前 AI 视角评估模拟后局面
+4. 非 EndTurn 的主动动作必须不降低评分，才进入候选
+5. 如果有主动候选，选择模拟后评分最高的动作
+6. 如果没有不降分主动动作，选择 EndTurn
+7. 如果快照模拟无法选出动作，才按固定优先级兜底
 ```
 
-这是阶段性简化，不是成熟项目最终 AI。评估函数和快照模拟基础链路已经写入；下一步再把“选择原因”扩展成分数、权重和候选动作比较。
+这是阶段性简化，不是成熟项目最终 AI。当前只做单步模拟，不做多步搜索；它的价值是让 AI 决策有可解释的评分依据，并且最终执行仍复用 `GameManager.ExecuteAction()`，避免 AI 和玩家规则分叉。
 
-## 阶段 3.4/3.5 评估与快照模拟链路
+## 阶段 3.4-3.6 评估与快照模拟链路
 
-阶段 3.4/3.5 的目标不是立刻做搜索，而是先证明“同一个局面可以被复制、评分和单步模拟”：
+阶段 3.4-3.6 的目标不是立刻做搜索，而是先证明“同一个局面可以被复制、评分、单步模拟，并用于选择动作”：
 
 ```text
 真实 GameManager 局面
@@ -349,6 +356,7 @@ Enemy 回合开始
 -> SnapshotActionMapper.TryMap(action, snapshot)
 -> SnapshotSimulator.Simulate(snapshot, snapshotAction)
 -> Evaluator.EvaluateDetailed(simulatedSnapshot, perspectivePlayerId)
+-> ActionSelector 选择不降分的最高分动作，或在没有收益时结束回合
 ```
 
 这条链路的意义：
@@ -356,7 +364,8 @@ Enemy 回合开始
 - `Evaluator` 只负责“这个局面对某个玩家好不好”，不负责选择动作。
 - `SnapshotSimulator` 只负责“假设执行这个动作后会变成什么局面”，不修改真实游戏。
 - `GameManager` 当前只提供调试开关，用于对比真实评分和快照评分，以及打印每个合法动作模拟后的评分。
-- 下一步再让 `ActionSelector` 使用这些评分结果，而不是直接把搜索逻辑塞进 `GameManager`。
+- `ActionSelector` 使用模拟评分选择动作，但不直接执行真实规则。
+- `EndTurn` 快照会模拟对手回合开始的关键状态变化：抽牌、法力刷新、随从恢复攻击。
 
 ## 当前阶段性简化
 

@@ -1,6 +1,6 @@
 /// <summary>
 /// AI 选择某个动作的原因。
-/// 当前只描述规则型 AI 的简单决策来源，不代表局面评分。
+/// 用于让 AIController 把选择依据打印成可读日志。
 /// </summary>
 public enum AIActionSelectionReason
 {
@@ -15,14 +15,14 @@ public enum AIActionSelectionReason
     Lethal,
 
     /// <summary>
-    /// 选择这个动作是因为它可以击杀敌方随从。
+    /// 选择这个动作是因为它在不降低评分的主动动作中模拟后评分最高。
     /// </summary>
-    KillEnemyMinion,
+    HighestEvaluationScore,
 
     /// <summary>
-    /// 选择这个动作是因为当前没有击杀机会，先打出一张可用手牌。
+    /// 没有找到不降低评分的主动动作，所以选择结束回合。
     /// </summary>
-    PlayCard,
+    NoProfitableActionEndTurn,
 
     /// <summary>
     /// 没有命中特殊策略，按固定动作优先级兜底选择。

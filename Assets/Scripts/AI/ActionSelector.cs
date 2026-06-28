@@ -2,16 +2,19 @@ using System.Collections.Generic;
 
 /// <summary>
 /// AI 动作选择器。
-/// 它只从已经生成好的合法动作里挑一条，不判断规则，也不执行动作。
+/// 它只从已经生成好的合法动作里挑一条，不执行真实动作。
 /// </summary>
 public class ActionSelector
 {
     /// <summary>
     /// 从合法动作中选择一条动作。
-    /// 第一版策略：能斩杀就斩杀，能击杀随从就解场，再尝试出牌，最后结束回合。
+    /// 当前策略：先保留斩杀硬规则；其余主动动作必须在快照模拟后不降低评分，否则选择结束回合。
     /// 这里接收的动作必须已经由 GameActionGenerator 验证过合法性。
     /// </summary>
-    public AIActionSelection SelectAction(IReadOnlyList<GameAction> legalActions)
+    public AIActionSelection SelectAction(
+        IReadOnlyList<GameAction> legalActions,
+        GameManager gameManager,
+        Evaluator evaluator)
     {
         if (legalActions == null || legalActions.Count == 0) return null;
 
@@ -20,14 +23,18 @@ public class ActionSelector
             return new AIActionSelection(lethalAction, AIActionSelectionReason.Lethal);
         }
 
-        if (TryFindKillMinionAction(legalActions, out GameAction killMinionAction))
+        if (TryFindBestEvaluatedAction(
+            legalActions,
+            gameManager,
+            evaluator,
+            out GameAction evaluatedAction,
+            out EvaluationResult simulatedEvaluation,
+            out AIActionSelectionReason evaluatedReason))
         {
-            return new AIActionSelection(killMinionAction, AIActionSelectionReason.KillEnemyMinion);
-        }
-
-        if (TryFindPlayableCardAction(legalActions, out GameAction playableCardAction))
-        {
-            return new AIActionSelection(playableCardAction, AIActionSelectionReason.PlayCard);
+            return new AIActionSelection(
+                evaluatedAction,
+                evaluatedReason,
+                simulatedEvaluation);
         }
 
         GameAction fallbackAction = SelectHighestPriorityAction(legalActions);
@@ -55,125 +62,100 @@ public class ActionSelector
     }
 
     /// <summary>
-    /// 查找能直接击杀敌方随从的动作。
-    /// 这是阶段性简化：只在能击杀的动作里做简单排序，不计算随从交换是否亏赚。
+    /// 用当前局面的快照逐个模拟合法动作，选择模拟后不降分的最高分主动动作。
+    /// 如果没有任何主动动作能保持或提高评分，就选择结束回合。
+    /// 这是阶段性简化，不是成熟项目最终做法：当前只看一步，不搜索后续回合，也不完整模拟战吼和亡语。
     /// </summary>
-    private bool TryFindKillMinionAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
+    private bool TryFindBestEvaluatedAction(
+        IReadOnlyList<GameAction> legalActions,
+        GameManager gameManager,
+        Evaluator evaluator,
+        out GameAction selectedAction,
+        out EvaluationResult selectedEvaluation,
+        out AIActionSelectionReason selectedReason)
     {
         selectedAction = null;
-        int selectedScore = int.MinValue;
+        selectedEvaluation = null;
+        selectedReason = AIActionSelectionReason.None;
+
+        if (legalActions == null || legalActions.Count == 0) return false;
+        if (gameManager == null || evaluator == null) return false;
+
+        GameStateSnapshot snapshot = GameStateSnapshot.FromGameManager(gameManager);
+        if (snapshot == null) return false;
+
+        int playerIndex = GetCurrentPlayerIndex(gameManager);
+        EvaluationResult currentEvaluation = evaluator.EvaluateDetailed(snapshot, playerIndex);
+        int currentEvaluationScore = currentEvaluation != null ? currentEvaluation.TotalScore : int.MinValue;
+        int selectedEvaluationScore = int.MinValue;
+        int selectedTieBreakerScore = int.MinValue;
+        GameAction endTurnAction = null;
+        EvaluationResult endTurnEvaluation = null;
 
         for (int i = 0; i < legalActions.Count; i++)
         {
             GameAction action = legalActions[i];
-            if (!CanKillMinion(action)) continue;
+            if (!SnapshotActionMapper.TryMap(action, gameManager, out SnapshotAction snapshotAction))
+            {
+                continue;
+            }
 
-            int actionScore = GetKillMinionScore(action);
-            if (selectedAction == null || actionScore > selectedScore)
+            GameStateSnapshot simulatedState = SnapshotSimulator.Simulate(snapshot, snapshotAction);
+            EvaluationResult evaluation = evaluator.EvaluateDetailed(simulatedState, playerIndex);
+            int evaluationScore = evaluation != null ? evaluation.TotalScore : int.MinValue;
+            int tieBreakerScore = GetFallbackActionScore(action);
+
+            if (action.ActionType == GameActionType.EndTurn)
+            {
+                endTurnAction = action;
+                endTurnEvaluation = evaluation;
+                continue;
+            }
+
+            if (evaluationScore < currentEvaluationScore)
+            {
+                continue;
+            }
+
+            if (selectedAction == null
+                || evaluationScore > selectedEvaluationScore
+                || (evaluationScore == selectedEvaluationScore && tieBreakerScore > selectedTieBreakerScore))
             {
                 selectedAction = action;
-                selectedScore = actionScore;
+                selectedEvaluation = evaluation;
+                selectedEvaluationScore = evaluationScore;
+                selectedTieBreakerScore = tieBreakerScore;
             }
         }
 
-        return selectedAction != null;
-    }
-
-    /// <summary>
-    /// 查找可以打出的手牌动作。
-    /// 费用、目标、战场格子等合法性已经由 GameActionGenerator 处理。
-    /// AI 选择时还要排除“合法但明显伤害自己”的目标，例如把伤害法术打到自己英雄或自己随从。
-    /// 如果有多张牌可以打，优先选择费用更高的牌，让 AI 更接近“尽量利用当前法力”的行为。
-    /// </summary>
-    private bool TryFindPlayableCardAction(IReadOnlyList<GameAction> legalActions, out GameAction selectedAction)
-    {
-        selectedAction = null;
-        int selectedScore = int.MinValue;
-
-        for (int i = 0; i < legalActions.Count; i++)
+        if (selectedAction != null)
         {
-            GameAction action = legalActions[i];
-            if (action == null) continue;
-            if (!IsUsefulPlayableCardAction(action)) continue;
-
-            int actionScore = GetPlayableCardScore(action);
-            if (selectedAction == null || actionScore > selectedScore)
-            {
-                selectedAction = action;
-                selectedScore = actionScore;
-            }
+            selectedReason = AIActionSelectionReason.HighestEvaluationScore;
+            return true;
         }
 
-        return selectedAction != null;
-    }
-
-    /// <summary>
-    /// 判断一条出牌动作是否值得 AI 主动选择。
-    /// 当前阶段只支持随从牌和伤害法术，所以伤害法术默认只打敌方目标。
-    /// </summary>
-    private bool IsUsefulPlayableCardAction(GameAction action)
-    {
-        if (action == null) return false;
-
-        return action.ActionType switch
+        if (endTurnAction != null)
         {
-            GameActionType.PlayMinionCard => true,
-            GameActionType.PlaySpellOnHero => !IsTargetOwnedByActor(action),
-            GameActionType.PlaySpellOnMinion => !IsTargetOwnedByActor(action),
-            _ => false,
-        };
+            selectedAction = endTurnAction;
+            selectedEvaluation = endTurnEvaluation;
+            selectedReason = AIActionSelectionReason.NoProfitableActionEndTurn;
+            return true;
+        }
+
+        return false;
     }
 
-    /// <summary>
-    /// 给可出牌动作一个简单分数。
-    /// 当前不是完整评估函数，只用费用近似节奏价值；同费用时优先打随从。
-    /// 对非击杀伤害法术，优先打敌方英雄，避免因为动作生成顺序而随便打高血随从。
-    /// </summary>
-    private int GetPlayableCardScore(GameAction action)
+    private int GetCurrentPlayerIndex(GameManager gameManager)
     {
-        if (action == null || action.Card == null) return int.MinValue;
+        if (gameManager == null) return GameStateSnapshot.PlayerIndex;
 
-        int costScore = action.Card.CurrentCost * 10;
-        int typeScore = action.ActionType == GameActionType.PlayMinionCard ? 3 : 0;
-        int targetScore = GetPlayableTargetScore(action);
-
-        return costScore + typeScore + targetScore;
+        return gameManager.CurrentPlayer == gameManager.Enemy
+            ? GameStateSnapshot.EnemyIndex
+            : GameStateSnapshot.PlayerIndex;
     }
 
     /// <summary>
-    /// 给出牌动作的目标一个简单分数。
-    /// 斩杀和击杀随从已经在更高优先级处理；这里主要处理“不能击杀时打谁更合理”。
-    /// </summary>
-    private int GetPlayableTargetScore(GameAction action)
-    {
-        if (action == null) return 0;
-
-        return action.ActionType switch
-        {
-            GameActionType.PlaySpellOnHero => 2,
-            GameActionType.PlaySpellOnMinion => 1,
-            _ => 0,
-        };
-    }
-
-    /// <summary>
-    /// 给击杀敌方随从的动作一个简单分数。
-    /// 优先处理攻击力高的敌方随从；伤害溢出越少，分数越高。
-    /// </summary>
-    private int GetKillMinionScore(GameAction action)
-    {
-        if (action == null || action.TargetMinion == null) return int.MinValue;
-
-        int damage = GetMinionDamage(action);
-        int overkillDamage = damage - action.TargetMinion.CurrentHealth;
-        int threatScore = action.TargetMinion.Attack * 100;
-        int overkillPenalty = overkillDamage * 10;
-
-        return threatScore - overkillPenalty;
-    }
-
-    /// <summary>
-    /// 兜底选择：如果没有命中斩杀、解场或出牌策略，就按固定优先级选一条动作。
+    /// 兜底选择：如果快照模拟无法选出动作，就按固定优先级选一条动作。
     /// 这样可以保证 AI 至少会从合法动作中选到一个确定结果。
     /// </summary>
     private GameAction SelectHighestPriorityAction(IReadOnlyList<GameAction> legalActions)
@@ -237,19 +219,6 @@ public class ActionSelector
     }
 
     /// <summary>
-    /// 判断这条动作是否能击杀目标随从。
-    /// 如果目标是自己的随从，直接返回 false，避免 AI 把自伤当成解场。
-    /// </summary>
-    private bool CanKillMinion(GameAction action)
-    {
-        if (action == null || action.TargetMinion == null) return false;
-        if (IsTargetOwnedByActor(action)) return false;
-
-        int damage = GetMinionDamage(action);
-        return damage > 0 && damage >= action.TargetMinion.CurrentHealth;
-    }
-
-    /// <summary>
     /// 判断动作目标是否属于动作发起者。
     /// 用于避免 AI 把伤害打到自己英雄或自己随从身上。
     /// </summary>
@@ -282,26 +251,8 @@ public class ActionSelector
     }
 
     /// <summary>
-    /// 估算动作对随从造成的伤害。
-    /// 当前只覆盖随从攻击随从和单体伤害法术打随从两类动作。
-    /// </summary>
-    private int GetMinionDamage(GameAction action)
-    {
-        if (action == null) return 0;
-
-        return action.ActionType switch
-        {
-            GameActionType.AttackMinion => action.Attacker != null ? action.Attacker.Attack : 0,
-            GameActionType.PlaySpellOnMinion => action.Card != null && action.Card.CardData != null
-                ? action.Card.CardData.SpellDamage
-                : 0,
-            _ => 0,
-        };
-    }
-
-    /// <summary>
     /// 返回动作的兜底优先级。
-    /// 分数只用于排序，不代表局面评分；真正的评估函数会在阶段 3.3 再做。
+    /// 分数只用于兜底和同分排序，不代表局面评分。
     /// </summary>
     private int GetActionPriority(GameAction action)
     {
