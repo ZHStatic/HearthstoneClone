@@ -11,26 +11,27 @@ public class ActionSelector
     /// 第一版策略：能斩杀就斩杀，能击杀随从就解场，再尝试出牌，最后结束回合。
     /// 这里接收的动作必须已经由 GameActionGenerator 验证过合法性。
     /// </summary>
-    public GameAction SelectAction(IReadOnlyList<GameAction> legalActions)
+    public AIActionSelection SelectAction(IReadOnlyList<GameAction> legalActions)
     {
         if (legalActions == null || legalActions.Count == 0) return null;
 
         if (TryFindLethalAction(legalActions, out GameAction lethalAction))
         {
-            return lethalAction;
+            return new AIActionSelection(lethalAction, AIActionSelectionReason.Lethal);
         }
 
         if (TryFindKillMinionAction(legalActions, out GameAction killMinionAction))
         {
-            return killMinionAction;
+            return new AIActionSelection(killMinionAction, AIActionSelectionReason.KillEnemyMinion);
         }
 
         if (TryFindPlayableCardAction(legalActions, out GameAction playableCardAction))
         {
-            return playableCardAction;
+            return new AIActionSelection(playableCardAction, AIActionSelectionReason.PlayCard);
         }
 
-        return SelectHighestPriorityAction(legalActions);
+        GameAction fallbackAction = SelectHighestPriorityAction(legalActions);
+        return new AIActionSelection(fallbackAction, AIActionSelectionReason.FallbackPriority);
     }
 
     /// <summary>
@@ -156,17 +157,14 @@ public class ActionSelector
     {
         if (action == null) return 0;
 
-        switch (action.ActionType)
+        return action.ActionType switch
         {
-            case GameActionType.AttackHero:
-                return action.Attacker != null ? action.Attacker.Attack : 0;
-            case GameActionType.PlaySpellOnHero:
-                return action.Card != null && action.Card.CardData != null
-                    ? action.Card.CardData.SpellDamage
-                    : 0;
-            default:
-                return 0;
-        }
+            GameActionType.AttackHero => action.Attacker != null ? action.Attacker.Attack : 0,
+            GameActionType.PlaySpellOnHero => action.Card != null && action.Card.CardData != null
+                ? action.Card.CardData.SpellDamage
+                : 0,
+            _ => 0,
+        };
     }
 
     /// <summary>
@@ -177,17 +175,14 @@ public class ActionSelector
     {
         if (action == null) return 0;
 
-        switch (action.ActionType)
+        return action.ActionType switch
         {
-            case GameActionType.AttackMinion:
-                return action.Attacker != null ? action.Attacker.Attack : 0;
-            case GameActionType.PlaySpellOnMinion:
-                return action.Card != null && action.Card.CardData != null
-                    ? action.Card.CardData.SpellDamage
-                    : 0;
-            default:
-                return 0;
-        }
+            GameActionType.AttackMinion => action.Attacker != null ? action.Attacker.Attack : 0,
+            GameActionType.PlaySpellOnMinion => action.Card != null && action.Card.CardData != null
+                ? action.Card.CardData.SpellDamage
+                : 0,
+            _ => 0,
+        };
     }
 
     /// <summary>

@@ -47,7 +47,8 @@ public class AIController
     private GameAction ExecuteNextAction()
     {
         List<GameAction> legalActions = GameActionGenerator.GenerateLegalActions(gameManager);
-        GameAction selectedAction = actionSelector.SelectAction(legalActions);
+        AIActionSelection selection = actionSelector.SelectAction(legalActions);
+        GameAction selectedAction = selection?.Action;
 
         if (selectedAction == null)
         {
@@ -55,18 +56,45 @@ public class AIController
             return null;
         }
 
-        Debug.Log($"AI 选择：{GetActionDebugText(selectedAction)}");
+        string actionText = GetActionDebugText(selectedAction);
+        string reasonText = GetSelectionReasonText(selection.Reason);
 
         GameActionResult result = gameManager.ExecuteAction(selectedAction);
+        string logText = BuildActionLogText(actionText, reasonText, GetActionResultText(result));
         if (result.Failed)
         {
-            Debug.LogWarning($"AI 行动失败：{GetActionResultText(result)}");
+            Debug.LogWarning(logText);
             return null;
         }
 
-        Debug.Log($"AI 结果：{GetActionResultText(result)}");
+        Debug.Log(logText);
 
         return selectedAction;
+    }
+
+    /// <summary>
+    /// 构建单条 AI 日志。
+    /// Unity Console 列表对多行日志显示不稳定，所以这里保持一行展示。
+    /// </summary>
+    private string BuildActionLogText(string actionText, string reasonText, string resultText)
+    {
+        return $"AI 行动：{actionText} | 理由：{reasonText} | 结果：{resultText}";
+    }
+
+    /// <summary>
+    /// 把 AI 选择原因转换成适合 Console 阅读的中文文本。
+    /// 这里只解释当前规则型策略，不涉及阶段 3.3 之后的评分函数。
+    /// </summary>
+    private string GetSelectionReasonText(AIActionSelectionReason reason)
+    {
+        return reason switch
+        {
+            AIActionSelectionReason.Lethal => "这个动作可以击杀敌方英雄。",
+            AIActionSelectionReason.KillEnemyMinion => "这个动作可以击杀敌方随从。",
+            AIActionSelectionReason.PlayCard => "当前没有击杀机会，优先打出可用手牌。",
+            AIActionSelectionReason.FallbackPriority => "没有命中特殊策略，按固定优先级选择。",
+            _ => "没有明确选择原因。",
+        };
     }
 
     /// <summary>
