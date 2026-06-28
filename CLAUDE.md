@@ -1,12 +1,4 @@
-# CLAUDE.md — HearthstoneClone 项目上下文
-
-## 当前状态摘要（2026-06-27）
-
-- 阶段 1、1.5、2.1、2.1.5、2.2、2.3、2.4、2.4.5、2.5、2.6、2.7、2.8、2.9、2.10 核心结构优化已完成。
-- 阶段 2.10 已补齐 `GameAction` 动作建模、`GameActionGenerator` 合法动作枚举、`GameManager.ExecuteAction(GameAction)` 统一执行入口。
-- 随从出牌、法术、攻击都已有 `GameActionResult` 详细结果；旧 `bool Try...` 入口保留为兼容包装。
-- `GameActionGenerator` 只枚举动作，不复制规则验证；出牌、施法目标、攻击和嘲讽判断复用 `GameManager` 的验证方法。
-- 当前下一步：进入阶段 3.0，让 AI 复用合法动作生成器并执行一条基础动作。UI 拆分和 UI 复用刷新暂缓。
+# AGENTS.md — HearthstoneClone 项目上下文
 
 ## 用户画像
 
@@ -63,22 +55,36 @@ docs: 文档更新     → docs: 补充架构说明
 
 ## Unity 资源协作规则
 
-- Claude 新增 C# 脚本时，只创建 `.cs` 文件，**不要手动生成 `.meta` 文件**。
+- Codex 新增 C# 脚本时，只创建 `.cs` 文件，**不要手动生成 `.meta` 文件**。
 - 写完脚本后，提醒用户回到 Unity，让 Unity 自动导入脚本并生成对应 `.meta`。
 - Prefab、Scene、ScriptableObject、图片、音频等 Unity 资源，优先让用户在 Unity Editor 的 Project 面板中创建、移动或重命名。
-- 如果必须由 Claude 调整 Unity 资源文件，先说明风险并等待用户确认，避免破坏 `.meta` GUID 和场景/Prefab 引用。
+- 如果必须由 Codex 调整 Unity 资源文件，先说明风险并等待用户确认，避免破坏 `.meta` GUID 和场景/Prefab 引用。
 
 ## AI 协作原则
 
 > **每行代码都必须自己读懂。**
 
-- 不是让用户自己写，而是 Claude 写完之后，用户必须能解释它在做什么、为什么这样写
+- 不是让用户自己写，而是 Codex 写完之后，用户必须能解释它在做什么、为什么这样写
 - 每次写完一个类，用户确认理解后再进入下一个
 - 遇到不懂的语法/概念立刻追问，不要跳过
 - 用户可以随时要求放慢节奏、换个角度解释、或者重写
 - 遇到 Unity、游戏行业工程实践、UI/资源制作流程等问题时，先说明业内或成熟项目通常怎么做，再说明本项目当前阶段可以如何简化，以及这种简化的代价。
 - 明确区分哪些事情应该在 Unity Editor / Prefab / ScriptableObject 里配置，哪些事情应该写进代码。UI 布局、字号、颜色、边距等视觉参数优先放在 Editor/Prefab 中调整；运行时状态、规则判断、交互反馈内容才由代码控制。
 - 如果为了原型速度建议临时写法，必须明确标注“这是阶段性简化，不是成熟项目最终做法”，并补充以后求职或面试时可以如何解释这个取舍。
+
+### 固定巡检方法
+
+每次做较大范围代码整理、架构调整或 UI 反馈修正前，先按这个顺序检查：
+
+```powershell
+& 'C:/Users/Static/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe' '.codex/skills/hearthstone-code-review/scripts/find_review_candidates.py'
+```
+
+- 优先使用项目专用 `hearthstone-code-review` skill。
+- 把脚本输出当作候选，不直接当作结论；需要打开相关代码确认。
+- 重点看：忽略 `TakeDamage()` / `Heal()` 返回值、UI 误报实际伤害、重复 formatter、手动字符串拼接、Core/UI 反向依赖、`GameManager` / `GameUIController` 继续膨胀。
+- 中文文档在 PowerShell 中读取时使用 `-Encoding UTF8`，避免误判为乱码。
+- Prefab、Scene、ScriptableObject、图片、音频和 `.meta` 默认不由 Codex 直接改；视觉布局、字号、颜色、边距优先在 Unity Editor / Prefab 里调整。
 
 ### 写代码前的"属性清单"流程
 
@@ -171,14 +177,88 @@ docs: 文档更新     → docs: 补充架构说明
   - [x] `GameManager` 召唤后处理冲锋
   - [x] `CardView` 显示手牌关键词文字
   - [x] 疾风斥候测试通过
+- [x] 阶段 2.3：关键词“嘲讽”
+  - [x] `KeywordType` 增加 `Taunt`
+  - [x] 攻击随从和攻击英雄时检查嘲讽限制
+  - [x] 手牌和场上随从可以显示“嘲讽”
+- [x] 阶段 2.4：第一个战吼
+  - [x] `BattlecryType`
+  - [x] `CardData` 支持战吼类型和通用数值
+  - [x] 召唤后结算“对敌方英雄造成伤害”
+- [x] 阶段 2.4.5：战吼抽牌
+  - [x] 战吼通用数值复用为抽牌数量
+  - [x] 书卷侍从测试通过
+- [x] 阶段 2.5.0：事件系统基础链路
+  - [x] `GameEventType`
+  - [x] `GameEvent`
+  - [x] `GameEventBus`
+  - [x] 曾用出牌和召唤调试事件验证事件总线，阶段 3 已删除调试事件
+- [x] 阶段 2.5.1：死亡事件
+  - [x] 随从死亡时发布 `MinionDied`
+  - [x] 事件携带死亡随从
+- [x] 阶段 2.6：第一个亡语
+  - [x] `DeathrattleType`
+  - [x] `CardData` 支持亡语类型和通用数值
+  - [x] `MinionDied` 事件触发亡语伤害
+- [x] 阶段 2.7：关键词“圣盾”
+  - [x] `KeywordType` 增加 `DivineShield`
+  - [x] `Minion.TakeDamage()` 支持首次正数伤害抵消并移除圣盾
+  - [x] 手牌和场上随从显示“圣盾”
+- [x] 阶段 2.8：阶段 2 收尾复盘
+  - [x] 更新 README
+  - [x] 新增 `Docs/06_Stage2Review.md`
+  - [x] 整理阶段 2 演示脚本、架构取舍和进入 AI 前检查点
+- [x] 阶段 2.9：战斗日志与代码整理
+  - [x] `BattleLogEntry.cs`
+  - [x] `BattleLogger.cs`
+  - [x] `GameManager.BattleLog.cs`
+  - [x] 伤害 helper 记录尝试伤害和实际伤害
+  - [x] 圣盾抵消时记录 `DivineShieldPrevented`
+  - [x] `GameUIController` 法术反馈优先读取 Core 最近结算日志
+  - [x] `KeywordTextFormatter.cs` 统一关键词文本
+- [x] 阶段 2.10.1：Core 操作结果标准化第一轮
+  - [x] `GameActionFailureReason.cs`
+  - [x] `GameActionResult.cs`
+  - [x] 随从出牌和法术释放返回详细操作结果
+  - [x] UI 读取 Core 返回的反馈文本
+- [x] 阶段 2.10.2：Player 状态封装
+  - [x] `Player.Hand` / `Player.Deck` 对外只读
+  - [x] `Player.HasCardInHand(card)` 替代外部直接 `Hand.Contains(card)`
+- [x] 阶段 2.10.3：动作建模与验证入口
+  - [x] `GameActionType.cs`
+  - [x] `GameAction.cs`
+  - [x] `GameActionGenerator.cs`
+  - [x] `GameManager` 支持回合开始时打印合法动作，默认关闭
+- [x] 阶段 3.0 / 3.1：AI 基础行动
+  - [x] `AIController.cs`
+  - [x] `ActionSelector.cs`
+  - [x] Enemy 回合自动生成合法动作并通过 `GameManager.ExecuteAction(GameAction)` 执行
+- [x] 阶段 3.2：第一版动作选择策略
+  - [x] `AIActionSelection.cs`
+  - [x] `AIActionSelectionReason.cs`
+  - [x] AI 行动日志输出行动、理由和结果
 
 ## 当前停靠点
 
 - 阶段 1 最小对战闭环已完成。
-- 阶段 2 已完成：基础法术、冲锋、嘲讽、战吼、事件系统、亡语、圣盾、战斗日志和阶段复盘。
-- 阶段 2.10 核心结构优化已完成：`GameActionResult`、`Player` 状态封装、`GameAction`、`GameActionGenerator`、`GameManager.ExecuteAction(GameAction)`。
+- 阶段 1.5 展示打磨已完成：基础卡牌、操作反馈、选中高亮和基础 UI 可读性。
+- 阶段 2.1 基础伤害法术已完成：火花可以选择随从或英雄并造成伤害。
+- 阶段 2.1.5 已完成：文档边界重新整理，Core 架构文档不再重复详细流程。
+- 阶段 2.2 已完成：冲锋随从召唤后可以立即攻击，手牌 UI 可以显示“冲锋”。
+- 阶段 2.3 已完成：嘲讽可以限制攻击目标，手牌和场上随从可以显示“嘲讽”。
+- 阶段 2.4 / 2.4.5 已完成：战吼可以造成敌方英雄伤害，也可以为出牌者抽牌。
+- 阶段 2.5.0 / 2.5.1 已完成：事件总线基础链路已验证，当前只保留规则需要的 `MinionDied`。
+- 阶段 2.6 已完成：亡语炸弹人死亡后可以通过 `MinionDied` 事件触发伤害。
+- 阶段 2.7 已完成：圣盾随从第一次受到正数伤害时抵消伤害并失去圣盾。
+- 阶段 2.8 已完成：阶段 2 文档复盘和演示脚本已整理。
+- 阶段 2.9 已收口：战斗日志、圣盾反馈修正、关键词 formatter 复用已完成。
+- 阶段 2.10.1 已完成：随从出牌和法术释放已接入 `GameActionResult`。
+- 阶段 2.10.2 已完成：`Player` 手牌和牌库已改为只读暴露。
+- 阶段 2.10.3 已完成：动作类型、动作数据和合法动作生成器已写入，Console 验证入口已加入。
+- 阶段 3.0 / 3.1 已完成：Enemy AI 可以在自己的回合自动枚举并执行合法动作。
+- 阶段 3.2 已完成：AI 第一版动作选择策略和选择原因日志已写入。
 - UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
-- 下一步：进入阶段 3.0，先做 AI 基础行动，让 AI 复用合法动作生成和统一执行入口。
+- 下一步：继续打磨 AI 出牌和攻击顺序，再进入评估函数。
 
 ## 开发阶段速览
 
@@ -197,8 +277,8 @@ docs: 文档更新     → docs: 补充架构说明
 | 2.7 | 第三个关键词：圣盾 | 已完成 |
 | 2.8 | 阶段 2 收尾复盘 | 已完成 |
 | 2.9 | 战斗日志与代码整理 | 已完成 |
-| 2.10 | 进入 AI 前的结构和 UI 优化 | 核心结构已完成，UI 大改暂缓 |
-| 2 | 法术 + 5 个关键词 + 事件系统 | 已完成核心范围 |
-| 3 | AI 对手（博弈树 + 评估函数） | 下一步 |
+| 2.10 | 进入 AI 前的结构和 UI 优化 | 已完成 |
+| 2 | 法术 + 5 个关键词 + 事件系统 | 6-8 周 |
+| 3 | AI 对手（博弈树 + 评估函数） | 进行中 |
 | 4 | 套牌构筑 + UI 打磨 | 4-6 周 |
 | 5 | 求职包装（视频/博客） | 2-3 周 |

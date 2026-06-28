@@ -16,7 +16,7 @@ Core 层的目标：
 规则清楚
 状态集中
 UI 不反向控制规则
-已经接入关键词、法术和第一版事件系统基础链路，后续继续扩展 AI
+已经接入关键词、法术、亡语事件链路和第一版 AI 自动行动
 ```
 
 ## 分层边界
@@ -52,9 +52,9 @@ Core 不依赖 UI
 | `KeywordType` | `Assets/Scripts/Core/Effects/KeywordType.cs` | 关键词类型，当前支持冲锋、嘲讽和圣盾 |
 | `BattlecryType` | `Assets/Scripts/Core/Effects/BattlecryType.cs` | 战吼类型，当前支持对敌方英雄造成伤害、抽牌 |
 | `DeathrattleType` | `Assets/Scripts/Core/Effects/DeathrattleType.cs` | 亡语类型，当前支持对敌方英雄造成伤害 |
-| `GameEventType` | `Assets/Scripts/Core/Events/GameEventType.cs` | 游戏事件类型 |
-| `GameEvent` | `Assets/Scripts/Core/Events/GameEvent.cs` | 游戏事件数据 |
-| `GameEventBus` | `Assets/Scripts/Core/Events/GameEventBus.cs` | 游戏事件订阅和发布 |
+| `GameEventType` | `Assets/Scripts/Core/Events/GameEventType.cs` | 游戏事件类型，当前只保留 `MinionDied` |
+| `GameEvent` | `Assets/Scripts/Core/Events/GameEvent.cs` | 游戏事件数据，当前只记录事件类型和死亡随从 |
+| `GameEventBus` | `Assets/Scripts/Core/Events/GameEventBus.cs` | 游戏事件订阅和发布，当前用于亡语触发 |
 | `BattleLogEntry` | `Assets/Scripts/Core/Logging/BattleLogEntry.cs` | 单条战斗日志快照 |
 | `BattleLogger` | `Assets/Scripts/Core/Logging/BattleLogger.cs` | 本局战斗日志记录器 |
 | `GameActionFailureReason` | `Assets/Scripts/Core/Actions/GameActionFailureReason.cs` | 游戏操作失败原因枚举 |
@@ -66,6 +66,15 @@ Core 不依赖 UI
 | `Board` | `Assets/Scripts/Core/Entities/Board.cs` | 双方战场随从列表、召唤上限、移除随从 |
 | `GameManager` | `Assets/Scripts/Core/GameManager.cs` | 当前阶段的对局流程调度入口 |
 | `GameManager.BattleLog` | `Assets/Scripts/Core/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
+
+## AI 类职责
+
+| 类 | 文件 | 当前职责 |
+|----|------|----------|
+| `AIController` | `Assets/Scripts/AI/AIController.cs` | AI 回合控制器，生成合法动作、选择动作、执行动作并打印日志 |
+| `ActionSelector` | `Assets/Scripts/AI/ActionSelector.cs` | 基础动作选择器，按斩杀、解场、出牌、兜底优先级选择动作 |
+| `AIActionSelection` | `Assets/Scripts/AI/AIActionSelection.cs` | AI 选择结果，包含最终动作和选择原因 |
+| `AIActionSelectionReason` | `Assets/Scripts/AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于解释当前动作来源 |
 
 ## 依赖关系
 
@@ -180,18 +189,12 @@ LastActionLogEntry：最近一次主要结算结果，当前由 GameActionResult
 战吼属于出牌/召唤成功后触发的一次性效果。
 当前由 `ResolveBattlecry(minion)` 直接结算，暂不迁移到事件系统。
 
-阶段 2.5.0 已经接入第一版事件系统基础链路：
+阶段 2.5.0 曾接入第一版事件系统基础链路，用 `CardPlayed`、`MinionSummoned` 和 Console 日志验证事件总线可以工作。
+进入阶段 3 后，这些只服务调试日志的事件已删除，避免影响 AI 行动日志阅读。
+当前事件系统只保留真正影响规则的 `MinionDied`：
 
 ```text
 GameManager 创建 GameEventBus
-TryPlayMinionCard() 成功后发布 CardPlayed 和 MinionSummoned
-TryPlaySpellCardOnMinion() / TryPlaySpellCardOnHero() 成功后发布 CardPlayed
-logGameEvents 调试开关订阅事件并打印 Console 日志
-```
-
-阶段 2.5.1 已经接入死亡事件：
-
-```text
 CleanupDeadMinions()
 -> RemoveDeadMinions(owner)
 -> 发现 minion.IsDead
@@ -263,7 +266,7 @@ GameActionResult.LogEntry：可选的本次结算日志
 
 UI 可以根据返回值显示反馈，但不能自己绕过规则修改状态。
 
-阶段 2.10 会继续把这件事整理得更清楚：
+阶段 2.10 已经把这件事整理得更清楚：
 
 ```text
 GameActionResult：描述一次操作是否成功、失败原因和反馈文本
@@ -302,8 +305,33 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 - `GameActionGenerator` 只负责“能做什么”，不负责“怎么结算”。
 - 出牌、法术目标、攻击和嘲讽规则验证复用 `GameManager`，避免生成器和执行器各写一套规则。
 - 真正执行动作统一调用 `GameManager.ExecuteAction(GameAction)`，它再分发到详细 `Try...Detailed` 入口。
-- 阶段 2.10 已完成动作建模、动作生成和动作执行闭环；阶段 3 再让 AI 从合法动作里选择并执行。
+- 阶段 2.10 已完成动作建模、动作生成和动作执行闭环；阶段 3 已让 AI 从合法动作里选择并执行。
 - 如果需要新增 C# 类，仍然先写属性清单，再动代码。
+
+## 阶段 3 AI 基础链路
+
+当前 AI 第一版先追求可观察、可调试，不做局面复制和搜索。
+
+```text
+Enemy 回合开始
+-> AIController.TakeTurn()
+-> GameActionGenerator.GenerateLegalActions(gameManager)
+-> ActionSelector.SelectAction(legalActions)
+-> AIActionSelection(Action + Reason)
+-> GameManager.ExecuteAction(action)
+-> Console 输出 AI 行动、理由和结果
+```
+
+当前动作选择顺序：
+
+```text
+1. 能击杀敌方英雄，优先斩杀
+2. 能击杀敌方随从，优先解场
+3. 没有击杀机会时，优先打出可用手牌
+4. 没命中特殊策略时，按固定动作优先级兜底
+```
+
+这是阶段性简化，不是成熟项目最终 AI。后续做评估函数时，再把“选择原因”扩展成分数、权重和候选动作比较。
 
 ## 当前阶段性简化
 
@@ -319,6 +347,7 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 | UI 手动调用 `RefreshAll()` | 操作链路短、方便学习 | 事件系统稳定后再做事件驱动刷新 |
 | 旧版 `bool Try...` 方法仍保留 | 降低 UI 和后续 AI 迁移风险 | 全部调用方迁移到详细结果后再考虑删除或降级为兼容 API |
 | `BattleLogger` 只做内存日志 | 当前只服务调试、演示和 AI 前可观测性 | 需要回放、导出或复杂统计时再做持久化/日志 UI |
+| AI 直接在真实局面上连续执行动作 | 先验证自动行动闭环和日志可观测性 | 做评估函数和搜索时再考虑局面快照或模拟器 |
 
 面试时可以这样解释：
 
@@ -474,7 +503,7 @@ CheckGameOver()
 | 随从死亡会触发亡语、复生、召唤等效果 | `DeathProcessor` |
 | 战吼、亡语、回合开始、受伤等都要触发效果 | `GameEventBus` |
 | 法术效果包含伤害、治疗、Buff、抽牌、召唤 | `EffectSystem` |
-| AI 需要枚举合法操作并模拟结果 | `ActionGenerator` 和 `AIController` |
+| AI 需要枚举合法操作并模拟结果 | `GameActionGenerator`、`AIController`、局面快照或模拟器 |
 | UI 和 AI 都需要清楚知道失败原因 | `GameActionResult` |
 
 当前不急着拆这些系统，因为过早抽象会让学习成本变高。

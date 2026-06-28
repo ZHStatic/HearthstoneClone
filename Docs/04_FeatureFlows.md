@@ -301,25 +301,24 @@ UI 最后重新读取 Core 状态并显示操作结果。
 
 ```text
 1. 等 Unity 自动导入 Assets/Scripts/Core/Events 下的新脚本，并确认 Console 没有编译错误。
-2. 确认 GameManager 上的 Log Game Events 为开启状态。
-3. 进入 Play 模式。
-4. 打出一张随从牌。
-5. 确认 Console 输出 CardPlayed。
-6. 确认 Console 输出 MinionSummoned。
-7. 打出一张法术牌。
-8. 确认 Console 输出 CardPlayed。
+2. 进入 Play 模式。
+3. 让一个随从死亡。
+4. 确认亡语等依赖死亡事件的规则可以正常触发。
 ```
+
+说明：阶段 2.5.0 曾经用 `CardPlayed` / `MinionSummoned` 和 Console 日志验证事件总线。
+进入阶段 3 后，这些只用于调试输出的事件已经删除，避免干扰 AI 行动日志。
+当前事件系统只保留真正影响规则的 `MinionDied`。
 
 ### 阶段 2.5.1 死亡事件测试步骤
 
 在 Unity Editor 中操作：
 
 ```text
-1. 确认 GameManager 上的 Log Game Events 为开启状态。
-2. 进入 Play 模式。
-3. 让一个随从被攻击打死，或用火花打死一个随从。
-4. 确认 Console 输出 MinionDied。
-5. 确认 Console 中的 Minion 字段显示死亡随从名字，而不是 None。
+1. 进入 Play 模式。
+2. 让一个随从被攻击打死，或用火花打死一个随从。
+3. 如果死亡随从配置了亡语，确认亡语效果会结算。
+4. 如果死亡随从没有亡语，确认随从会从战场移除，且没有额外 GameEvent 调试日志刷屏。
 ```
 
 ### 亡语随从补充流程

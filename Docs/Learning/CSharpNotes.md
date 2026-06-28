@@ -808,7 +808,8 @@ C# 的 `event` 是语言机制。
 
 ```text
 它是一局游戏里的事件中转站。
-它统一管理 CardPlayed、MinionSummoned、MinionDied 等多种游戏事件。
+它统一管理当前保留的游戏事件，例如 MinionDied。
+历史上曾用 CardPlayed、MinionSummoned 做调试验证，进入 AI 阶段后已经删除。
 ```
 
 当前项目代码：
@@ -826,13 +827,13 @@ private readonly Dictionary<GameEventType, List<Action<GameEvent>>> listeners;
 订阅：
 
 ```csharp
-EventBus.Subscribe(GameEventType.CardPlayed, LogGameEvent);
+EventBus.Subscribe(GameEventType.MinionDied, ResolveDeathrattle);
 ```
 
 读作：
 
 ```text
-以后发布 CardPlayed 事件时，请调用 LogGameEvent。
+以后发布 MinionDied 事件时，请调用 ResolveDeathrattle。
 ```
 
 发布：
@@ -866,6 +867,7 @@ public event Action<GameEvent> MinionDied;
 ```
 
 事件种类变多后，管理会分散。
+当前项目已经删掉只用于调试日志的 `CardPlayed` 和 `MinionSummoned`，只保留会影响规则结算的 `MinionDied`。
 
 当前用 `GameEventBus`，可以统一成：
 

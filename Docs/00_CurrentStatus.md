@@ -1,20 +1,20 @@
 # Current Status
 
-最后更新：2026-06-27
+最后更新：2026-06-28
 
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已进入 AI 基础行动和第一版动作选择策略。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
 
 当前停靠点：
 
 ```text
-阶段 2.9 代码链路已写入：战斗日志、圣盾反馈修正、关键词显示整理
-当前重点：阶段 3 AI 基础行动
-已完成：文档记忆 -> 结果对象 -> Player 封装 -> 动作建模 -> 动作生成验证入口
+阶段 3.2 当前链路已写入：Enemy AI 自动行动、基础动作选择、选择原因日志
+当前重点：阶段 3 AI 基础策略打磨
+已完成：动作建模 -> 合法动作生成 -> 统一执行入口 -> AI 自动回合 -> 选择原因日志
 暂缓：UI 拆分 -> UI 复用刷新
-下一步：阶段 3 让 AI 复用动作模型，先能选择并执行基础动作
+下一步：根据 Play 模式验证结果，继续调整 AI 出牌和攻击顺序
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -23,7 +23,7 @@
 
 战吼的最小链路已经测试通过：`BattlecryType` 定义战吼类型，`CardData` 支持配置战吼类型和通用数值，`GameManager` 在随从召唤成功后调用 `ResolveAfterSummon()` 处理冲锋和战吼，`CardView` 可以在手牌描述区显示战吼文字。
 
-事件系统基础链路已经测试通过：`GameEventType` 定义事件类型，`GameEvent` 承载事件数据，`GameEventBus` 管理订阅和发布，`GameManager` 可以发布 `CardPlayed`、`MinionSummoned` 和 `MinionDied`，Console 日志已确认监听回调会执行。
+事件系统已经精简为只保留规则需要的 `MinionDied`。历史上的 `CardPlayed` / `MinionSummoned` 调试事件和 `GameEvent:` Console 日志已删除，避免干扰 AI 行动日志。
 
 亡语的第一版代码链路已经写入：`DeathrattleType` 定义亡语类型，`CardData` 支持配置亡语类型和通用数值，`CardView` 和 `MinionView` 可以显示亡语文字，`GameManager` 监听 `MinionDied` 并在死亡随从有亡语时结算“对敌方英雄造成伤害”。
 Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌方英雄生命减少 1。
@@ -41,6 +41,10 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 阶段 2.10 第三轮动作建模已经写入：新增 `GameActionType`、`GameAction` 和 `GameActionGenerator`。`GameActionGenerator` 只读取当前局面并枚举合法动作，不执行动作、不做 AI 决策。`GameManager` 新增 `logLegalActionsOnTurnStart` 调试开关，可在回合开始后打印当前玩家合法动作列表。
 
 阶段 2.10 第四轮动作执行闭环已经写入：`GameManager` 新增 `ExecuteAction(GameAction)`，可统一执行出牌、施法、攻击和结束回合；攻击入口新增 `TryAttackMinionDetailed()` / `TryAttackHeroDetailed()`；`GameActionGenerator` 已改为复用 `GameManager` 的出牌、施法目标、攻击和嘲讽验证，避免 AI 动作生成与 Core 执行规则重复。
+
+阶段 3.0 / 3.1 基础 AI 行动已经写入：新增 `AIController` 和 `ActionSelector`，Enemy 回合开始后会复用 `GameActionGenerator` 生成合法动作，再通过 `GameManager.ExecuteAction(GameAction)` 执行动作，直到结束回合、游戏结束或达到行动上限。
+
+阶段 3.2 第一版动作选择策略已经写入：`ActionSelector` 会优先选择可击杀敌方英雄的动作，其次选择可击杀敌方随从的动作，再选择可出牌动作，最后按固定优先级兜底。`AIActionSelection` 和 `AIActionSelectionReason` 会记录 AI 选择原因，`AIController` 在 Console 中输出单行 AI 行动日志，包含行动、理由和结果。
 
 ## 当前可玩内容
 
@@ -63,6 +67,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 随从攻击英雄
 结束回合
 胜负判定
+Enemy AI 自动行动
+AI 行动原因日志
 ```
 
 当前测试卡牌：
@@ -89,9 +95,9 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `Core/Effects/KeywordType.cs` | 关键词类型：当前支持 `Charge`、`Taunt`、`DivineShield` |
 | `Core/Effects/BattlecryType.cs` | 战吼类型：当前支持对敌方英雄造成伤害、抽牌 |
 | `Core/Effects/DeathrattleType.cs` | 亡语类型：当前支持对敌方英雄造成伤害 |
-| `Core/Events/GameEventType.cs` | 游戏事件类型：当前包含出牌、召唤、死亡、回合开始和回合结束 |
-| `Core/Events/GameEvent.cs` | 游戏事件数据：记录事件类型和相关上下文 |
-| `Core/Events/GameEventBus.cs` | 事件总线：管理事件订阅和发布 |
+| `Core/Events/GameEventType.cs` | 游戏事件类型：当前只保留 `MinionDied` |
+| `Core/Events/GameEvent.cs` | 游戏事件数据：当前只记录事件类型和死亡随从 |
+| `Core/Events/GameEventBus.cs` | 事件总线：管理事件订阅和发布，当前用于亡语 |
 | `Core/Logging/BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本 |
 | `Core/Logging/BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
 | `Core/Actions/GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满 |
@@ -103,8 +109,17 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 | `Core/Entities/Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌；对外只读暴露手牌和牌库 |
 | `Core/Entities/Board.cs` | 双方战场随从列表和召唤位置限制 |
 | `Core/Entities/Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限、关键词和圣盾消耗 |
-| `GameManager.cs` | 当前阶段的对局流程调度，包含冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算、基础事件发布和战斗日志入口 |
+| `GameManager.cs` | 当前阶段的对局流程调度，包含 AI 回合触发、冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算和战斗日志入口 |
 | `Core/Logging/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
+
+### AI 层
+
+| 文件 | 职责 |
+|------|------|
+| `AI/AIController.cs` | AI 回合控制器，负责生成合法动作、选择动作、执行动作并打印 AI 日志 |
+| `AI/ActionSelector.cs` | AI 动作选择器，按斩杀、解场、出牌、兜底优先级选择动作 |
+| `AI/AIActionSelection.cs` | AI 动作选择结果，包含最终动作和选择原因 |
+| `AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于说明斩杀、解场、出牌或兜底选择 |
 
 ### UI 层
 
@@ -176,6 +191,8 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - `GameActionGenerator` 已复用 `GameManager` 验证方法，不再重复维护出牌、法术目标、攻击和嘲讽规则。
 - `GameManager.ExecuteAction(GameAction)` 已能统一执行出牌、施法、攻击和结束回合动作。
 - `GameManager` 已新增 `Log Legal Actions On Turn Start` 调试开关，用于 Play Mode Console 验证动作生成结果。
+- `AIController` 已能在 Enemy 回合自动连续执行动作，直到结束回合、游戏结束或达到行动上限。
+- `ActionSelector` 已能按基础策略选择动作，并通过 `AIActionSelectionReason` 输出选择原因。
 - 法术牌可以进入选目标状态，并通过 `TryPlaySpellCardOnMinion` / `TryPlaySpellCardOnHero` 结算。
 - 出牌成功后，手牌减少、法力减少、战场或目标血量刷新。
 - 结束回合后，当前行动者切换，UI 刷新。
@@ -208,18 +225,16 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - 当时 Unity 已自动生成事件脚本文件夹 `.meta`；当前事件脚本已随目录整理移动到 `Assets/Scripts/Core/Events`。
 - 已创建 `GameEventType.cs`、`GameEvent.cs`、`GameEventBus.cs`。
 - `GameManager` 每局开始时创建新的 `GameEventBus`。
-- `GameManager` 在卡牌成功打出后发布 `CardPlayed`。
-- `GameManager` 在随从成功召唤后发布 `MinionSummoned`。
-- 已用 `logGameEvents` 调试开关订阅 `CardPlayed` 和 `MinionSummoned`。
-- Play 模式已确认：打出随从时 Console 输出 `CardPlayed` 和 `MinionSummoned`。
-- Play 模式已确认：打出法术时 Console 输出 `CardPlayed`。
+- 历史上曾用 `CardPlayed` / `MinionSummoned` 验证事件总线和 Console 调试日志。
+- 进入阶段 3 后，为避免干扰 AI 日志，出牌和召唤调试事件已删除。
+- 当前事件系统只保留真正影响规则的 `MinionDied`。
 
 ## 阶段 2.5.1 已验证
 
 - `GameManager` 在随从死亡清理时发布 `MinionDied`。
 - `MinionDied` 事件把死亡随从写入 `TargetMinion`。
-- `logGameEvents` 调试日志已订阅 `MinionDied`。
-- Play 模式已确认：随从死亡时 Console 输出 `MinionDied`，并显示死亡随从名字。
+- `GameManager` 订阅 `MinionDied`，用于触发亡语。
+- 事件系统不再输出 `GameEvent:` Console 调试日志，避免影响 AI 行动日志阅读。
 
 ## 阶段 2.6 已验证
 
@@ -229,7 +244,7 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 - `MinionView` 已支持显示“亡语:X”。
 - `GameManager` 已注册规则事件监听，收到 `MinionDied` 后会尝试结算死亡随从的亡语。
 - 当前第一个亡语效果：对死亡随从拥有者的敌方英雄造成 `DeathrattleValue` 点伤害。
-- Unity Play 模式已确认：亡语炸弹人死亡后，Console 输出 `MinionDied`，敌方英雄生命减少 1，死亡随从从战场移除。
+- Unity Play 模式已确认：亡语炸弹人死亡后，敌方英雄生命减少 1，死亡随从从战场移除。
 
 ## 阶段 2.7 已验证
 
@@ -365,7 +380,7 @@ CardData 配置 DivineShield
 - `GameUIController` 已经负责攻击选择、法术选择、英雄点击、操作反馈和刷新，后续 UI 状态复杂时需要拆分。
 - 当前法术和最小战吼直接由 `GameManager` 结算，这是阶段性简化，不是成熟项目最终做法。
 - 当前圣盾直接写在 `Minion.TakeDamage()`，这是阶段性简化。后续如果出现免疫、法术伤害加成、吸血、伤害翻倍等机制，应抽出 `DamageResolver` 或 `CombatResolver`。
-- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统已经验证出牌、召唤和死亡事件，亡语已经开始通过 `MinionDied` 事件触发。
+- 当前冲锋、嘲讽和前两个无目标战吼不急着迁移到事件系统。事件系统已经精简为只保留 `MinionDied`，用于触发亡语。
 
 下一步判断：
 
@@ -384,9 +399,9 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 阶段 2.10 本轮核心优化已经完成，下一步进入阶段 3：
 
 ```text
-阶段 3.0：AI 基础行动
-目标：让 AI 复用 GameActionGenerator 枚举合法动作，再选择一条基础动作执行。
-第一版先追求“能自动行动”，不做评分函数和搜索。
+阶段 3.0 / 3.1：AI 基础行动和自动回合已写入
+阶段 3.2：基础动作选择和选择原因日志已写入
+下一步：继续根据 Play 模式表现调整 AI 策略顺序
 
 UI 拆分 / UI 复用刷新：
 暂缓到功能更完整后统一整理。
