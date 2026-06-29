@@ -66,7 +66,7 @@ public class ActionSelector
     /// <summary>
     /// 用当前局面的快照逐个模拟合法动作，选择模拟后评分最高且不超过亏分阈值的主动动作。
     /// 如果没有任何主动动作进入可接受范围，就选择结束回合。
-    /// 这是阶段性简化，不是成熟项目最终做法：当前只看一步，不搜索后续回合，也不完整模拟战吼和亡语。
+    /// 这是阶段性简化，不是成熟项目最终做法：当前只粗略预估同回合少量后续出牌和攻击，不模拟对手回合。
     /// </summary>
     private bool TryFindBestEvaluatedAction(
         IReadOnlyList<GameAction> legalActions,
@@ -103,7 +103,10 @@ public class ActionSelector
             }
 
             GameStateSnapshot simulatedState = SnapshotSimulator.Simulate(snapshot, snapshotAction);
-            EvaluationResult evaluation = evaluator.EvaluateDetailed(simulatedState, playerIndex);
+            EvaluationResult evaluation = SnapshotFollowUpEvaluator.EvaluateBestContinuation(
+                simulatedState,
+                playerIndex,
+                evaluator);
             int evaluationScore = evaluation != null ? evaluation.TotalScore : int.MinValue;
             int tieBreakerScore = GetFallbackActionScore(action);
 

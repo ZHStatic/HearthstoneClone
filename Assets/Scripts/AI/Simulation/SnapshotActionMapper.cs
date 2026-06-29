@@ -46,10 +46,12 @@ public static class SnapshotActionMapper
         if (action.Card == null || action.Card.CardData == null) return false;
 
         CardData cardData = action.Card.CardData;
+        int handCardIndex = FindHandCardIndex(action.Actor, action.Card);
 
         snapshotAction = SnapshotAction.CreatePlayMinion(
             actorIndex,
             action.Card.CurrentCost,
+            handCardIndex,
             cardData.Attack,
             cardData.Health,
             cardData.HasKeyword(KeywordType.Taunt),
@@ -75,9 +77,11 @@ public static class SnapshotActionMapper
         if (targetIndex < 0) return false;
 
         // 第一版只模拟伤害法术，直接复制 CardData.SpellDamage。
+        int handCardIndex = FindHandCardIndex(action.Actor, action.Card);
         snapshotAction = SnapshotAction.CreateSpellOnMinion(
             actorIndex,
             action.Card.CurrentCost,
+            handCardIndex,
             action.Card.CardData.SpellDamage,
             targetIndex);
         return true;
@@ -95,9 +99,11 @@ public static class SnapshotActionMapper
         Player opponent = gameManager.GetOpponent(action.Actor);
         if (opponent == null || action.TargetHero != opponent.Hero) return false;
 
+        int handCardIndex = FindHandCardIndex(action.Actor, action.Card);
         snapshotAction = SnapshotAction.CreateSpellOnHero(
             actorIndex,
             action.Card.CurrentCost,
+            handCardIndex,
             action.Card.CardData.SpellDamage);
         return true;
     }
@@ -168,6 +174,22 @@ public static class SnapshotActionMapper
         for (int i = 0; i < minions.Count; i++)
         {
             if (minions[i] == target)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int FindHandCardIndex(Player owner, Card target)
+    {
+        if (owner == null || target == null) return -1;
+        if (owner.Hand == null) return -1;
+
+        for (int i = 0; i < owner.Hand.Count; i++)
+        {
+            if (owner.Hand[i] == target)
             {
                 return i;
             }

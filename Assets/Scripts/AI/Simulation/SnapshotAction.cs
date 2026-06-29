@@ -21,6 +21,12 @@ public class SnapshotAction
     public int CardCost { get; private set; }
 
     /// <summary>
+    /// 出牌或施法动作使用的手牌索引。
+    /// 真实 GameAction 映射和快照层后续搜索都会尽量传具体索引；未知时为 -1。
+    /// </summary>
+    public int HandCardIndex { get; private set; }
+
+    /// <summary>
     /// 召唤随从时使用的攻击力。
     /// </summary>
     public int CardAttack { get; private set; }
@@ -91,6 +97,7 @@ public class SnapshotAction
         GameActionType actionType,
         int actorIndex,
         int cardCost,
+        int handCardIndex,
         int cardAttack,
         int cardHealth,
         int spellDamage,
@@ -109,6 +116,7 @@ public class SnapshotAction
         ActionType = actionType;
         ActorIndex = NormalizePlayerIndex(actorIndex);
         CardCost = ClampNonNegative(cardCost);
+        HandCardIndex = handCardIndex;
         CardAttack = ClampNonNegative(cardAttack);
         CardHealth = ClampNonNegative(cardHealth);
         SpellDamage = ClampNonNegative(spellDamage);
@@ -130,6 +138,7 @@ public class SnapshotAction
     public static SnapshotAction CreatePlayMinion(
         int actorIndex,
         int cardCost,
+        int handCardIndex,
         int cardAttack,
         int cardHealth,
         bool cardHasTaunt,
@@ -144,6 +153,7 @@ public class SnapshotAction
             GameActionType.PlayMinionCard,
             actorIndex,
             cardCost,
+            handCardIndex,
             cardAttack,
             cardHealth,
             0,
@@ -162,12 +172,18 @@ public class SnapshotAction
     /// <summary>
     /// 创建“对随从释放法术”的快照动作。
     /// </summary>
-    public static SnapshotAction CreateSpellOnMinion(int actorIndex, int cardCost, int spellDamage, int targetMinionIndex)
+    public static SnapshotAction CreateSpellOnMinion(
+        int actorIndex,
+        int cardCost,
+        int handCardIndex,
+        int spellDamage,
+        int targetMinionIndex)
     {
         return new SnapshotAction(
             GameActionType.PlaySpellOnMinion,
             actorIndex,
             cardCost,
+            handCardIndex,
             0,
             0,
             spellDamage,
@@ -186,12 +202,13 @@ public class SnapshotAction
     /// <summary>
     /// 创建“对英雄释放法术”的快照动作。
     /// </summary>
-    public static SnapshotAction CreateSpellOnHero(int actorIndex, int cardCost, int spellDamage)
+    public static SnapshotAction CreateSpellOnHero(int actorIndex, int cardCost, int handCardIndex, int spellDamage)
     {
         return new SnapshotAction(
             GameActionType.PlaySpellOnHero,
             actorIndex,
             cardCost,
+            handCardIndex,
             0,
             0,
             spellDamage,
@@ -216,6 +233,7 @@ public class SnapshotAction
             GameActionType.AttackMinion,
             actorIndex,
             0,
+            -1,
             0,
             0,
             0,
@@ -240,6 +258,7 @@ public class SnapshotAction
             GameActionType.AttackHero,
             actorIndex,
             0,
+            -1,
             0,
             0,
             0,
@@ -264,6 +283,7 @@ public class SnapshotAction
             GameActionType.EndTurn,
             actorIndex,
             0,
+            -1,
             0,
             0,
             0,

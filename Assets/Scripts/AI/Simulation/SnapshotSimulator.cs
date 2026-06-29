@@ -59,7 +59,7 @@ public static class SnapshotSimulator
         PlayerSnapshot actor = GetPlayer(action.ActorIndex, player, enemy);
         List<MinionSnapshot> actorMinions = GetMinions(action.ActorIndex, playerMinions, enemyMinions);
 
-        actor = SpendCard(actor, action.CardCost);
+        actor = SpendCard(actor, action.CardCost, action.HandCardIndex);
 
         // 当前模拟关键词、无目标战吼和一层亡语伤害，更复杂的死亡连锁后续再补。
         actorMinions.Add(new MinionSnapshot(
@@ -126,7 +126,7 @@ public static class SnapshotSimulator
         if (!IsValidIndex(targetMinions, action.TargetMinionIndex)) return;
 
         PlayerSnapshot actor = GetPlayer(action.ActorIndex, player, enemy);
-        actor = SpendCard(actor, action.CardCost);
+        actor = SpendCard(actor, action.CardCost, action.HandCardIndex);
         SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
 
         targetMinions[action.TargetMinionIndex] = DamageMinion(targetMinions[action.TargetMinionIndex], action.SpellDamage);
@@ -145,7 +145,7 @@ public static class SnapshotSimulator
         PlayerSnapshot actor = GetPlayer(action.ActorIndex, player, enemy);
         PlayerSnapshot opponent = GetPlayer(GetOpponentIndex(action.ActorIndex), player, enemy);
 
-        actor = SpendCard(actor, action.CardCost);
+        actor = SpendCard(actor, action.CardCost, action.HandCardIndex);
         opponent = DamageHero(opponent, action.SpellDamage);
 
         SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
@@ -183,7 +183,8 @@ public static class SnapshotSimulator
             maxMana,
             maxMana,
             player.HandCount,
-            player.DeckCount);
+            player.DeckCount,
+            player.HandCards);
 
         return DrawCardForTurnStart(refreshedPlayer);
     }
@@ -205,7 +206,8 @@ public static class SnapshotSimulator
             player.CurrentMana,
             player.MaxMana,
             handCount,
-            player.DeckCount - 1);
+            player.DeckCount - 1,
+            player.HandCards);
     }
 
     private static PlayerSnapshot DrawCards(PlayerSnapshot player, int drawCount)
@@ -237,7 +239,8 @@ public static class SnapshotSimulator
             player.CurrentMana,
             player.MaxMana,
             handCount,
-            player.DeckCount - 1);
+            player.DeckCount - 1,
+            player.HandCards);
     }
 
     private static void SimulateAttackMinion(
@@ -294,17 +297,41 @@ public static class SnapshotSimulator
         SetPlayer(GetOpponentIndex(action.ActorIndex), opponent, ref player, ref enemy);
     }
 
-    private static PlayerSnapshot SpendCard(PlayerSnapshot player, int cost)
+    private static PlayerSnapshot SpendCard(PlayerSnapshot player, int cost, int handCardIndex)
     {
         if (player == null) return new PlayerSnapshot(0, 0, 0, 0, 0, 0);
 
+        IReadOnlyList<CardSnapshot> remainingHandCards = RemoveKnownHandCard(player, handCardIndex);
         return new PlayerSnapshot(
             player.HeroHealth,
             player.HeroMaxHealth,
             player.CurrentMana - cost,
             player.MaxMana,
             player.HandCount - 1,
-            player.DeckCount);
+            player.DeckCount,
+            remainingHandCards);
+    }
+
+    private static IReadOnlyList<CardSnapshot> RemoveKnownHandCard(PlayerSnapshot player, int handCardIndex)
+    {
+        if (player == null) return null;
+        if (player.HandCards == null) return null;
+
+        if (handCardIndex < 0 || handCardIndex >= player.HandCards.Count)
+        {
+            // 没有具体手牌索引时，不能可靠判断剩余手牌是哪几张。
+            // 只保留 HandCount，丢弃具体列表，避免后续搜索误用已经打出的牌。
+            return null;
+        }
+
+        List<CardSnapshot> remainingCards = new List<CardSnapshot>();
+        for (int i = 0; i < player.HandCards.Count; i++)
+        {
+            if (i == handCardIndex) continue;
+            remainingCards.Add(player.HandCards[i]);
+        }
+
+        return remainingCards;
     }
 
     private static PlayerSnapshot DamageHero(PlayerSnapshot player, int damage)
@@ -317,7 +344,8 @@ public static class SnapshotSimulator
             player.CurrentMana,
             player.MaxMana,
             player.HandCount,
-            player.DeckCount);
+            player.DeckCount,
+            player.HandCards);
     }
 
     private static MinionSnapshot DamageMinion(MinionSnapshot minion, int damage)
@@ -387,7 +415,8 @@ public static class SnapshotSimulator
             player.CurrentMana,
             player.MaxMana,
             player.HandCount,
-            player.DeckCount);
+            player.DeckCount,
+            player.HandCards);
     }
 
     private static List<MinionSnapshot> CopyMinions(IReadOnlyList<MinionSnapshot> minions)
