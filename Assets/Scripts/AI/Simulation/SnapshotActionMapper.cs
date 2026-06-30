@@ -31,6 +31,10 @@ public static class SnapshotActionMapper
                 return TryMapAttackMinion(action, gameManager, actorIndex, out snapshotAction);
             case GameActionType.AttackHero:
                 return TryMapAttackHero(action, gameManager, actorIndex, out snapshotAction);
+            case GameActionType.UseHeroSkillOnMinion:
+                return TryMapHeroSkillOnMinion(action, gameManager, actorIndex, out snapshotAction);
+            case GameActionType.UseHeroSkillOnHero:
+                return TryMapHeroSkillOnHero(action, gameManager, actorIndex, out snapshotAction);
             case GameActionType.EndTurn:
                 snapshotAction = SnapshotAction.CreateEndTurn(actorIndex);
                 return true;
@@ -138,6 +142,38 @@ public static class SnapshotActionMapper
         if (attackerIndex < 0) return false;
 
         snapshotAction = SnapshotAction.CreateAttackHero(actorIndex, attackerIndex);
+        return true;
+    }
+
+    private static bool TryMapHeroSkillOnMinion(GameAction action, GameManager gameManager, int actorIndex, out SnapshotAction snapshotAction)
+    {
+        snapshotAction = null;
+
+        if (action.TargetMinion == null) return false;
+
+        Player opponent = gameManager.GetOpponent(action.Actor);
+        int targetIndex = FindMinionIndex(gameManager.Board, opponent, action.TargetMinion);
+        if (targetIndex < 0) return false;
+
+        snapshotAction = SnapshotAction.CreateHeroSkillOnMinion(
+            actorIndex,
+            Player.HeroSkillDamage,
+            targetIndex);
+        return true;
+    }
+
+    private static bool TryMapHeroSkillOnHero(GameAction action, GameManager gameManager, int actorIndex, out SnapshotAction snapshotAction)
+    {
+        snapshotAction = null;
+
+        if (action.TargetHero == null) return false;
+
+        Player opponent = gameManager.GetOpponent(action.Actor);
+        if (opponent == null || action.TargetHero != opponent.Hero) return false;
+
+        snapshotAction = SnapshotAction.CreateHeroSkillOnHero(
+            actorIndex,
+            Player.HeroSkillDamage);
         return true;
     }
 

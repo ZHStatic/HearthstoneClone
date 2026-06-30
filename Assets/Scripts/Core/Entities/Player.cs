@@ -26,9 +26,14 @@ public class Player
     public int MaxMana { get; private set; }     // 本回合最大水晶数
     public int CurrentMana { get; private set; }  // 本回合剩余可用水晶
 
+    // ── 英雄技能 ──
+    public bool HasUsedHeroSkillThisTurn { get; private set; }
+
     // ── 常量 ──
     public const int MaxHandSize = 10;   // 手牌上限
     public const int MaxManaCap = 10;    // 水晶上限
+    public const int HeroSkillCost = 2;   // 第一版英雄技能固定消耗
+    public const int HeroSkillDamage = 1; // 第一版英雄技能固定伤害
 
     // ── 构造函数 ──
     /// <param name="deckCards">初始牌库的卡牌模板列表</param>
@@ -61,6 +66,7 @@ public class Player
 
         MaxMana = 0;
         CurrentMana = 0;
+        HasUsedHeroSkillThisTurn = false;
     }
 
     // ── 回合流程 ──
@@ -76,6 +82,9 @@ public class Player
 
         // 补满当前水晶
         CurrentMana = MaxMana;
+
+        // 每个自己的回合开始时，英雄技能重新变为可用。
+        ResetHeroSkillForTurn();
 
         // 重置所有手牌的费用（消除上回合的临时减费效果）
         foreach (Card card in hand)
@@ -121,9 +130,9 @@ public class Player
     {
         if (card == null) return false;
         if (!HasCardInHand(card)) return false;
-        if (card.CurrentCost > CurrentMana) return false;
+        if (!CanSpendMana(card.CurrentCost)) return false;
 
-        CurrentMana -= card.CurrentCost;
+        SpendMana(card.CurrentCost);
         hand.Remove(card);
         return true;
     }
@@ -135,6 +144,49 @@ public class Player
     public bool HasCardInHand(Card card)
     {
         return card != null && hand.Contains(card);
+    }
+
+    // ── 法力与英雄技能操作 ──
+
+    /// <summary>
+    /// 检查当前玩家是否能消耗指定数量的法力。
+    /// 0 点法力是合法消耗，负数不是合法输入。
+    /// </summary>
+    public bool CanSpendMana(int amount)
+    {
+        return amount >= 0 && amount <= CurrentMana;
+    }
+
+    /// <summary>
+    /// 消耗指定数量的法力。
+    /// 返回 false 表示法力不足或输入非法，不会修改 CurrentMana。
+    /// </summary>
+    public bool SpendMana(int amount)
+    {
+        if (!CanSpendMana(amount)) return false;
+
+        CurrentMana -= amount;
+        return true;
+    }
+
+    /// <summary>
+    /// 标记本回合已经使用过英雄技能。
+    /// 如果本回合已经用过，返回 false，避免重复标记。
+    /// </summary>
+    public bool MarkHeroSkillUsed()
+    {
+        if (HasUsedHeroSkillThisTurn) return false;
+
+        HasUsedHeroSkillThisTurn = true;
+        return true;
+    }
+
+    /// <summary>
+    /// 回合开始时重置英雄技能使用状态。
+    /// </summary>
+    public void ResetHeroSkillForTurn()
+    {
+        HasUsedHeroSkillThisTurn = false;
     }
 
     // ── 牌库操作 ──

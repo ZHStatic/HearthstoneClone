@@ -76,6 +76,11 @@ public enum GameActionFailureReason
     MinionDead,
 
     /// <summary>
+    /// 当前玩家本回合已经使用过英雄技能。
+    /// </summary>
+    HeroSkillAlreadyUsed,
+
+    /// <summary>
     /// 目标为空、死亡、不属于本局，或不能成为当前操作的目标。
     /// </summary>
     InvalidTarget,

@@ -46,6 +46,11 @@ public class PlayerSnapshot
     /// </summary>
     public int DeckCount { get; private set; }
 
+    /// <summary>
+    /// 当前回合是否已经使用过英雄技能。
+    /// </summary>
+    public bool HasUsedHeroSkillThisTurn { get; private set; }
+
     public PlayerSnapshot(
         int heroHealth,
         int heroMaxHealth,
@@ -53,7 +58,8 @@ public class PlayerSnapshot
         int maxMana,
         int handCount,
         int deckCount,
-        IReadOnlyList<CardSnapshot> handCards = null)
+        IReadOnlyList<CardSnapshot> handCards = null,
+        bool hasUsedHeroSkillThisTurn = false)
     {
         this.handCards = CopyHandCards(handCards);
 
@@ -68,6 +74,7 @@ public class PlayerSnapshot
         }
 
         DeckCount = ClampNonNegative(deckCount);
+        HasUsedHeroSkillThisTurn = hasUsedHeroSkillThisTurn;
     }
 
     /// <summary>
@@ -93,7 +100,8 @@ public class PlayerSnapshot
             player.MaxMana,
             handCount,
             deckCount,
-            handCardSnapshots);
+            handCardSnapshots,
+            player.HasUsedHeroSkillThisTurn);
     }
 
     private static List<CardSnapshot> CreateHandCardSnapshots(IReadOnlyList<Card> hand)

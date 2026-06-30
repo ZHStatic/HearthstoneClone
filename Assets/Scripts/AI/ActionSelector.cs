@@ -208,6 +208,7 @@ public class ActionSelector
         return action.ActionType switch
         {
             GameActionType.AttackMinion => action.TargetMinion != null ? action.TargetMinion.Attack : 0,
+            GameActionType.UseHeroSkillOnMinion => action.TargetMinion != null ? action.TargetMinion.Attack : 0,
             _ => 0,
         };
     }
@@ -253,6 +254,7 @@ public class ActionSelector
             GameActionType.PlaySpellOnHero => action.Card != null && action.Card.CardData != null
                 ? action.Card.CardData.SpellDamage
                 : 0,
+            GameActionType.UseHeroSkillOnHero => Player.HeroSkillDamage,
             _ => 0,
         };
     }
@@ -271,6 +273,8 @@ public class ActionSelector
             GameActionType.AttackMinion => 40,
             GameActionType.PlaySpellOnHero => IsTargetOwnedByActor(action) ? -10 : 30,
             GameActionType.PlaySpellOnMinion => IsTargetOwnedByActor(action) ? -10 : 25,
+            GameActionType.UseHeroSkillOnHero => IsTargetOwnedByActor(action) ? -10 : 22,
+            GameActionType.UseHeroSkillOnMinion => IsTargetOwnedByActor(action) ? -10 : 21,
             GameActionType.PlayMinionCard => 20,
             GameActionType.EndTurn => 0,
             _ => -1,

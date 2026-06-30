@@ -30,13 +30,13 @@ public class GameAction
     public Minion Attacker { get; private set; }
 
     /// <summary>
-    /// 法术或攻击动作中的目标随从。
+    /// 法术、攻击或英雄技能动作中的目标随从。
     /// 目标是英雄时不会使用这个字段。
     /// </summary>
     public Minion TargetMinion { get; private set; }
 
     /// <summary>
-    /// 法术或攻击动作中的目标英雄。
+    /// 法术、攻击或英雄技能动作中的目标英雄。
     /// 目标是随从时不会使用这个字段。
     /// </summary>
     public Hero TargetHero { get; private set; }
@@ -132,6 +132,36 @@ public class GameAction
             actor,
             null,
             attacker,
+            null,
+            targetHero);
+    }
+
+    /// <summary>
+    /// 创建“对随从使用英雄技能”动作。
+    /// 第一版英雄技能的费用、伤害和每回合一次限制由 GameManager 执行时判断。
+    /// </summary>
+    public static GameAction CreateUseHeroSkillOnMinion(Player actor, Minion targetMinion)
+    {
+        return new GameAction(
+            GameActionType.UseHeroSkillOnMinion,
+            actor,
+            null,
+            null,
+            targetMinion,
+            null);
+    }
+
+    /// <summary>
+    /// 创建“对英雄使用英雄技能”动作。
+    /// 第一版英雄技能的费用、伤害和每回合一次限制由 GameManager 执行时判断。
+    /// </summary>
+    public static GameAction CreateUseHeroSkillOnHero(Player actor, Hero targetHero)
+    {
+        return new GameAction(
+            GameActionType.UseHeroSkillOnHero,
+            actor,
+            null,
+            null,
             null,
             targetHero);
     }

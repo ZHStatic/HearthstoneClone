@@ -1,20 +1,23 @@
 # Current Status
 
-最后更新：2026-06-29
+最后更新：2026-06-30
 
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环进行中：Core 规则、动作系统和 AI 快照模拟链路已写入，玩家 UI 交互和 Play 模式验证尚未完成。UI 拆分和 UI 复用刷新暂时延后，等功能更完整后统一大改。
 
 当前停靠点：
 
 ```text
-阶段 3.12 已写入：Enemy AI 自动行动、评分函数、快照模拟、模拟评分日志、评分优先级动作选择、允许小亏换节奏、出随从关键词和战吼模拟、亡语伤害模拟、同回合后续攻击预估、具体手牌快照、继续出牌模拟
-当前重点：观察同回合搜索是否能正确利用“先出牌再攻击 / 先攻击再出牌 / 连续出牌”的收益
-已完成：动作建模 -> 合法动作生成 -> 统一执行入口 -> AI 自动回合 -> 选择原因日志 -> 调试验证入口 -> 评估函数 -> 快照模拟 -> 评分优先级选择 -> 最小收益门槛 -> 允许小亏阈值 -> 出随从模拟补强 -> 亡语伤害模拟 -> 同回合后续攻击预估 -> 具体手牌快照 -> 继续出牌模拟
+阶段 3.13 进行中：英雄技能最小闭环
+当前重点：先补齐英雄技能，让对局完整度更像炉石类项目
+已完成：Player 英雄技能状态 -> GameAction 英雄技能动作 -> GameManager 英雄技能规则结算 -> GameActionGenerator 合法动作生成 -> AI 快照映射和模拟 -> ActionSelector / AIController 识别英雄技能
+已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理
+已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败
 暂缓：UI 拆分 -> UI 复用刷新
-下一步：通过 Play 模式观察 AI 连续出牌和连续攻击选择，再决定是否加搜索日志或扩大深度
+后续路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
+下一步：`GameUIController.cs` 增加玩家英雄技能选择状态和按钮入口；随后回 Unity 绑定按钮并 Play 模式验证
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -65,6 +68,13 @@ Unity Play 模式已确认：“亡语炸弹人”死亡后会触发亡语，敌
 阶段 3.11 具体手牌快照已经写入：新增 `CardSnapshot`，复制手牌卡牌的类型、费用、攻血、法术目标、关键词、战吼和亡语信息；`PlayerSnapshot` 新增 `HandCards`，会从真实 `Player.Hand` 复制已知手牌快照。当前 `SnapshotSimulator` 在抽牌时只增加手牌数量，因为快照还不知道牌库顶是哪张；在当前模拟层花费卡牌时会丢弃具体手牌列表，只保留数量，避免没有手牌索引时误用已经打出的牌。
 
 阶段 3.12 继续出牌模拟已经写入：`SnapshotAction` 新增 `HandCardIndex`，`SnapshotActionMapper` 会尽量把真实动作中的手牌引用映射成手牌索引；`SnapshotSimulator` 在有具体手牌索引时会移除对应 `CardSnapshot`，找不到索引时只保留手牌数量；`SnapshotFollowUpEvaluator` 现在会基于 `PlayerSnapshot.HandCards` 生成后续出随从和伤害法术动作，并继续和攻击动作一起做最多 2 层同回合预估。
+Play 模式已观察：AI 连续出牌和连续攻击选择基本合理；当前不急着增加搜索日志或扩大搜索深度。
+阶段 3 AI v1 回归结果已整理到 `Docs/08_AIReview.md`。其中圣盾处理没有在 AI 自然对局中出现，因为 AI 一般不会主动攻击圣盾随从；该项记录为“未自然覆盖”，不视为失败。
+
+阶段 3.13 英雄技能核心与 AI 链路已部分写入：`Player` 记录英雄技能费用、伤害和本回合使用状态；`GameActionType` / `GameAction` 支持英雄技能打随从和打英雄；`GameManager` 支持 2 费、每回合一次、对敌方角色造成 1 点伤害的英雄技能结算；`GameActionGenerator` 会把合法英雄技能动作加入动作列表；`BattleLogEntryType` 支持 `HeroSkill` 日志类型；AI 快照链路已能映射、模拟和后续预估英雄技能，`ActionSelector` 可把英雄技能纳入斩杀和评分选择，`AIController` 日志能显示“使用英雄技能”。
+当前未完成：`GameUIController` 还没有英雄技能按钮和“选择英雄技能目标”的 UI 状态；Unity Inspector 还没有绑定英雄技能按钮；尚未跑 Unity 编译或 Play 模式验证。
+
+后续计划已经按求职导向重新排序：先补英雄技能，让对局完整度更像炉石类项目；再把 UI、交互反馈、动画和主流程作为重点；随后补移动端性能意识、数据配置工具和求职包装。这个路线的目标是让项目从“规则系统原型”转向“可展示的商业项目 Demo”。
 
 ## 当前可玩内容
 
@@ -129,39 +139,39 @@ AI 同回合继续出牌收益预估
 | `Core/Events/GameEventType.cs` | 游戏事件类型：当前只保留 `MinionDied` |
 | `Core/Events/GameEvent.cs` | 游戏事件数据：当前只记录事件类型和死亡随从 |
 | `Core/Events/GameEventBus.cs` | 事件总线：管理事件订阅和发布，当前用于亡语 |
-| `Core/Logging/BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本 |
+| `Core/Logging/BattleLogEntry.cs` | 单条战斗日志快照，记录类型、来源、目标、尝试数值、实际数值和文本；当前已包含英雄技能日志类型 |
 | `Core/Logging/BattleLogger.cs` | 本局战斗日志记录器，支持追加、查询最近日志和简单统计 |
-| `Core/Actions/GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满 |
+| `Core/Actions/GameActionFailureReason.cs` | 游戏操作失败原因枚举，例如费用不足、目标非法、战场已满、英雄技能本回合已使用 |
 | `Core/Actions/GameActionResult.cs` | 游戏操作结果，包含成功状态、失败原因、反馈文本和可选日志 |
-| `Core/Actions/GameActionType.cs` | 游戏动作类型：出牌、施法、攻击、结束回合 |
-| `Core/Actions/GameAction.cs` | 单条游戏动作数据，只记录动作意图，不执行规则 |
-| `Core/Actions/GameActionGenerator.cs` | 合法动作生成器，只读取局面并创建 `GameAction` 列表 |
+| `Core/Actions/GameActionType.cs` | 游戏动作类型：出牌、施法、攻击、英雄技能、结束回合 |
+| `Core/Actions/GameAction.cs` | 单条游戏动作数据，只记录动作意图，不执行规则；当前支持英雄技能打随从和打英雄 |
+| `Core/Actions/GameActionGenerator.cs` | 合法动作生成器，只读取局面并创建 `GameAction` 列表；当前会生成合法英雄技能动作 |
 | `Core/Entities/Hero.cs` | 英雄生命、受伤、治疗、死亡判断 |
-| `Core/Entities/Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌；对外只读暴露手牌和牌库 |
+| `Core/Entities/Player.cs` | 手牌、牌库、法力水晶、抽牌、出牌和英雄技能使用状态；对外只读暴露手牌和牌库 |
 | `Core/Entities/Board.cs` | 双方战场随从列表和召唤位置限制 |
 | `Core/Entities/Minion.cs` | 场上随从的攻击、生命、所属玩家、攻击权限、关键词和圣盾消耗 |
-| `GameManager.cs` | 当前阶段的对局流程调度，包含 AI 回合触发、冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算和战斗日志入口 |
-| `Core/Logging/GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
+| `GameManager.cs` | 当前阶段的对局流程调度，包含 AI 回合触发、冲锋召唤处理、嘲讽攻击目标检查、最小战吼结算、亡语结算、英雄技能结算和战斗日志入口 |
+| `GameManager.BattleLog.cs` | `GameManager` 的日志与伤害记录 helper，拆文件但不拆新系统 |
 
 ### AI 层
 
 | 文件 | 职责 |
 |------|------|
-| `AI/AIController.cs` | AI 回合控制器，负责生成合法动作、选择动作、执行动作并打印 AI 日志 |
-| `AI/ActionSelector.cs` | AI 动作选择器，保留斩杀硬规则，其余动作按快照模拟评分选择，并允许小幅亏分换节奏 |
+| `AI/AIController.cs` | AI 回合控制器，负责生成合法动作、选择动作、执行动作并打印 AI 日志；当前能显示英雄技能动作 |
+| `AI/ActionSelector.cs` | AI 动作选择器，保留斩杀硬规则，其余动作按快照模拟评分选择，并允许小幅亏分换节奏；当前会把英雄技能纳入斩杀和评分选择 |
 | `AI/AIActionSelection.cs` | AI 动作选择结果，包含最终动作、选择原因和可选模拟评分 |
 | `AI/AIActionSelectionReason.cs` | AI 选择原因枚举，用于说明斩杀、评分最高动作、允许小亏、无收益结束回合或兜底选择 |
 | `AI/Evaluator.cs` | AI 局面评估函数，可以评分真实局面和快照局面 |
 | `AI/EvaluationResult.cs` | 评分明细结果，记录英雄血量、手牌、场面和总分 |
 | `AI/Simulation/GameStateSnapshot.cs` | 对局快照根对象，用于脱离真实局面做模拟 |
-| `AI/Simulation/PlayerSnapshot.cs` | 玩家快照，记录英雄血量、法力和手牌数量 |
+| `AI/Simulation/PlayerSnapshot.cs` | 玩家快照，记录英雄血量、法力、手牌数量和本回合英雄技能使用状态 |
 | `AI/Simulation/CardSnapshot.cs` | 手牌卡牌快照，记录模拟出牌所需的卡牌类型、费用、数值、关键词、战吼和亡语 |
 | `AI/Simulation/MinionSnapshot.cs` | 随从快照，记录随从攻血、攻击权限、关键词和亡语数据 |
 | `AI/Simulation/BoardSnapshot.cs` | 战场快照，保存双方随从列表 |
-| `AI/Simulation/SnapshotAction.cs` | 快照动作，描述可以在快照上模拟的动作；出随从动作会携带关键词、战吼和亡语数据 |
-| `AI/Simulation/SnapshotActionMapper.cs` | 将真实 `GameAction` 映射成快照动作，并从 `CardData` 读取出随从模拟需要的数据 |
-| `AI/Simulation/SnapshotSimulator.cs` | 单步快照模拟器，执行快照动作并返回新快照；`EndTurn` 会模拟回合开始状态，出随从会模拟关键词和无目标战吼，随从死亡会模拟一层亡语伤害 |
-| `AI/Simulation/SnapshotFollowUpEvaluator.cs` | 同回合后续攻击预估器，在快照层继续模拟少量已有随从攻击，用于减少 AI 单步评分短视 |
+| `AI/Simulation/SnapshotAction.cs` | 快照动作，描述可以在快照上模拟的动作；出随从动作会携带关键词、战吼和亡语数据，英雄技能动作会携带技能伤害 |
+| `AI/Simulation/SnapshotActionMapper.cs` | 将真实 `GameAction` 映射成快照动作，并从 `CardData` 读取出随从模拟需要的数据；当前支持英雄技能动作映射 |
+| `AI/Simulation/SnapshotSimulator.cs` | 单步快照模拟器，执行快照动作并返回新快照；`EndTurn` 会模拟回合开始状态，出随从会模拟关键词和无目标战吼，随从死亡会模拟一层亡语伤害，英雄技能会模拟扣费、伤害和使用状态 |
+| `AI/Simulation/SnapshotFollowUpEvaluator.cs` | 同回合后续预估器，在快照层继续模拟少量已有随从攻击、继续出牌和英雄技能，用于减少 AI 单步评分短视 |
 
 ### UI 层
 
@@ -187,6 +197,7 @@ AI 同回合继续出牌收益预估
 | `Docs/04_FeatureFlows.md` | 玩家操作到代码调用的流程 |
 | `Docs/05_InterviewNotes.md` | 面试时怎么讲这个项目 |
 | `Docs/06_Stage2Review.md` | 阶段 2 收尾复盘、演示脚本和进入 AI 前检查点 |
+| `Docs/08_AIReview.md` | 阶段 3 AI v1 回归清单、演示观察点和阶段性简化 |
 | `Docs/Learning/` | 学习笔记，不要求和正式架构文档完全同步 |
 
 ## 固定巡检方法
@@ -470,7 +481,11 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 阶段 3.10：同回合后续攻击预估已写入
 阶段 3.11：具体手牌快照已写入
 阶段 3.12：基于 CardSnapshot 的继续出牌模拟已写入
-下一步：观察 AI 连续出牌和连续攻击选择，再决定是否加搜索日志或扩大深度
+阶段 3.12 Play 模式观察：AI 连续出牌和连续攻击行为基本合理
+阶段 3.13：英雄技能 Core / AI 规则链路已部分写入，玩家 UI 交互未接入
+阶段 3 AI v1 回归清单：已整理到 Docs/08_AIReview.md
+后续求职导向路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
+下一步：写 `GameUIController.cs` 英雄技能按钮和目标选择状态，然后回 Unity Editor 新增/绑定 Hero Skill Button，最后 Play 模式验证费用不足、每回合一次、目标非法、斩杀和 AI 使用技能
 
 UI 拆分 / UI 复用刷新：
 暂缓到功能更完整后统一整理。

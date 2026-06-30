@@ -42,6 +42,11 @@ public class SnapshotAction
     public int SpellDamage { get; private set; }
 
     /// <summary>
+    /// 英雄技能造成的伤害。
+    /// </summary>
+    public int HeroSkillDamage { get; private set; }
+
+    /// <summary>
     /// 打出的随从牌是否带有嘲讽。
     /// </summary>
     public bool CardHasTaunt { get; private set; }
@@ -101,6 +106,7 @@ public class SnapshotAction
         int cardAttack,
         int cardHealth,
         int spellDamage,
+        int heroSkillDamage,
         bool cardHasTaunt,
         bool cardHasDivineShield,
         bool cardHasCharge,
@@ -120,6 +126,7 @@ public class SnapshotAction
         CardAttack = ClampNonNegative(cardAttack);
         CardHealth = ClampNonNegative(cardHealth);
         SpellDamage = ClampNonNegative(spellDamage);
+        HeroSkillDamage = ClampNonNegative(heroSkillDamage);
         CardHasTaunt = cardHasTaunt;
         CardHasDivineShield = cardHasDivineShield;
         CardHasCharge = cardHasCharge;
@@ -157,6 +164,7 @@ public class SnapshotAction
             cardAttack,
             cardHealth,
             0,
+            0,
             cardHasTaunt,
             cardHasDivineShield,
             cardHasCharge,
@@ -187,6 +195,7 @@ public class SnapshotAction
             0,
             0,
             spellDamage,
+            0,
             false,
             false,
             false,
@@ -212,6 +221,7 @@ public class SnapshotAction
             0,
             0,
             spellDamage,
+            0,
             false,
             false,
             false,
@@ -234,6 +244,7 @@ public class SnapshotAction
             actorIndex,
             0,
             -1,
+            0,
             0,
             0,
             0,
@@ -262,6 +273,7 @@ public class SnapshotAction
             0,
             0,
             0,
+            0,
             false,
             false,
             false,
@@ -270,6 +282,58 @@ public class SnapshotAction
             DeathrattleType.None,
             0,
             attackerIndex,
+            -1,
+            true);
+    }
+
+    /// <summary>
+    /// 创建“对随从使用英雄技能”的快照动作。
+    /// </summary>
+    public static SnapshotAction CreateHeroSkillOnMinion(int actorIndex, int heroSkillDamage, int targetMinionIndex)
+    {
+        return new SnapshotAction(
+            GameActionType.UseHeroSkillOnMinion,
+            actorIndex,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            heroSkillDamage,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
+            0,
+            -1,
+            targetMinionIndex,
+            false);
+    }
+
+    /// <summary>
+    /// 创建“对英雄使用英雄技能”的快照动作。
+    /// </summary>
+    public static SnapshotAction CreateHeroSkillOnHero(int actorIndex, int heroSkillDamage)
+    {
+        return new SnapshotAction(
+            GameActionType.UseHeroSkillOnHero,
+            actorIndex,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            heroSkillDamage,
+            false,
+            false,
+            false,
+            BattlecryType.None,
+            0,
+            DeathrattleType.None,
+            0,
+            -1,
             -1,
             true);
     }
@@ -284,6 +348,7 @@ public class SnapshotAction
             actorIndex,
             0,
             -1,
+            0,
             0,
             0,
             0,

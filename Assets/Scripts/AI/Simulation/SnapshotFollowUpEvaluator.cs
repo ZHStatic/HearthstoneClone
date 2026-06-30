@@ -67,6 +67,7 @@ public static class SnapshotFollowUpEvaluator
         AddPlayableCardActions(actions, state, actor, attackers, targets, actorIndex);
         AddAttackMinionActions(actions, attackers, targets, actorIndex);
         AddAttackHeroActions(actions, state, attackers, targets, actorIndex);
+        AddHeroSkillActions(actions, state, actor, targets, actorIndex);
 
         return actions;
     }
@@ -231,6 +232,55 @@ public static class SnapshotFollowUpEvaluator
 
             actions.Add(SnapshotAction.CreateAttackHero(actorIndex, attackerIndex));
         }
+    }
+
+    private static void AddHeroSkillActions(
+        List<SnapshotAction> actions,
+        GameStateSnapshot state,
+        PlayerSnapshot actor,
+        IReadOnlyList<MinionSnapshot> targets,
+        int actorIndex)
+    {
+        if (actions == null) return;
+        if (actor == null) return;
+        if (actor.HasUsedHeroSkillThisTurn) return;
+        if (actor.CurrentMana < Player.HeroSkillCost) return;
+
+        AddHeroSkillOnMinionActions(actions, targets, actorIndex);
+        AddHeroSkillOnHeroAction(actions, state, actorIndex);
+    }
+
+    private static void AddHeroSkillOnMinionActions(
+        List<SnapshotAction> actions,
+        IReadOnlyList<MinionSnapshot> targets,
+        int actorIndex)
+    {
+        if (actions == null) return;
+        if (targets == null) return;
+
+        for (int targetIndex = 0; targetIndex < targets.Count; targetIndex++)
+        {
+            MinionSnapshot target = targets[targetIndex];
+            if (!IsAlive(target)) continue;
+
+            actions.Add(SnapshotAction.CreateHeroSkillOnMinion(
+                actorIndex,
+                Player.HeroSkillDamage,
+                targetIndex));
+        }
+    }
+
+    private static void AddHeroSkillOnHeroAction(
+        List<SnapshotAction> actions,
+        GameStateSnapshot state,
+        int actorIndex)
+    {
+        if (actions == null) return;
+        if (state != null && !IsHeroAlive(GetPlayer(state, GetOpponentIndex(actorIndex)))) return;
+
+        actions.Add(SnapshotAction.CreateHeroSkillOnHero(
+            actorIndex,
+            Player.HeroSkillDamage));
     }
 
     private static bool HasAliveTauntMinion(IReadOnlyList<MinionSnapshot> minions)

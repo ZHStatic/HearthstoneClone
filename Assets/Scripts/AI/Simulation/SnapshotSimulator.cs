@@ -39,6 +39,12 @@ public static class SnapshotSimulator
                 case GameActionType.AttackHero:
                     SimulateAttackHero(action, ref player, ref enemy, playerMinions, enemyMinions);
                     break;
+                case GameActionType.UseHeroSkillOnMinion:
+                    SimulateHeroSkillOnMinion(action, ref player, ref enemy, playerMinions, enemyMinions);
+                    break;
+                case GameActionType.UseHeroSkillOnHero:
+                    SimulateHeroSkillOnHero(action, ref player, ref enemy);
+                    break;
                 case GameActionType.EndTurn:
                     SimulateEndTurn(ref currentPlayerIndex, ref player, ref enemy, playerMinions, enemyMinions);
                     break;
@@ -184,7 +190,8 @@ public static class SnapshotSimulator
             maxMana,
             player.HandCount,
             player.DeckCount,
-            player.HandCards);
+            player.HandCards,
+            false);
 
         return DrawCardForTurnStart(refreshedPlayer);
     }
@@ -207,7 +214,8 @@ public static class SnapshotSimulator
             player.MaxMana,
             handCount,
             player.DeckCount - 1,
-            player.HandCards);
+            player.HandCards,
+            player.HasUsedHeroSkillThisTurn);
     }
 
     private static PlayerSnapshot DrawCards(PlayerSnapshot player, int drawCount)
@@ -240,7 +248,8 @@ public static class SnapshotSimulator
             player.MaxMana,
             handCount,
             player.DeckCount - 1,
-            player.HandCards);
+            player.HandCards,
+            player.HasUsedHeroSkillThisTurn);
     }
 
     private static void SimulateAttackMinion(
@@ -297,6 +306,43 @@ public static class SnapshotSimulator
         SetPlayer(GetOpponentIndex(action.ActorIndex), opponent, ref player, ref enemy);
     }
 
+    private static void SimulateHeroSkillOnMinion(
+        SnapshotAction action,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy,
+        List<MinionSnapshot> playerMinions,
+        List<MinionSnapshot> enemyMinions)
+    {
+        List<MinionSnapshot> targetMinions = GetMinions(GetOpponentIndex(action.ActorIndex), playerMinions, enemyMinions);
+        if (!IsValidIndex(targetMinions, action.TargetMinionIndex)) return;
+
+        PlayerSnapshot actor = GetPlayer(action.ActorIndex, player, enemy);
+        actor = SpendHeroSkillMana(actor);
+        SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
+
+        targetMinions[action.TargetMinionIndex] = DamageMinion(targetMinions[action.TargetMinionIndex], action.HeroSkillDamage);
+        ResolveDeathrattlesAndRemoveDeadMinions(
+            targetMinions,
+            GetOpponentIndex(action.ActorIndex),
+            ref player,
+            ref enemy);
+    }
+
+    private static void SimulateHeroSkillOnHero(
+        SnapshotAction action,
+        ref PlayerSnapshot player,
+        ref PlayerSnapshot enemy)
+    {
+        PlayerSnapshot actor = GetPlayer(action.ActorIndex, player, enemy);
+        PlayerSnapshot opponent = GetPlayer(GetOpponentIndex(action.ActorIndex), player, enemy);
+
+        actor = SpendHeroSkillMana(actor);
+        opponent = DamageHero(opponent, action.HeroSkillDamage);
+
+        SetPlayer(action.ActorIndex, actor, ref player, ref enemy);
+        SetPlayer(GetOpponentIndex(action.ActorIndex), opponent, ref player, ref enemy);
+    }
+
     private static PlayerSnapshot SpendCard(PlayerSnapshot player, int cost, int handCardIndex)
     {
         if (player == null) return new PlayerSnapshot(0, 0, 0, 0, 0, 0);
@@ -309,7 +355,23 @@ public static class SnapshotSimulator
             player.MaxMana,
             player.HandCount - 1,
             player.DeckCount,
-            remainingHandCards);
+            remainingHandCards,
+            player.HasUsedHeroSkillThisTurn);
+    }
+
+    private static PlayerSnapshot SpendHeroSkillMana(PlayerSnapshot player)
+    {
+        if (player == null) return new PlayerSnapshot(0, 0, 0, 0, 0, 0);
+
+        return new PlayerSnapshot(
+            player.HeroHealth,
+            player.HeroMaxHealth,
+            player.CurrentMana - Player.HeroSkillCost,
+            player.MaxMana,
+            player.HandCount,
+            player.DeckCount,
+            player.HandCards,
+            true);
     }
 
     private static IReadOnlyList<CardSnapshot> RemoveKnownHandCard(PlayerSnapshot player, int handCardIndex)
@@ -345,7 +407,8 @@ public static class SnapshotSimulator
             player.MaxMana,
             player.HandCount,
             player.DeckCount,
-            player.HandCards);
+            player.HandCards,
+            player.HasUsedHeroSkillThisTurn);
     }
 
     private static MinionSnapshot DamageMinion(MinionSnapshot minion, int damage)
@@ -416,7 +479,8 @@ public static class SnapshotSimulator
             player.MaxMana,
             player.HandCount,
             player.DeckCount,
-            player.HandCards);
+            player.HandCards,
+            player.HasUsedHeroSkillThisTurn);
     }
 
     private static List<MinionSnapshot> CopyMinions(IReadOnlyList<MinionSnapshot> minions)

@@ -10,6 +10,7 @@ public enum BattleLogEntryType
     MinionSummoned,
     Attack,
     Spell,
+    HeroSkill,
     Battlecry,
     Deathrattle,
     Damage,

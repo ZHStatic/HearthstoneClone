@@ -42,6 +42,20 @@ public enum GameActionType
     AttackHero,
 
     /// <summary>
+    /// 对一个随从使用英雄技能。
+    /// 当前第一版英雄技能是 2 费、每回合一次、对敌方角色造成 1 点伤害。
+    /// 目标保存在 GameAction.TargetMinion。
+    /// </summary>
+    UseHeroSkillOnMinion,
+
+    /// <summary>
+    /// 对一个英雄使用英雄技能。
+    /// 当前第一版英雄技能是 2 费、每回合一次、对敌方角色造成 1 点伤害。
+    /// 目标保存在 GameAction.TargetHero。
+    /// </summary>
+    UseHeroSkillOnHero,
+
+    /// <summary>
     /// 结束当前玩家的回合。
     /// 当前只记录动作意图，真正结束回合仍然由 GameManager.EndTurn() 执行。
     /// </summary>

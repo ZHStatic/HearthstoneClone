@@ -146,6 +146,8 @@ public class AIController
             GameActionType.PlaySpellOnHero => $"对 {GetHeroName(action.TargetHero)} 释放 {GetCardName(action.Card)}",
             GameActionType.AttackMinion => $"{GetMinionName(action.Attacker)} 攻击 {GetMinionName(action.TargetMinion)}",
             GameActionType.AttackHero => $"{GetMinionName(action.Attacker)} 攻击 {GetHeroName(action.TargetHero)}",
+            GameActionType.UseHeroSkillOnMinion => $"对 {GetMinionName(action.TargetMinion)} 使用英雄技能",
+            GameActionType.UseHeroSkillOnHero => $"对 {GetHeroName(action.TargetHero)} 使用英雄技能",
             GameActionType.EndTurn => "结束回合",
             _ => $"未知动作：{action.ActionType}",
         };

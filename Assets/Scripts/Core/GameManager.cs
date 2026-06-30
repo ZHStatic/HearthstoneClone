@@ -201,6 +201,10 @@ public partial class GameManager : MonoBehaviour
                 return TryAttackMinionDetailed(action.Attacker, action.TargetMinion);
             case GameActionType.AttackHero:
                 return TryAttackHeroDetailed(action.Attacker, action.TargetHero);
+            case GameActionType.UseHeroSkillOnMinion:
+                return TryUseHeroSkillOnMinionDetailed(action.TargetMinion);
+            case GameActionType.UseHeroSkillOnHero:
+                return TryUseHeroSkillOnHeroDetailed(action.TargetHero);
             case GameActionType.EndTurn:
                 EndTurn();
                 return GameActionResult.Succeeded($"{GetPlayerLogName(CurrentPlayer)} 回合开始。");
@@ -377,6 +381,8 @@ public partial class GameManager : MonoBehaviour
             GameActionType.PlaySpellOnHero => $"PlaySpellOnHero: {GetCardLogName(action.Card)} -> {GetHeroLogName(action.TargetHero)}",
             GameActionType.AttackMinion => $"AttackMinion: {GetMinionLogName(action.Attacker)} -> {GetMinionLogName(action.TargetMinion)}",
             GameActionType.AttackHero => $"AttackHero: {GetMinionLogName(action.Attacker)} -> {GetHeroLogName(action.TargetHero)}",
+            GameActionType.UseHeroSkillOnMinion => $"UseHeroSkillOnMinion: {GetPlayerLogName(action.Actor)} -> {GetMinionLogName(action.TargetMinion)}",
+            GameActionType.UseHeroSkillOnHero => $"UseHeroSkillOnHero: {GetPlayerLogName(action.Actor)} -> {GetHeroLogName(action.TargetHero)}",
             GameActionType.EndTurn => "EndTurn",
             _ => action.ActionType.ToString(),
         };
@@ -766,6 +772,210 @@ public partial class GameManager : MonoBehaviour
         BattleLogEntry resultLogEntry = IsGameOver && LastActionLogEntry != null
             ? LastActionLogEntry
             : attackLogEntry;
+
+        string message = resultLogEntry != null && !string.IsNullOrWhiteSpace(resultLogEntry.Message)
+            ? resultLogEntry.Message
+            : fallbackMessage ?? "";
+
+        return GameActionResult.Succeeded(message, resultLogEntry);
+    }
+
+    /// <summary>
+    /// 尝试对敌方随从使用英雄技能。
+    /// 第一版英雄技能固定为 2 费、每回合一次、造成 1 点伤害。
+    /// </summary>
+    public GameActionResult TryUseHeroSkillOnMinionDetailed(Minion target)
+    {
+        GameActionResult skillValidationResult = ValidateHeroSkill();
+        if (skillValidationResult.Failed) return skillValidationResult;
+
+        GameActionResult targetValidationResult = ValidateHeroSkillTargetMinion(target);
+        if (targetValidationResult.Failed) return targetValidationResult;
+
+        if (!CurrentPlayer.SpendMana(Player.HeroSkillCost))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotEnoughMana,
+                $"英雄技能需要 {Player.HeroSkillCost} 点法力，当前只有 {CurrentPlayer.CurrentMana} 点。");
+        }
+
+        if (!CurrentPlayer.MarkHeroSkillUsed())
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.HeroSkillAlreadyUsed,
+                "本回合已经使用过英雄技能。");
+        }
+
+        BattleLogEntry heroSkillLogEntry = DamageMinion(
+            target,
+            Player.HeroSkillDamage,
+            "英雄技能",
+            CurrentPlayer,
+            BattleLogEntryType.HeroSkill);
+
+        CleanupDeadMinions();
+        CheckGameOver();
+        return BuildHeroSkillSuccessResult(heroSkillLogEntry, $"英雄技能对 {GetMinionLogName(target)} 造成 {Player.HeroSkillDamage} 点伤害。");
+    }
+
+    /// <summary>
+    /// 尝试对敌方英雄使用英雄技能。
+    /// </summary>
+    public GameActionResult TryUseHeroSkillOnHeroDetailed(Hero targetHero)
+    {
+        GameActionResult skillValidationResult = ValidateHeroSkill();
+        if (skillValidationResult.Failed) return skillValidationResult;
+
+        GameActionResult targetValidationResult = ValidateHeroSkillTargetHero(targetHero);
+        if (targetValidationResult.Failed) return targetValidationResult;
+
+        if (!CurrentPlayer.SpendMana(Player.HeroSkillCost))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotEnoughMana,
+                $"英雄技能需要 {Player.HeroSkillCost} 点法力，当前只有 {CurrentPlayer.CurrentMana} 点。");
+        }
+
+        if (!CurrentPlayer.MarkHeroSkillUsed())
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.HeroSkillAlreadyUsed,
+                "本回合已经使用过英雄技能。");
+        }
+
+        BattleLogEntry heroSkillLogEntry = DamageHero(
+            targetHero,
+            Player.HeroSkillDamage,
+            "英雄技能",
+            CurrentPlayer,
+            BattleLogEntryType.HeroSkill);
+
+        CheckGameOver();
+        return BuildHeroSkillSuccessResult(heroSkillLogEntry, $"英雄技能对 {GetHeroLogName(targetHero)} 造成 {Player.HeroSkillDamage} 点伤害。");
+    }
+
+    /// <summary>
+    /// 检查当前玩家是否可以使用英雄技能。
+    /// 这里只检查使用者状态，不检查具体目标。
+    /// </summary>
+    internal GameActionResult ValidateHeroSkill()
+    {
+        if (IsGameOver)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.GameOver,
+                "游戏已经结束，不能继续使用英雄技能。");
+        }
+
+        if (CurrentPlayer == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NoCurrentPlayer,
+                "当前没有行动玩家。");
+        }
+
+        if (CurrentPlayer.HasUsedHeroSkillThisTurn)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.HeroSkillAlreadyUsed,
+                "本回合已经使用过英雄技能。");
+        }
+
+        if (!CurrentPlayer.CanSpendMana(Player.HeroSkillCost))
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.NotEnoughMana,
+                $"英雄技能需要 {Player.HeroSkillCost} 点法力，当前只有 {CurrentPlayer.CurrentMana} 点。");
+        }
+
+        return GameActionResult.Succeeded();
+    }
+
+    /// <summary>
+    /// 检查一个随从是否能成为当前英雄技能目标。
+    /// 第一版英雄技能只能选择敌方随从，不受嘲讽限制。
+    /// </summary>
+    internal GameActionResult ValidateHeroSkillTargetMinion(Minion target)
+    {
+        if (target == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "英雄技能目标无效。");
+        }
+
+        if (target.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                $"{GetMinionLogName(target)} 已经死亡，不能成为英雄技能目标。");
+        }
+
+        Player opponent = GetOpponent(CurrentPlayer);
+        if (opponent == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "找不到当前玩家的对手。");
+        }
+
+        if (target.Owner != opponent)
+        {
+            return GameActionResult.FailedWith(
+                target.Owner == CurrentPlayer ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                "英雄技能只能选择敌方随从。");
+        }
+
+        return GameActionResult.Succeeded();
+    }
+
+    /// <summary>
+    /// 检查一个英雄是否能成为当前英雄技能目标。
+    /// 第一版英雄技能只能选择敌方英雄。
+    /// </summary>
+    internal GameActionResult ValidateHeroSkillTargetHero(Hero targetHero)
+    {
+        if (targetHero == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "英雄技能目标英雄无效。");
+        }
+
+        if (targetHero.IsDead)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                $"{GetHeroLogName(targetHero)} 已经死亡，不能成为英雄技能目标。");
+        }
+
+        Player opponent = GetOpponent(CurrentPlayer);
+        if (opponent == null)
+        {
+            return GameActionResult.FailedWith(
+                GameActionFailureReason.InvalidTarget,
+                "找不到当前玩家的对手。");
+        }
+
+        if (targetHero != opponent.Hero)
+        {
+            return GameActionResult.FailedWith(
+                CurrentPlayer != null && targetHero == CurrentPlayer.Hero ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                "英雄技能只能选择敌方英雄。");
+        }
+
+        return GameActionResult.Succeeded();
+    }
+
+    /// <summary>
+    /// 使用英雄技能结算日志创建成功结果。
+    /// 如果英雄技能导致游戏结束，优先返回游戏结束日志。
+    /// </summary>
+    private GameActionResult BuildHeroSkillSuccessResult(BattleLogEntry heroSkillLogEntry, string fallbackMessage)
+    {
+        BattleLogEntry resultLogEntry = IsGameOver && LastActionLogEntry != null
+            ? LastActionLogEntry
+            : heroSkillLogEntry;
 
         string message = resultLogEntry != null && !string.IsNullOrWhiteSpace(resultLogEntry.Message)
             ? resultLogEntry.Message

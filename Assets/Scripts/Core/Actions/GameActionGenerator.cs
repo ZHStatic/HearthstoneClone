@@ -24,6 +24,7 @@ public static class GameActionGenerator
 
         AddPlayableCardActions(actions, gameManager, actor);
         AddAttackActions(actions, gameManager, actor);
+        AddHeroSkillActions(actions, gameManager, actor);
         AddEndTurnAction(actions, actor);
 
         return actions;
@@ -195,6 +196,68 @@ public static class GameActionGenerator
         if (!gameManager.ValidateAttackHeroTarget(attacker, targetHero).Success) return;
 
         actions.Add(GameAction.CreateAttackHero(actor, attacker, targetHero));
+    }
+
+    /// <summary>
+    /// 生成当前玩家可以使用的英雄技能动作。
+    /// 第一版英雄技能只能选择敌方随从或敌方英雄，不受嘲讽限制。
+    /// </summary>
+    private static void AddHeroSkillActions(
+        List<GameAction> actions,
+        GameManager gameManager,
+        Player actor)
+    {
+        if (actions == null) return;
+        if (gameManager == null) return;
+        if (actor == null) return;
+        if (!gameManager.ValidateHeroSkill().Success) return;
+
+        Player opponent = gameManager.GetOpponent(actor);
+        if (opponent == null) return;
+
+        AddHeroSkillTargetMinionActions(actions, gameManager, actor, opponent);
+        AddHeroSkillTargetHeroAction(actions, gameManager, actor, opponent.Hero);
+    }
+
+    /// <summary>
+    /// 为英雄技能生成所有合法的敌方随从目标动作。
+    /// </summary>
+    private static void AddHeroSkillTargetMinionActions(
+        List<GameAction> actions,
+        GameManager gameManager,
+        Player actor,
+        Player opponent)
+    {
+        if (actions == null) return;
+        if (gameManager == null || gameManager.Board == null) return;
+        if (actor == null || opponent == null) return;
+
+        IReadOnlyList<Minion> targets = gameManager.Board.GetMinions(opponent);
+        if (targets == null) return;
+
+        foreach (Minion target in targets)
+        {
+            if (!gameManager.ValidateHeroSkillTargetMinion(target).Success) continue;
+
+            actions.Add(GameAction.CreateUseHeroSkillOnMinion(actor, target));
+        }
+    }
+
+    /// <summary>
+    /// 如果敌方英雄是合法目标，就生成英雄技能打英雄动作。
+    /// </summary>
+    private static void AddHeroSkillTargetHeroAction(
+        List<GameAction> actions,
+        GameManager gameManager,
+        Player actor,
+        Hero targetHero)
+    {
+        if (actions == null) return;
+        if (gameManager == null) return;
+        if (actor == null) return;
+        if (!gameManager.ValidateHeroSkillTargetHero(targetHero).Success) return;
+
+        actions.Add(GameAction.CreateUseHeroSkillOnHero(actor, targetHero));
     }
 
     /// <summary>
