@@ -20,17 +20,6 @@ public partial class GameManager : MonoBehaviour
     [SerializeField] private bool logLegalActionsOnTurnStart = false;
     // 调试开关：关闭洗牌后，Inspector 中的牌库顺序会更稳定，方便验证 AI 起手和出牌选择。
     [SerializeField] private bool disableDeckShuffleForDebug = false;
-    // 调试开关：Enemy 回合开始时打印 AI 手牌和当前法力，方便验证 ActionSelector 的选择。
-    [SerializeField] private bool logAIHandOnTurnStart = false;
-    // 调试开关：回合开始时对比真实局面评分和快照局面评分，验证快照复制是否漏字段。
-    [SerializeField] private bool logSnapshotEvaluationOnTurnStart = false;
-    // 调试开关：回合开始时打印每个可映射动作的快照模拟后评分。
-    [SerializeField] private bool logSnapshotSimulationOnTurnStart = false;
-
-    // 阶段 3 第一版 AI：只控制 Enemy，复用 GameActionGenerator 和 ExecuteAction。
-    [SerializeField] private bool enableEnemyAI = true;
-    [SerializeField] private int maxAIActionsPerTurn = 20;
-
     // 运行时对象：进入 Play 模式后由 StartNewGame 创建。
     public Player Player { get; private set; }
     public Player Enemy { get; private set; }
@@ -44,8 +33,6 @@ public partial class GameManager : MonoBehaviour
     public Player Winner { get; private set; }
     public int TurnNumber { get; private set; }
     public bool IsGameOver { get; private set; }
-
-    private AIController enemyAIController;
 
     // Unity 生命周期方法：Awake 会早于其他脚本的 Start 执行。
     // 这样 UI 脚本在 Start 里刷新时，Player / Enemy / Board 已经创建好了。
@@ -124,25 +111,11 @@ public partial class GameManager : MonoBehaviour
         }
 
         LogLegalActionsForCurrentPlayer();
+        // AI 自动行动和快照调试钩子实现在 Assets/Scripts/AI/GameManager.AIBridge.cs。
         LogSnapshotEvaluationForCurrentPlayer();
         LogSnapshotSimulationForCurrentPlayer();
         LogAIHandForCurrentPlayer();
         TryRunEnemyAI();
-    }
-
-    private void InitializeEnemyAI()
-    {
-        enemyAIController = new AIController(this, Enemy, maxAIActionsPerTurn);
-    }
-
-    private void TryRunEnemyAI()
-    {
-        if (!enableEnemyAI) return;
-        if (enemyAIController == null) return;
-        if (IsGameOver) return;
-        if (CurrentPlayer != Enemy) return;
-
-        enemyAIController.TakeTurn();
     }
 
     /// <summary>
@@ -262,111 +235,6 @@ public partial class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 调试用：对比真实局面评分和快照局面评分。
-    /// 这只用于验证 GameStateSnapshot 是否正确复制当前局面，不影响 AI 决策。
-    /// </summary>
-    private void LogSnapshotEvaluationForCurrentPlayer()
-    {
-        if (!logSnapshotEvaluationOnTurnStart) return;
-        if (CurrentPlayer == null) return;
-
-        Evaluator evaluator = new Evaluator();
-        Player opponent = GetOpponent(CurrentPlayer);
-        EvaluationResult realEvaluation = evaluator.EvaluateDetailed(CurrentPlayer, opponent, Board);
-
-        GameStateSnapshot snapshot = GameStateSnapshot.FromGameManager(this);
-        int currentPlayerIndex = CurrentPlayer == Enemy
-            ? GameStateSnapshot.EnemyIndex
-            : GameStateSnapshot.PlayerIndex;
-        EvaluationResult snapshotEvaluation = evaluator.EvaluateDetailed(snapshot, currentPlayerIndex);
-        bool isMatch = IsSameEvaluation(realEvaluation, snapshotEvaluation);
-
-        Debug.Log($"Snapshot Evaluation - {GetPlayerLogName(CurrentPlayer)}: Real[{realEvaluation.ToDebugText()}] Snapshot[{snapshotEvaluation.ToDebugText()}] Match={isMatch}");
-    }
-
-    private bool IsSameEvaluation(EvaluationResult left, EvaluationResult right)
-    {
-        if (left == null || right == null) return false;
-
-        return left.TotalScore == right.TotalScore
-            && left.HeroHealthScore == right.HeroHealthScore
-            && left.HandScore == right.HandScore
-            && left.BoardScore == right.BoardScore;
-    }
-
-    /// <summary>
-    /// 调试用：打印当前合法动作在快照模拟后的评分。
-    /// 这只帮助观察模拟器结果，不影响 AI 当前选择策略。
-    /// </summary>
-    private void LogSnapshotSimulationForCurrentPlayer()
-    {
-        if (!logSnapshotSimulationOnTurnStart) return;
-        if (CurrentPlayer == null) return;
-
-        List<GameAction> legalActions = GameActionGenerator.GenerateLegalActions(this);
-        GameStateSnapshot snapshot = GameStateSnapshot.FromGameManager(this);
-        Evaluator evaluator = new Evaluator();
-        int currentPlayerIndex = CurrentPlayer == Enemy
-            ? GameStateSnapshot.EnemyIndex
-            : GameStateSnapshot.PlayerIndex;
-
-        Debug.Log($"Snapshot Simulation - {GetPlayerLogName(CurrentPlayer)}: {legalActions.Count} legal actions");
-
-        for (int i = 0; i < legalActions.Count; i++)
-        {
-            GameAction action = legalActions[i];
-            string actionText = GetActionDebugText(action);
-
-            if (!SnapshotActionMapper.TryMap(action, this, out SnapshotAction snapshotAction))
-            {
-                Debug.Log($"Snapshot Simulation - Skip: {actionText} | 原因：当前模拟层暂不支持此动作或无法定位索引。");
-                continue;
-            }
-
-            GameStateSnapshot simulatedState = SnapshotSimulator.Simulate(snapshot, snapshotAction);
-            EvaluationResult evaluation = evaluator.EvaluateDetailed(simulatedState, currentPlayerIndex);
-
-            Debug.Log($"Snapshot Simulation - {actionText} | 模拟后评分：{evaluation.ToDebugText()}");
-        }
-    }
-
-    /// <summary>
-    /// 调试用：Enemy 回合开始时打印 AI 手牌。
-    /// 这不是正式 UI，只用于阶段 3.3 验证 AI 是否按预期选择出牌。
-    /// </summary>
-    private void LogAIHandForCurrentPlayer()
-    {
-        if (!logAIHandOnTurnStart) return;
-        if (CurrentPlayer != Enemy) return;
-        if (Enemy == null) return;
-
-        string handText = BuildHandDebugText(Enemy);
-        Debug.Log($"AI 手牌：{handText}，当前法力：{Enemy.CurrentMana}/{Enemy.MaxMana}");
-    }
-
-    private string BuildHandDebugText(Player player)
-    {
-        if (player == null || player.Hand == null || player.Hand.Count == 0)
-        {
-            return "无";
-        }
-
-        List<string> cardTexts = new List<string>();
-        foreach (Card card in player.Hand)
-        {
-            if (card == null)
-            {
-                cardTexts.Add("未知卡牌");
-                continue;
-            }
-
-            cardTexts.Add($"{card.CurrentCost}费 {GetCardLogName(card)}");
-        }
-
-        return string.Join(" | ", cardTexts);
-    }
-
-    /// <summary>
     /// 把一条动作转换成 Console 中容易阅读的文本。
     /// 只用于调试动作枚举结果，不参与正式规则结算。
     /// </summary>
@@ -423,10 +291,16 @@ public partial class GameManager : MonoBehaviour
                 "召唤随从失败。");
         }
 
+        string cardName = GetCardLogName(card);
         RecordCardPlayed(card, CurrentPlayer);
         RecordMinionSummoned(minion);
+        BattleLogEntry lastActionBeforeSummonEffects = LastActionLogEntry;
         ResolveAfterSummon(minion);
-        return GameActionResult.Succeeded($"打出 {GetCardLogName(card)}。");
+        BattleLogEntry summonEffectLogEntry = LastActionLogEntry != lastActionBeforeSummonEffects
+            ? LastActionLogEntry
+            : null;
+
+        return BuildPlayMinionSuccessResult(summonEffectLogEntry, $"打出 {cardName}。");
     }
 
     /// <summary>
@@ -743,6 +617,23 @@ public partial class GameManager : MonoBehaviour
                     GameActionFailureReason.InvalidTarget,
                     "这个法术不能选择英雄作为目标。");
         }
+    }
+
+    /// <summary>
+    /// 使用出随从后的结算日志创建成功结果。
+    /// 如果战吼等召唤后效果造成伤害或结束游戏，优先返回实际结算日志。
+    /// </summary>
+    private GameActionResult BuildPlayMinionSuccessResult(BattleLogEntry summonEffectLogEntry, string fallbackMessage)
+    {
+        BattleLogEntry resultLogEntry = IsGameOver && LastActionLogEntry != null
+            ? LastActionLogEntry
+            : summonEffectLogEntry;
+
+        string message = resultLogEntry != null && !string.IsNullOrWhiteSpace(resultLogEntry.Message)
+            ? resultLogEntry.Message
+            : fallbackMessage ?? "";
+
+        return GameActionResult.Succeeded(message, resultLogEntry);
     }
 
     /// <summary>
