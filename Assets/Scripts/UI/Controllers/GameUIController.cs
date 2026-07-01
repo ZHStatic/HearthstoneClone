@@ -24,10 +24,11 @@ public class GameUIController : MonoBehaviour
     [SerializeField] private Text enemyHeroText;
     [SerializeField] private Text gameOverText;
 
-    // 英雄和结束回合按钮。
+    // 英雄、英雄技能和结束回合按钮。
     // 英雄按钮用于让已选中的随从攻击英雄。
     [SerializeField] private Button playerHeroButton;
     [SerializeField] private Button enemyHeroButton;
+    [SerializeField] private Button heroSkillButton;
     [SerializeField] private Button endTurnButton;
 
     // 当前被选中的攻击者。
@@ -37,6 +38,10 @@ public class GameUIController : MonoBehaviour
     // 当前被选中的法术牌。
     // 点击法术牌时设置，点击目标、结束回合或改打其他牌后清空。
     private Card selectedSpellCard;
+
+    // 当前是否正在等待玩家选择英雄技能目标。
+    // 点击英雄技能按钮后设置，点击目标、结束回合或改做其他操作后清空。
+    private bool isSelectingHeroSkillTarget;
 
     private string feedbackMessage = "";
 
@@ -63,6 +68,11 @@ public class GameUIController : MonoBehaviour
             enemyHeroButton.onClick.AddListener(HandleEnemyHeroClicked);
         }
 
+        if (heroSkillButton != null)
+        {
+            heroSkillButton.onClick.AddListener(HandleHeroSkillClicked);
+        }
+
         RefreshAll();
     }
 
@@ -82,6 +92,11 @@ public class GameUIController : MonoBehaviour
         if (enemyHeroButton != null)
         {
             enemyHeroButton.onClick.RemoveListener(HandleEnemyHeroClicked);
+        }
+
+        if (heroSkillButton != null)
+        {
+            heroSkillButton.onClick.RemoveListener(HandleHeroSkillClicked);
         }
     }
 
@@ -112,6 +127,7 @@ public class GameUIController : MonoBehaviour
 
         ClearSelectedAttacker();
         ClearSelectedSpell();
+        ClearHeroSkillSelection();
 
         if (IsSpellCard(card))
         {
@@ -192,14 +208,50 @@ public class GameUIController : MonoBehaviour
 
         ClearSelectedAttacker();
         ClearSelectedSpell();
+        ClearHeroSkillSelection();
         gameManager.EndTurn();
         SetFeedback($"{GetPlayerLabel(gameManager.CurrentPlayer)} 回合开始。");
         RefreshAll();
     }
 
     /// <summary>
+    /// 处理英雄技能按钮点击。
+    /// 点击后先检查当前玩家是否能使用技能，通过后进入选择目标状态。
+    /// </summary>
+    private void HandleHeroSkillClicked()
+    {
+        if (gameManager == null) return;
+
+        if (isSelectingHeroSkillTarget)
+        {
+            ClearHeroSkillSelection();
+            SetFeedback("取消选择英雄技能。");
+            RefreshAll();
+            return;
+        }
+
+        ClearSelectedAttacker();
+        ClearSelectedSpell();
+
+        GameActionResult validationResult = gameManager.ValidateHeroSkill();
+        if (validationResult.Failed)
+        {
+            SetFeedback(GetActionResultMessageOrFallback(
+                validationResult,
+                "",
+                "现在不能使用英雄技能。"));
+            RefreshAll();
+            return;
+        }
+
+        isSelectingHeroSkillTarget = true;
+        SetFeedback("已选择英雄技能，请选择敌方目标。");
+        RefreshAll();
+    }
+
+    /// <summary>
     /// 处理玩家英雄被点击。
-    /// 如果当前已经选中攻击者，就尝试攻击玩家英雄。
+    /// 根据当前选择状态，把点击转换成法术、英雄技能或攻击目标。
     /// </summary>
     private void HandlePlayerHeroClicked()
     {
@@ -215,6 +267,10 @@ public class GameUIController : MonoBehaviour
         {
             TryPlaySelectedSpellOnHero(gameManager.Player.Hero);
         }
+        else if (isSelectingHeroSkillTarget)
+        {
+            TryUseSelectedHeroSkillOnHero(gameManager.Player.Hero);
+        }
         else
         {
             TryAttackSelectedHero(gameManager.Player.Hero);
@@ -225,7 +281,7 @@ public class GameUIController : MonoBehaviour
 
     /// <summary>
     /// 处理敌方英雄被点击。
-    /// 如果当前已经选中攻击者，就尝试攻击敌方英雄。
+    /// 根据当前选择状态，把点击转换成法术、英雄技能或攻击目标。
     /// </summary>
     private void HandleEnemyHeroClicked()
     {
@@ -241,6 +297,10 @@ public class GameUIController : MonoBehaviour
         {
             TryPlaySelectedSpellOnHero(gameManager.Enemy.Hero);
         }
+        else if (isSelectingHeroSkillTarget)
+        {
+            TryUseSelectedHeroSkillOnHero(gameManager.Enemy.Hero);
+        }
         else
         {
             TryAttackSelectedHero(gameManager.Enemy.Hero);
@@ -251,8 +311,7 @@ public class GameUIController : MonoBehaviour
 
     /// <summary>
     /// 处理随从点击。
-    /// 没有攻击者时，尝试选择当前玩家的可攻击随从。
-    /// 已经有攻击者时，点击敌方随从会尝试攻击。
+    /// 根据当前选择状态，把点击转换成法术目标、英雄技能目标或攻击选择。
     /// </summary>
     private void HandleMinionClicked(Minion clickedMinion)
     {
@@ -274,6 +333,13 @@ public class GameUIController : MonoBehaviour
         if (selectedSpellCard != null)
         {
             TryPlaySelectedSpellOnMinion(clickedMinion);
+            RefreshAll();
+            return;
+        }
+
+        if (isSelectingHeroSkillTarget)
+        {
+            TryUseSelectedHeroSkillOnMinion(clickedMinion);
             RefreshAll();
             return;
         }
@@ -450,6 +516,76 @@ public class GameUIController : MonoBehaviour
     }
 
     /// <summary>
+    /// 使用当前选中的英雄技能，尝试对目标随从造成伤害。
+    /// </summary>
+    private void TryUseSelectedHeroSkillOnMinion(Minion target)
+    {
+        if (!isSelectingHeroSkillTarget)
+        {
+            SetFeedback("请先选择英雄技能。");
+            return;
+        }
+
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续使用英雄技能。");
+            ClearHeroSkillSelection();
+            return;
+        }
+
+        if (target == null)
+        {
+            SetFeedback("英雄技能目标无效。");
+            return;
+        }
+
+        string targetName = GetMinionName(target);
+        GameActionResult result = gameManager.TryUseHeroSkillOnMinionDetailed(target);
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
+            "英雄技能目标非法，使用失败。"));
+        ClearHeroSkillSelection();
+        ClearSelectedAttacker();
+        ClearSelectedSpell();
+    }
+
+    /// <summary>
+    /// 使用当前选中的英雄技能，尝试对目标英雄造成伤害。
+    /// </summary>
+    private void TryUseSelectedHeroSkillOnHero(Hero targetHero)
+    {
+        if (!isSelectingHeroSkillTarget)
+        {
+            SetFeedback("请先选择英雄技能。");
+            return;
+        }
+
+        if (gameManager.IsGameOver)
+        {
+            SetFeedback("游戏已经结束，不能继续使用英雄技能。");
+            ClearHeroSkillSelection();
+            return;
+        }
+
+        if (targetHero == null)
+        {
+            SetFeedback("英雄技能目标英雄无效。");
+            return;
+        }
+
+        string targetName = targetHero.Name;
+        GameActionResult result = gameManager.TryUseHeroSkillOnHeroDetailed(targetHero);
+        SetFeedback(GetActionResultMessageOrFallback(
+            result,
+            $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
+            "英雄技能目标英雄非法，使用失败。"));
+        ClearHeroSkillSelection();
+        ClearSelectedAttacker();
+        ClearSelectedSpell();
+    }
+
+    /// <summary>
     /// 使用当前选中的法术牌，尝试对目标英雄释放法术。
     /// </summary>
     private void TryPlaySelectedSpellOnHero(Hero targetHero)
@@ -500,6 +636,14 @@ public class GameUIController : MonoBehaviour
     private void ClearSelectedSpell()
     {
         selectedSpellCard = null;
+    }
+
+    /// <summary>
+    /// 清空英雄技能选目标状态。
+    /// </summary>
+    private void ClearHeroSkillSelection()
+    {
+        isSelectingHeroSkillTarget = false;
     }
 
     /// <summary>
@@ -575,6 +719,11 @@ public class GameUIController : MonoBehaviour
         {
             enemyHeroButton.interactable = !gameManager.IsGameOver;
         }
+
+        if (heroSkillButton != null)
+        {
+            heroSkillButton.interactable = !gameManager.IsGameOver;
+        }
     }
 
     /// <summary>
@@ -584,6 +733,7 @@ public class GameUIController : MonoBehaviour
     {
         ClearSelectedAttacker();
         ClearSelectedSpell();
+        ClearHeroSkillSelection();
         ClearFeedback();
 
         if (handView != null)
@@ -625,6 +775,11 @@ public class GameUIController : MonoBehaviour
         if (selectedSpellCard != null && selectedSpellCard.CardData != null)
         {
             text += $" | Spell: {selectedSpellCard.CardData.CardName}";
+        }
+
+        if (isSelectingHeroSkillTarget)
+        {
+            text += " | Hero Skill";
         }
 
         return text;
