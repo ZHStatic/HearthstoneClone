@@ -638,16 +638,16 @@
     ② 能击杀敌方随从 → 选威胁最大的<br>
     ③ 有可出手牌 → 选费用最高的<br>
     ④ 兜底 → 按固定优先级（攻英雄 > 攻随从 > 出随从 > 结束回合）<br><br>
-    <strong>未来策略（评分驱动）：</strong>对每个候选动作做快照模拟 → 评分 → 选分最高的。</div>
+    <strong>当前策略（评分驱动）：</strong>对每个候选动作做快照模拟 → 评估少量同回合后续动作 → 评分 → 选允许范围内的高分动作。</div>
   </div>
 </div>
 
 <div class="tl-step">
   <div class="tl-num">5</div>
   <div class="tl-body">
-    <div class="title">【可选】快照模拟 + 评分（当前仅用于日志对比）</div>
-    <div class="file">GameStateSnapshot.FromGameManager() → SnapshotSimulator.Simulate() → Evaluator.Evaluate()</div>
-    <div class="detail">这是 Simulation 模块登场的位置。目前主要用于验证"快照评分和真实评分是否一致"，不参与实际决策。</div>
+    <div class="title">快照模拟 + 后续预估 + 评分</div>
+    <div class="file">GameStateSnapshot.FromGameManager() → SnapshotSimulator.Simulate() → SnapshotFollowUpEvaluator → Evaluator.Evaluate()</div>
+    <div class="detail">这是 Simulation 模块登场的位置。当前 AI 已经用快照模拟和评分参与实际决策，不再只是日志对比。</div>
   </div>
 </div>
 
@@ -722,16 +722,16 @@
 </pre>
 
 <div class="box tip">
-  <strong>为什么丢弃具体手牌信息？</strong><br>
-  当前评估只看"有几张牌"，不看"是什么牌"。评估公式是 <code>手牌数差 × 4</code>。<br>
-  如果以后要评估手牌质量（比如手里有 AOE），就需要扩展快照，记录每张牌的 CardData 引用或摘要。
+  <strong>为什么现在需要具体手牌快照？</strong><br>
+  阶段 3.11 起，<code>PlayerSnapshot</code> 会保存 <code>CardSnapshot</code> 列表。这样 <code>SnapshotFollowUpEvaluator</code> 才能在第一步动作之后继续模拟出随从、法术和英雄技能等后续选择。<br>
+  抽牌后的牌库顶仍是阶段性简化：快照只知道手牌数量增加，不知道新抽到的具体卡牌。
 </div>
 
-<h4>MinionSnapshot — 随从状态的 7 个字段</h4>
+<h4>MinionSnapshot — 随从状态快照</h4>
 <pre>
 <span class="kw">public class</span> <span class="type">MinionSnapshot</span>
 {
-    <span class="cmt">// 7 个字段。没有 CardData 引用，没有 Owner 引用，没有战吼/亡语效果。</span>
+    <span class="cmt">// 只保存模拟需要的数据。没有 CardData 引用，也没有 Owner 引用。</span>
     <span class="kw">public int</span>  Attack;
     <span class="kw">public int</span>  CurrentHealth;
     <span class="kw">public int</span>  MaxHealth;
@@ -739,6 +739,8 @@
     <span class="kw">public bool</span> HasTaunt;            <span class="cmt">// 是否有嘲讽</span>
     <span class="kw">public bool</span> HasDivineShield;     <span class="cmt">// 是否有圣盾</span>
     <span class="kw">public bool</span> HasCharge;           <span class="cmt">// 是否有冲锋</span>
+    <span class="kw">public DeathrattleType</span> DeathrattleType;
+    <span class="kw">public int</span> DeathrattleValue;
 }
 </pre>
 
@@ -801,12 +803,13 @@
       PlaySpellOnHero（费用/伤害）<br>
       AttackMinion（攻击者索引/目标索引）<br>
       AttackHero（攻击者索引）<br>
+      UseHeroSkillOnMinion / UseHeroSkillOnHero<br>
       EndTurn
     </td>
     <td>
       友方目标法术（当前只支持敌方目标）<br>
       治疗、Buff、AOE<br>
-      战吼、亡语（快照目前不模拟）<br>
+      复杂战吼链和亡语连锁<br>
       找不到索引的动作（返回 false）
     </td>
   </tr>

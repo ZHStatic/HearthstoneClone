@@ -580,7 +580,7 @@
             <h1>把阶段 3 AI 系统拆成能读懂的六块</h1>
             <p class="lead">这页不是 API 手册，而是面向你每天复盘的项目地图：先看动作从哪里来，再看 AI 怎么选，最后看快照模拟为什么能避免污染真实对局。</p>
             <div class="chips" aria-label="当前覆盖范围">
-              <span class="chip">阶段 3.0-3.6</span>
+              <span class="chip">阶段 3.0-3.13</span>
               <span class="chip">手机端优先</span>
               <span class="chip">不改 Unity 资源</span>
               <span class="chip">可接入 NDepend / MkDocs</span>
@@ -600,6 +600,10 @@
             <div class="node gold">
               <strong>SnapshotSimulator</strong>
               <span>在快照副本里预演，不碰 GameManager</span>
+            </div>
+            <div class="node rust">
+              <strong>SnapshotFollowUpEvaluator</strong>
+              <span>继续评估少量同回合后续动作</span>
             </div>
             <div class="node green">
               <strong>Evaluator</strong>
@@ -673,9 +677,9 @@
             <div class="step">
               <div class="num">5</div>
               <div>
-                <h3>模拟每个候选动作并评分</h3>
-                <p>当前允许最多亏 3 分换节奏，避免 AI 因短期评分波动过于保守。</p>
-                <span class="code-line">AllowedScoreLoss = 3</span>
+                <h3>模拟候选动作、后续动作并评分</h3>
+                <p>当前允许最多亏 3 分换节奏，并用同回合后续预估减少只看一步的短视。</p>
+                <span class="code-line">SnapshotFollowUpEvaluator + AllowedScoreLoss = 3</span>
               </div>
             </div>
             <div class="step">
@@ -732,6 +736,12 @@
                   <td>在快照副本上模拟动作，返回新快照。</td>
                   <td>Snapshot 类、SnapshotAction</td>
                   <td>不引用 UI，不调用真实 GameManager。</td>
+                </tr>
+                <tr>
+                  <td><strong>SnapshotFollowUpEvaluator</strong></td>
+                  <td>在第一步动作后继续模拟少量同回合后续动作。</td>
+                  <td>SnapshotSimulator、Evaluator、快照对象</td>
+                  <td>不做完整 Minimax，不模拟玩家下一回合反击。</td>
                 </tr>
                 <tr>
                   <td><strong>Evaluator</strong></td>
@@ -817,7 +827,7 @@
             </li>
             <li>
               <strong>10 分钟：评分为什么会让 AI 保守？</strong>
-              <span>读 <code>Evaluator</code> 权重，再看 <code>AllowedScoreLoss = 3</code> 为什么是阶段 3.6 的关键调整。</span>
+              <span>读 <code>Evaluator</code> 权重，再看 <code>AllowedScoreLoss = 3</code> 和 <code>SnapshotFollowUpEvaluator</code> 为什么能让 AI 不那么短视。</span>
             </li>
             <li>
               <strong>15 分钟：面试怎么讲？</strong>
@@ -830,7 +840,7 @@
         </section>
 
         <footer>
-          生成日期：2026-06-28 · 覆盖阶段：3.0-3.6 · 文件：Docs/LearningSite/index.html
+          更新日期：2026-07-01 · 覆盖阶段：3.0-3.13 · 文件：Docs/LearningSite/index.html
         </footer>
       </div>
     </main>

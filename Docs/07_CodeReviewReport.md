@@ -1,5 +1,7 @@
 # 项目代码审查报告
 
+> 状态说明：这是 2026-06-27 的历史审查报告，用来保留当时的问题背景和修复记录，不代表当前代码状态。当前进度以 `Docs/00_CurrentStatus.md`、`README.md` 和最新审查结论为准。
+
 **日期：** 2026-06-27
 **审查方式：** 6 维度并行审查 + 交叉验证合成（7 个 Agent，433K tokens，182 次工具调用）
 **范围：** `Assets/Scripts/Core/`（19 个 .cs）、`Assets/Scripts/UI/`（6 个 .cs）、`Docs/`（6 个 .md）、`CLAUDE.md`、`README.md`

@@ -489,8 +489,8 @@ footer p { margin: 4px 0; }
       <tr><td>1.0 – 1.5</td><td>最小原型：随从召唤 / 攻击 / 胜负 + 展示打磨</td><td>4–5 周</td><td>✅</td></tr>
       <tr><td>2.1 – 2.8</td><td>法术 + 5 个关键词 + 事件系统</td><td>6–8 周</td><td>✅</td></tr>
       <tr><td>2.9 – 2.10</td><td>战斗日志 + 操作结果标准化 + 动作建模</td><td>2–3 周</td><td>✅</td></tr>
-      <tr><td><strong>3.0 – 3.6</strong></td><td><strong>AI 对手：AIController → ActionSelector → Evaluator → 快照模拟</strong></td><td><strong>4–6 周</strong></td><td>🔄</td></tr>
-      <tr><td>4</td><td>套牌构筑 + UI 打磨</td><td>4–6 周</td><td>⏳</td></tr>
+      <tr><td><strong>3.0 – 3.13</strong></td><td><strong>AI 对手：评分选择 + 快照模拟 + 同回合后续预估 + 英雄技能</strong></td><td><strong>4–6 周</strong></td><td>✅</td></tr>
+      <tr><td>4</td><td>UI 交互、反馈、演示节奏和视觉打磨</td><td>4–6 周</td><td>🔄</td></tr>
       <tr><td>5</td><td>求职包装（视频 / 博客 / README）</td><td>2–3 周</td><td>⏳</td></tr>
     </tbody>
   </table>
@@ -524,9 +524,10 @@ flowchart TB
 
     subgraph AI_S["📊 AI 模拟层 — 快照世界"]
         direction LR
-        Sn["<b>GameStateSnapshot</b><br/>PlayerSnapshot<br/>BoardSnapshot<br/>MinionSnapshot"]
+        Sn["<b>GameStateSnapshot</b><br/>PlayerSnapshot<br/>CardSnapshot<br/>BoardSnapshot<br/>MinionSnapshot"]
         Map["<b>SnapshotActionMapper</b><br/>真实动作 → 快照动作"]
         Sim["<b>SnapshotSimulator</b><br/>纯函数模拟引擎"]
+        Follow["<b>SnapshotFollowUpEvaluator</b><br/>同回合后续预估"]
     end
 
     subgraph Core["⚙️ Core 层 — 游戏规则（不依赖任何上层）"]
@@ -1007,7 +1008,7 @@ flowchart TD
   <tbody>
     <tr>
       <td><span class="tag tag-sim">数据</span></td>
-      <td><code>GameStateSnapshot</code><br/><code>PlayerSnapshot</code><br/><code>BoardSnapshot</code><br/><code>MinionSnapshot</code></td>
+      <td><code>GameStateSnapshot</code><br/><code>PlayerSnapshot</code><br/><code>CardSnapshot</code><br/><code>BoardSnapshot</code><br/><code>MinionSnapshot</code></td>
       <td>把真实游戏状态「拍照」成纯数据副本</td>
       <td>所有字段都是 int / bool / List，<strong>不引用任何真实对象</strong></td>
     </tr>
@@ -1022,6 +1023,12 @@ flowchart TD
       <td><code>SnapshotSimulator</code></td>
       <td>在快照世界上执行动作，返回新快照</td>
       <td><strong>纯函数</strong>：输入不变，输出全新对象</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-ai">后续</span></td>
+      <td><code>SnapshotFollowUpEvaluator</code></td>
+      <td>在第一步动作后继续评估少量同回合后续动作</td>
+      <td>减少 AI 只看一步导致的短视，不做完整 Minimax</td>
     </tr>
   </tbody>
 </table>
@@ -1056,12 +1063,13 @@ flowchart LR
   <table>
     <thead><tr><th width="50%">✅ 当前已模拟</th><th width="50%">❌ 当前未模拟（后续扩展）</th></tr></thead>
     <tbody>
-      <tr><td>出随从牌（扣费、减手牌、加 MinionSnapshot+keywords）</td><td>多步搜索（只看当前一步）</td></tr>
+      <tr><td>出随从牌（扣费、减手牌、加 MinionSnapshot+keywords）</td><td>完整 Minimax（只看 AI 当前回合少量后续）</td></tr>
       <tr><td>战吼：对敌方英雄伤害、抽牌</td><td>完整战吼链（只模拟一层）</td></tr>
-      <tr><td>法术打随从（伤害、死亡清理、亡语触发）</td><td>嘲讽目标验证（快照中忽略）</td></tr>
+      <tr><td>法术打随从（伤害、死亡清理、亡语触发）</td><td>玩家下一回合反击</td></tr>
       <tr><td>法术打英雄（伤害）</td><td>友方目标法术（Mapper 只映射敌方）</td></tr>
-      <tr><td>随从互撞（互相伤害、死亡清理）</td><td>手牌质量评估（只看数量）</td></tr>
+      <tr><td>随从互撞（互相伤害、死亡清理）</td><td>抽牌后的未知牌库顶具体卡牌</td></tr>
       <tr><td>随从打英雄</td><td></td></tr>
+      <tr><td>英雄技能：2 费 1 点伤害，每回合一次</td><td></td></tr>
       <tr><td>EndTurn（切玩家、涨法力、抽牌、刷新攻击权限）</td><td></td></tr>
     </tbody>
   </table>
@@ -1344,18 +1352,20 @@ public partial class GameManager { ... }</code></pre>
 </details>
 
 <details open>
-  <summary>📊 AI 层 — 快照模拟（7 个文件）</summary>
+  <summary>📊 AI 层 — 快照模拟（9 个文件）</summary>
   <div class="content">
     <div class="table-wrap">
     <table>
       <tr><th>文件</th><th>职责</th><th>标签</th></tr>
       <tr><td><code>AI/Simulation/GameStateSnapshot.cs</code></td><td>游戏状态快照根对象：包含双方玩家快照 + 战场快照 + 当前玩家索引</td><td><span class="tag tag-sim">快照</span></td></tr>
-      <tr><td><code>AI/Simulation/PlayerSnapshot.cs</code></td><td>玩家快照：6 个 int 字段（血量/法力/手牌数等）</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/PlayerSnapshot.cs</code></td><td>玩家快照：英雄、法力、手牌数量、具体手牌和英雄技能使用状态</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/CardSnapshot.cs</code></td><td>手牌卡牌快照：模拟出牌所需的类型、费用、数值、关键词、战吼和亡语</td><td><span class="tag tag-sim">快照</span></td></tr>
       <tr><td><code>AI/Simulation/BoardSnapshot.cs</code></td><td>战场快照：双方 MinionSnapshot 列表 + 防御性拷贝</td><td><span class="tag tag-sim">快照</span></td></tr>
-      <tr><td><code>AI/Simulation/MinionSnapshot.cs</code></td><td>随从快照：9 个字段（攻击/血量/关键词/死亡等）</td><td><span class="tag tag-sim">快照</span></td></tr>
+      <tr><td><code>AI/Simulation/MinionSnapshot.cs</code></td><td>随从快照：攻击、血量、攻击权限、关键词和亡语数据</td><td><span class="tag tag-sim">快照</span></td></tr>
       <tr><td><code>AI/Simulation/SnapshotAction.cs</code></td><td>快照世界动作：用索引代替对象引用</td><td><span class="tag tag-sim">动作</span></td></tr>
       <tr><td><code>AI/Simulation/SnapshotActionMapper.cs</code></td><td>真实 GameAction → SnapshotAction 翻译器</td><td><span class="tag tag-sim">映射</span></td></tr>
       <tr><td><code>AI/Simulation/SnapshotSimulator.cs</code></td><td>快照模拟引擎：纯函数，输入快照 → 返回新快照</td><td><span class="tag tag-sim">引擎</span></td></tr>
+      <tr><td><code>AI/Simulation/SnapshotFollowUpEvaluator.cs</code></td><td>同回合后续预估：在快照层继续模拟少量出牌、法术、攻击和英雄技能</td><td><span class="tag tag-ai">AI</span></td></tr>
     </table>
     </div>
   </div>

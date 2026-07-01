@@ -131,10 +131,13 @@ docs: 文档更新     → docs: 补充架构说明
 | `Docs/03_UIArchitecture.md` | 当前 UI 层架构说明（CardView/HandView/BoardView/GameUIController） |
 | `Docs/04_FeatureFlows.md` | 核心功能流程拆解（开局/出牌/结束回合/攻击） |
 | `Docs/05_InterviewNotes.md` | 求职面试讲解要点 |
+| `Docs/06_Stage2Review.md` | 阶段 2 收尾复盘 |
+| `Docs/07_CodeReviewReport.md` | 历史代码审查报告和修复记录 |
+| `Docs/08_AIReview.md` | 阶段 3 AI 回归清单 |
 | `Docs/Learning/CSharpNotes.md` | C# 和代码阅读笔记 |
 | `Docs/Learning/UnityNotes.md` | Unity 编辑器、UGUI、Prefab、Inspector 操作笔记 |
 | `Docs/00_CurrentStatus.md` | 当前进度快照，方便下次接着做 |
-| `PROJECT_PLAN.html` | 开发计划（浏览器查看，gitignore 已排除） |
+| `Docs/ProjectOverview.html` | 项目总览网页 |
 | `README.md` | 项目介绍（面试官第一眼看） |
 | `.gitignore` | 基于 GitHub 官方 Unity 模板 |
 

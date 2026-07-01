@@ -78,8 +78,14 @@ Core 不依赖 UI
 | `Evaluator` | `Assets/Scripts/AI/Evaluator.cs` | 局面评估函数，支持真实局面和快照局面的评分 |
 | `EvaluationResult` | `Assets/Scripts/AI/EvaluationResult.cs` | 评分明细结果，保存英雄血量、手牌、场面和总分 |
 | `GameStateSnapshot` | `Assets/Scripts/AI/Simulation/GameStateSnapshot.cs` | 对局快照根对象，用于脱离真实局面做模拟 |
+| `PlayerSnapshot` | `Assets/Scripts/AI/Simulation/PlayerSnapshot.cs` | 玩家快照，保存英雄、法力、牌库、手牌和场面状态 |
+| `CardSnapshot` | `Assets/Scripts/AI/Simulation/CardSnapshot.cs` | 手牌卡牌快照，让 AI 后续模拟知道手牌里的具体牌 |
+| `MinionSnapshot` | `Assets/Scripts/AI/Simulation/MinionSnapshot.cs` | 随从快照，保存攻击、生命、关键词和可攻击状态 |
+| `BoardSnapshot` | `Assets/Scripts/AI/Simulation/BoardSnapshot.cs` | 战场快照，保存双方场上随从列表 |
+| `SnapshotAction` | `Assets/Scripts/AI/Simulation/SnapshotAction.cs` | 快照层动作描述，避免模拟器依赖真实运行时对象 |
 | `SnapshotActionMapper` | `Assets/Scripts/AI/Simulation/SnapshotActionMapper.cs` | 把真实 `GameAction` 映射成快照动作 |
 | `SnapshotSimulator` | `Assets/Scripts/AI/Simulation/SnapshotSimulator.cs` | 在快照上执行单步动作并返回新快照，`EndTurn` 会模拟回合开始的关键状态变化 |
+| `SnapshotFollowUpEvaluator` | `Assets/Scripts/AI/Simulation/SnapshotFollowUpEvaluator.cs` | 在单步模拟后继续评估少量同回合后续动作，避免 AI 只看一步 |
 
 ## 依赖关系
 
@@ -185,11 +191,11 @@ BattleLogger：本局战斗日志
 LastActionLogEntry：最近一次主要结算结果，当前由 GameActionResult 在需要时携带给 UI
 ```
 
-`TryPlayMinionCard()` 当前还会在召唤成功后调用 `ResolveAfterSummon(minion)`。
+`TryPlayMinionCardDetailed()` 当前还会在召唤成功后调用 `ResolveAfterSummon(minion)`；旧的 `TryPlayMinionCard()` 只保留 bool 兼容入口。
 这个方法统一处理召唤后的阶段性结算，目前包含冲锋和最小战吼。
 
 嘲讽不属于召唤时效果，而是攻击目标合法性规则。
-当前由 `TryAttackMinion()` 和 `TryAttackHero()` 在攻击前检查。
+当前由 `TryAttackMinionDetailed()` 和 `TryAttackHeroDetailed()` 在攻击前检查；旧的 bool 方法只保留兼容入口。
 
 战吼属于出牌/召唤成功后触发的一次性效果。
 当前由 `ResolveBattlecry(minion)` 直接结算，暂不迁移到事件系统。
@@ -315,7 +321,7 @@ GameActionFailureReason：枚举失败原因，例如费用不足、目标非法
 
 ## 阶段 3 AI 基础链路
 
-当前 AI 先追求可观察、可调试。阶段 3.4/3.5 已补上评估函数和快照模拟基础链路，阶段 3.6 已让 `ActionSelector` 从规则优先级过渡到评分优先级。搜索暂未开始。
+当前 AI 先追求可观察、可调试。阶段 3.4/3.5 补上评估函数和快照模拟基础链路，阶段 3.6/3.7 让 `ActionSelector` 从规则优先级过渡到评分优先级并允许小幅亏分换节奏，阶段 3.10-3.13 已加入少量同回合后续预估、具体手牌快照和英雄技能动作。
 
 ```text
 Enemy 回合开始
@@ -325,6 +331,7 @@ Enemy 回合开始
 -> GameStateSnapshot.FromGameManager(gameManager)
 -> SnapshotActionMapper.TryMap(action, gameManager, out snapshotAction)
 -> SnapshotSimulator.Simulate(snapshot, snapshotAction)
+-> SnapshotFollowUpEvaluator.EvaluateBestContinuation(...)
 -> Evaluator.EvaluateDetailed(simulatedState, currentPlayerIndex)
 -> AIActionSelection(Action + Reason + SimulatedEvaluation)
 -> GameManager.ExecuteAction(action)
@@ -335,19 +342,20 @@ Enemy 回合开始
 
 ```text
 1. 能击杀敌方英雄，仍然优先斩杀
-2. 其他合法动作先映射到快照动作，并在快照上单步模拟
-3. 用 Evaluator 从当前 AI 视角评估模拟后局面
-4. 非 EndTurn 的主动动作必须在允许亏分范围内，才进入候选
-5. 如果有主动候选，选择模拟后评分最高的动作
-6. 如果没有进入允许范围的主动动作，选择 EndTurn
-7. 如果快照模拟无法选出动作，才按固定优先级兜底
+2. 其他合法动作先映射到快照动作，并在快照上模拟第一步
+3. `SnapshotFollowUpEvaluator` 继续评估少量同回合后续动作
+4. 用 `Evaluator` 从当前 AI 视角评估模拟后局面
+5. 非 `EndTurn` 的主动动作必须在允许亏分范围内，才进入候选
+6. 如果有主动候选，选择模拟后评分最高的动作
+7. 如果没有进入允许范围的主动动作，选择 `EndTurn`
+8. 如果快照模拟无法选出动作，才按固定优先级兜底
 ```
 
-这是阶段性简化，不是成熟项目最终 AI。当前只做单步模拟，不做多步搜索；它的价值是让 AI 决策有可解释的评分依据，并且最终执行仍复用 `GameManager.ExecuteAction()`，避免 AI 和玩家规则分叉。
+这是阶段性简化，不是成熟项目最终 AI。当前只搜索 AI 自己当前回合的少量后续动作，不做完整 Minimax，也不模拟玩家下一回合反击；它的价值是让 AI 决策有可解释的评分依据，并且最终执行仍复用 `GameManager.ExecuteAction()`，避免 AI 和玩家规则分叉。
 
 ## 阶段 3.4-3.6 评估与快照模拟链路
 
-阶段 3.4-3.6 的目标不是立刻做搜索，而是先证明“同一个局面可以被复制、评分、单步模拟，并用于选择动作”：
+阶段 3.4-3.13 的目标不是立刻做完整搜索，而是先证明“同一个局面可以被复制、评分、模拟当前动作和少量后续动作，并用于选择动作”：
 
 ```text
 真实 GameManager 局面
@@ -355,6 +363,7 @@ Enemy 回合开始
 -> Evaluator.EvaluateDetailed(snapshot, perspectivePlayerId)
 -> SnapshotActionMapper.TryMap(action, snapshot)
 -> SnapshotSimulator.Simulate(snapshot, snapshotAction)
+-> SnapshotFollowUpEvaluator.EvaluateBestContinuation(...)
 -> Evaluator.EvaluateDetailed(simulatedSnapshot, perspectivePlayerId)
 -> ActionSelector 选择允许范围内的最高分动作，或在没有合适动作时结束回合
 ```
@@ -404,7 +413,7 @@ Enemy 回合开始
 ```text
 CardData.Keywords 配置 Charge
 Minion 创建时复制 CardData.Keywords
-GameManager.TryPlayMinionCard() 召唤 Minion
+GameManager.TryPlayMinionCardDetailed() 召唤 Minion
 ApplySummonKeywords(minion) 识别 Charge
 minion.SetCanAttack(true)
 CardView 显示“冲锋”
@@ -418,8 +427,8 @@ CardView 显示“冲锋”
 CardData.Keywords 配置 Taunt
 Minion 创建时复制 CardData.Keywords
 CardView / MinionView 显示“嘲讽”
-GameManager.TryAttackMinion() 调用 IsValidAttackTarget()
-GameManager.TryAttackHero() 检查 HasAliveTauntMinion(opponent)
+GameManager.TryAttackMinionDetailed() 调用 ValidateAttackTarget()
+GameManager.TryAttackHeroDetailed() 检查 HasAliveTauntMinion(opponent)
 ```
 
 这个实现也暂时不需要完整事件系统，因为嘲讽只限制攻击目标，不改变伤害结算，也不影响法术选目标。
@@ -464,6 +473,21 @@ CombatResolver
 本项目现在已经把冲锋跑通，并完成嘲讽和圣盾代码实现。
 `CardView` 和 `MinionView` 都会显示关键词文字。
 
+英雄技能链路：
+
+```text
+Player 记录 HeroSkillCost、HeroSkillDamage、HasUsedHeroSkillThisTurn
+GameActionGenerator 生成 UseHeroSkillOnMinion / UseHeroSkillOnHero
+GameUIController 点击英雄技能按钮后进入选目标状态
+GameManager.ValidateHeroSkill(...) 检查游戏状态、法力和每回合一次限制
+GameManager.TryUseHeroSkillOnMinionDetailed(...) / TryUseHeroSkillOnHeroDetailed(...) 结算伤害
+Player.SpendMana(...) 扣除 2 点法力
+Player.MarkHeroSkillUsed() 标记本回合已使用
+SnapshotSimulator 和 SnapshotFollowUpEvaluator 支持 AI 模拟英雄技能动作
+```
+
+当前英雄技能是阶段性简化：双方英雄技能相同，固定 2 费造成 1 点伤害，只能选择敌方随从或敌方英雄；暂时没有职业差异、图标、动画和复杂效果。
+
 ## 战吼实现结论
 
 阶段 2.4 / 2.4.5 先不直接上完整 `GameEventBus`，而是用普通方法模拟“召唤后触发效果”的思想。
@@ -473,7 +497,7 @@ CombatResolver
 ```text
 CardData.BattlecryType 配置 DealDamageToEnemyHero
 CardData.BattlecryValue 配置伤害值
-GameManager.TryPlayMinionCard() 召唤 Minion
+GameManager.TryPlayMinionCardDetailed() 召唤 Minion
 ResolveAfterSummon(minion)
 ApplySummonKeywords(minion)
 ResolveBattlecry(minion)

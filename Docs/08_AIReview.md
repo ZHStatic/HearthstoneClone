@@ -1,6 +1,6 @@
 # 阶段 3 AI v1 回归清单
 
-最后更新：2026-06-29
+最后更新：2026-07-01
 
 ## 目标
 
@@ -9,6 +9,7 @@
 - 会出牌、攻击和结束回合。
 - 会利用冲锋、嘲讽、战吼、亡语等已接入规则。
 - 会做基本连续行动，而不是只看当前一步。
+- 会把英雄技能作为合法动作参与选择和执行。
 - 不为了测试覆盖而强迫 AI 做明显低收益动作。
 
 ## 测试前准备
@@ -38,6 +39,8 @@ HearthstoneClone -> AI Test Deck -> Apply Fixed Observation Deck
 | 嘲讽限制 | Player 场上有嘲讽 | AI 优先处理嘲讽，不能绕过打英雄 | 通过 |
 | 圣盾处理 | AI 攻击或法术打圣盾随从 | 圣盾抵消伤害，日志不误报实际伤害 | 未自然覆盖 |
 | 亡语处理 | 亡语炸弹人死亡 | 亡语伤害触发，快照模拟评分大体匹配 | 通过 |
+| 英雄技能动作 | AI 有 2 点以上法力且有敌方目标 | 合法动作中包含英雄技能，执行后扣 2 点法力并造成 1 点伤害 | 通过 |
+| 英雄技能限制 | AI 本回合已用过英雄技能 | 不再生成或执行第二次英雄技能 | 通过 |
 | 斩杀判断 | AI 有足够伤害击杀英雄 | AI 优先执行斩杀动作 | 通过 |
 | 不自伤 | 火花可选任意目标 | AI 不主动把伤害打自己英雄 | 通过 |
 | 正常收束 | AI 无可收益动作 | AI 结束回合，不死循环 | 通过 |
@@ -58,7 +61,9 @@ HearthstoneClone -> AI Test Deck -> Apply Fixed Observation Deck
 2. `ActionSelector` 通过快照模拟比较动作收益。
 3. `SnapshotSimulator` 不改真实局面，只在复制出来的状态上试算。
 4. `Evaluator` 把英雄血量、手牌、场面转换成分数。
-5. `AIController` 最后才调用 `GameManager.ExecuteAction()` 执行真实动作。
+5. `SnapshotFollowUpEvaluator` 只评估 AI 当前回合的少量后续动作，不做完整博弈树。
+6. `AIController` 最后才调用 `GameManager.ExecuteAction()` 执行真实动作。
+7. 英雄技能也建模成 `GameAction`，玩家和 AI 不分叉。
 
 ## 当前阶段性简化
 
@@ -66,6 +71,7 @@ HearthstoneClone -> AI Test Deck -> Apply Fixed Observation Deck
 - 还没有做 Minimax，不模拟玩家下一回合反击。
 - 抽牌后只增加手牌数量，不知道牌库顶具体是哪张。
 - 亡语只模拟一层，不处理复杂连锁。
+- 英雄技能固定为 2 费造成 1 点伤害，暂时没有职业差异和复杂效果。
 
 ## 下一步判断标准
 
@@ -74,5 +80,6 @@ HearthstoneClone -> AI Test Deck -> Apply Fixed Observation Deck
 - AI 明显漏掉斩杀。
 - AI 有法力和手牌却过早结束回合。
 - AI 错误绕过嘲讽。
+- AI 明显漏用英雄技能完成斩杀或关键补刀。
 - AI 反复选择明显亏很多的动作。
 - Console 里看不出某个选择为什么被选中。

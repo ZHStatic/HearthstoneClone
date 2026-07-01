@@ -14,7 +14,7 @@
 | `HandView` | `Assets/Scripts/UI/Views/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/Views/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
-| `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、攻击、结束回合、反馈提示和刷新 |
+| `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、反馈提示和刷新 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
@@ -23,6 +23,7 @@
 - 动画和音效
 - 敌方手牌隐藏
 - 最终视觉样式和完整美术资源
+- 英雄技能独立图标、动画和冷却表现
 - 独立的普通反馈文本和游戏结束文本
 - 独立的法术类型/效果显示区域
 - 独立的随从 Ready、关键词、亡语显示区域
@@ -229,6 +230,7 @@ EnemyBoardView
 处理结束回合按钮
 处理点击手牌
 处理法术牌选择目标
+处理英雄技能选择目标
 处理点击随从
 处理点击英雄
 显示操作反馈
@@ -241,8 +243,8 @@ EnemyBoardView
 ```text
 点击己方 Ready 随从 -> 记录 selectedAttacker
 刷新战场 -> 被选中的 MinionView 高亮
-点击敌方随从 -> 调用 GameManager.TryAttackMinion(...)
-点击敌方英雄 -> 调用 GameManager.TryAttackHero(...)
+点击敌方随从 -> 调用 GameManager.TryAttackMinionDetailed(...)
+点击敌方英雄 -> 调用 GameManager.TryAttackHeroDetailed(...)
 攻击后清空 selectedAttacker，显示反馈并刷新 UI
 ```
 
@@ -256,7 +258,17 @@ EnemyBoardView
 施放后读取 GameActionResult.Message，清空 selectedSpellCard，显示反馈并刷新 UI
 ```
 
-`selectedSpellCard` 和 `selectedAttacker` 都属于 UI 层的“当前操作选择状态”。
+当前英雄技能交互流程：
+
+```text
+点击英雄技能按钮 -> 调用 GameManager.ValidateHeroSkill(...)
+验证通过后记录 isSelectingHeroSkillTarget = true
+点击敌方随从 -> 调用 GameManager.TryUseHeroSkillOnMinionDetailed(...)
+点击敌方英雄 -> 调用 GameManager.TryUseHeroSkillOnHeroDetailed(...)
+结算后清空 isSelectingHeroSkillTarget，显示 GameActionResult.Message，并刷新 UI
+```
+
+`selectedSpellCard`、`selectedAttacker` 和 `isSelectingHeroSkillTarget` 都属于 UI 层的“当前操作选择状态”。
 它们只负责记录玩家下一次点击想做什么，不直接修改 Core 规则状态。
 
 ## 引用关系

@@ -228,7 +228,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 2. CardData 中配置 BattlecryValue = 1。
 3. CardView 刷新手牌时显示“战吼：对敌方英雄造成 1 点伤害”。
 4. 玩家点击火焰学徒。
-5. GameUIController 调用 GameManager.TryPlayMinionCard(card)。
+5. GameUIController 调用 GameManager.TryPlayMinionCardDetailed(card)。
 6. GameManager 检查出牌条件并让 Player 扣法力、移除手牌。
 7. GameManager 创建 Minion。
 8. Board.SummonMinion(minion) 把随从加入战场。
@@ -385,7 +385,7 @@ UI 最后重新读取 Core 状态并显示操作结果。
 12. 打出亡语炸弹人。
 13. 确认场上随从状态区显示“亡语:1”。
 14. 让亡语炸弹人被攻击或用火花打死。
-15. 确认 Console 输出 MinionDied。
+15. 确认死亡日志、亡语反馈或战斗结果符合预期。
 16. 确认敌方英雄生命减少 1。
 17. 确认亡语炸弹人从战场移除。
 18. 如果把 Deathrattle Value 临时调高到足以斩杀，确认敌方英雄生命归零后会 Game Over。
@@ -520,6 +520,48 @@ Hero / Minion 负责承受伤害。
 伤害结算仍然不通过 GameEventBus；这是阶段性简化，不是成熟项目最终做法。
 ```
 
+## 英雄技能流程
+
+入口：
+
+```text
+玩家点击英雄技能按钮，再点击一个敌方随从或敌方英雄
+```
+
+当前英雄技能：
+
+```text
+2 费，造成 1 点伤害，目标为敌方角色，每回合只能使用一次
+```
+
+流程：
+
+```text
+1. 玩家点击 HeroSkillButton。
+2. GameUIController 调用 GameManager.ValidateHeroSkill(CurrentPlayer)。
+3. 如果法力不足、已经使用过或游戏已结束，UI 显示失败原因。
+4. 验证通过后，GameUIController 记录 isSelectingHeroSkillTarget = true。
+5. UI 显示“请选择英雄技能目标”。
+6. 玩家点击敌方随从或敌方英雄。
+7. 如果点击敌方随从，GameUIController 调用 GameManager.TryUseHeroSkillOnMinionDetailed(target)。
+8. 如果点击敌方英雄，GameUIController 调用 GameManager.TryUseHeroSkillOnHeroDetailed(targetHero)。
+9. GameManager 再次检查英雄技能状态和目标合法性。
+10. CurrentPlayer.SpendMana(...) 扣除 2 点法力。
+11. CurrentPlayer.MarkHeroSkillUsed() 标记本回合已使用。
+12. GameManager 调用 DamageMinion 或 DamageHero 结算 1 点伤害。
+13. BattleLogger 记录尝试伤害和实际伤害；圣盾抵消时实际伤害为 0。
+14. GameManager 清理死亡随从并检查胜负。
+15. GameUIController 清空 isSelectingHeroSkillTarget，显示 GameActionResult.Message，并刷新 UI。
+```
+
+当前阶段性简化：
+
+```text
+双方英雄技能相同，没有职业差异。
+英雄技能没有独立图标、动画和音效。
+AI 使用英雄技能也走 GameActionGenerator、ActionSelector 和 GameManager.ExecuteAction，不另写一套规则。
+```
+
 ## 结束回合流程
 
 入口：
@@ -544,8 +586,9 @@ Hero / Minion 负责承受伤害。
 当前临时调试规则：
 
 ```text
-AI 还没做，所以 UI 暂时显示当前行动者的手牌。
-这样可以手动测试双方出牌和回合切换。
+UI 暂时仍显示 CurrentPlayer 的手牌。
+Enemy AI 启用时，Enemy 回合通常会自动行动并回到 Player 回合。
+关闭 AI 或手动调试时，这个显示方式仍方便测试双方出牌和回合切换。
 ```
 
 ## 随从攻击随从流程
@@ -565,7 +608,7 @@ AI 还没做，所以 UI 暂时显示当前行动者的手牌。
 4. 如果当前没有 selectedAttacker，尝试选择当前玩家的可攻击随从。
 5. 选择成功后，GameUIController 记录 selectedAttacker，BoardView 刷新时让对应 MinionView 高亮。
 6. 如果已经有 selectedAttacker，再点击敌方随从。
-7. GameUIController 调用 GameManager.TryAttackMinion(selectedAttacker, target)。
+7. GameUIController 调用 GameManager.TryAttackMinionDetailed(selectedAttacker, target)。
 8. GameManager 检查攻击者、目标、阵营、攻击权限和嘲讽限制。
 9. 如果目标合法，BattleLogger 记录攻击行为。
 10. 双方随从通过 DamageMinion 互相造成攻击力数值的伤害。
@@ -599,7 +642,7 @@ GameManager 负责判断攻击是否合法并结算伤害。
 2. GameUIController 把该随从记录为 selectedAttacker，并刷新选中高亮。
 3. 玩家点击敌方英雄按钮。
 4. GameUIController 调用 TryAttackSelectedHero(targetHero)。
-5. TryAttackSelectedHero 调用 GameManager.TryAttackHero(selectedAttacker, targetHero)。
+5. TryAttackSelectedHero 调用 GameManager.TryAttackHeroDetailed(selectedAttacker, targetHero)。
 6. GameManager 检查攻击者、目标英雄、阵营和嘲讽限制。
 7. 如果对方场上有活着的嘲讽随从，攻击英雄失败。
 8. 如果目标合法，BattleLogger 记录攻击行为。
@@ -613,7 +656,7 @@ GameManager 负责判断攻击是否合法并结算伤害。
 补充规则：
 
 ```text
-如果点击的是自己的英雄，GameManager.TryAttackHero 会返回失败。
+如果点击的是自己的英雄，GameManager.TryAttackHeroDetailed 会返回失败。
 UI 不自己判断这件事，规则仍然留在 Core 层。
 ```
 
