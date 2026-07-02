@@ -14,7 +14,7 @@
 | `HandView` | `Assets/Scripts/UI/Views/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/Views/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
-| `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、反馈提示和刷新 |
+| `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
@@ -24,7 +24,6 @@
 - 敌方手牌隐藏
 - 最终视觉样式和完整美术资源
 - 英雄技能独立图标、动画和冷却表现
-- 独立的普通反馈文本和游戏结束文本
 - 独立的法术类型/效果显示区域
 - 独立的随从 Ready、关键词、亡语显示区域
 - `HandView` / `BoardView` 的 View 复用刷新
@@ -238,20 +237,44 @@ EnemyBoardView
 
 它是 UI 和 Core 之间的桥。
 
+阶段 4.1 后，UI 反馈分成两类：
+
+```text
+规则结果反馈：优先读取 GameActionResult.Message
+UI 操作状态反馈：GameUIController 自己显示
+```
+
+规则结果包括费用不足、目标非法、嘲讽限制、游戏结束、英雄技能本回合已使用、圣盾抵消等。
+这些结果来自 `GameManager` 的验证和结算，UI 不再重复判断。
+
+UI 操作状态包括：
+
+```text
+已选择某张法术牌，请选择法术目标
+已选中某个随从，请选择攻击目标
+已选择英雄技能，请选择敌方目标
+请先选择攻击者 / 法术 / 英雄技能
+取消当前选择
+```
+
+这些状态只描述玩家下一次点击会被 UI 解释成什么，不修改 Core 规则状态。
+
 当前攻击交互流程：
 
 ```text
-点击己方 Ready 随从 -> 记录 selectedAttacker
+点击己方随从 -> 调用 GameManager.ValidateAttack(...)
+验证通过后记录 selectedAttacker
 刷新战场 -> 被选中的 MinionView 高亮
 点击敌方随从 -> 调用 GameManager.TryAttackMinionDetailed(...)
 点击敌方英雄 -> 调用 GameManager.TryAttackHeroDetailed(...)
-攻击后清空 selectedAttacker，显示反馈并刷新 UI
+攻击后清空 selectedAttacker，读取 GameActionResult.Message 显示反馈并刷新 UI
 ```
 
 当前法术交互流程：
 
 ```text
-点击法术牌 -> 记录 selectedSpellCard
+点击法术牌 -> 调用 GameManager.ValidatePlaySpellCard(...)
+验证通过后记录 selectedSpellCard
 显示“请选择法术目标”
 点击随从 -> 调用 GameManager.TryPlaySpellCardOnMinionDetailed(...)
 点击英雄 -> 调用 GameManager.TryPlaySpellCardOnHeroDetailed(...)
@@ -270,6 +293,7 @@ EnemyBoardView
 
 `selectedSpellCard`、`selectedAttacker` 和 `isSelectingHeroSkillTarget` 都属于 UI 层的“当前操作选择状态”。
 它们只负责记录玩家下一次点击想做什么，不直接修改 Core 规则状态。
+`ClearOperationSelection()` 用于统一清空这三种状态，避免切换操作时残留旧选择。
 
 ## 引用关系
 
@@ -297,6 +321,7 @@ BoardView 根据 Board.GetMinions(...) 创建 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 阶段 2.10 中，随从出牌和法术释放反馈改为读取 GameActionResult.Message
+阶段 4.1 中，法术选牌、攻击者选择、法术目标、英雄技能目标和攻击目标的主要规则失败反馈都改为读取 GameActionResult.Message
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -331,19 +356,18 @@ UI 拆分和复用刷新暂时延后，等功能更完整后统一整理。
 
 ### 反馈文本拆分
 
-当前 `GameOverText` 同时承担普通操作反馈和游戏结束提示。
-
-后续计划拆成：
+阶段 4.1 已经拆成：
 
 ```text
 FeedbackText：费用不足、目标非法、请选择目标、圣盾抵消等普通操作反馈
 GameOverText：只显示胜负结果
 ```
 
-代码上 `GameUIController` 会新增可选 `feedbackText` 字段。
-如果 Unity Editor 里暂时没有绑定，代码会保留旧行为作为兼容，避免 UI 突然没有反馈。
+代码上 `GameUIController` 已新增 `feedbackText` 字段。
+`RefreshFeedbackText()` 只刷新普通反馈；`RefreshGameOverText()` 只刷新胜负提示。
+游戏未结束时，`GameOverText` 会清空并隐藏。
 
-Unity Editor 需要做：
+Unity Editor 已做或需要保持：
 
 - 在 Canvas / HUD 区域新增或整理一个 `FeedbackText`。
 - 把它绑定到 `GameUIController`。
@@ -449,14 +473,15 @@ EnemyHeroButton
 若干 Text
 ```
 
-阶段 1.5 中，`GameOverText` 在游戏未结束时复用为操作反馈文本；游戏结束后仍然显示胜负结果。
+阶段 1.5 中，`GameOverText` 曾在游戏未结束时复用为操作反馈文本；游戏结束后仍然显示胜负结果。
 阶段 2.1 继续复用这块文本显示法术选择和法术结算反馈。
 阶段 2.2 的手牌关键词文字复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
 阶段 2.3 的场上随从关键词文字复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 阶段 2.4 的手牌战吼文字继续复用 `CardView` 的 `Description Text`，没有新增 Prefab 字段。
 阶段 2.6 的手牌亡语文字继续复用 `CardView` 的 `Description Text`，场上亡语文字继续复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 阶段 2.9 已把关键词文本格式化抽到 `KeywordTextFormatter`。
-UI 拆分和刷新复用暂缓，后续计划拆分 `FeedbackText`、卡牌效果文本、随从状态文本，并优化刷新复用。
+阶段 4.1 已拆分 `FeedbackText` 和 `GameOverText`，并整理三种 UI 选择状态。
+后续仍计划拆分卡牌效果文本、随从状态文本，并优化刷新复用。
 
 Prefab：
 

@@ -19,4 +19,9 @@ MonoBehaviour:
   health: 0
   spellDamage: 2
   spellTargetType: 1
+  battlecryType: 0
+  battlecryValue: 0
+  deathrattleType: 0
+  deathrattleValue: 0
+  keywords: 
   description: "\u9020\u6210 2 \u70B9\u4F24\u5BB3\u3002"

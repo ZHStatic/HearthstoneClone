@@ -16,12 +16,13 @@ public class GameUIController : MonoBehaviour
     [SerializeField] private BoardView playerBoardView;
     [SerializeField] private BoardView enemyBoardView;
 
-    // HUD 文本：当前玩家、回合、法力、英雄血量、游戏结束提示。
+    // HUD 文本：当前玩家、回合、法力、英雄血量、普通反馈、游戏结束提示。
     [SerializeField] private Text currentPlayerText;
     [SerializeField] private Text turnText;
     [SerializeField] private Text manaText;
     [SerializeField] private Text playerHeroText;
     [SerializeField] private Text enemyHeroText;
+    [SerializeField] private Text feedbackText;
     [SerializeField] private Text gameOverText;
 
     // 英雄、英雄技能和结束回合按钮。
@@ -125,9 +126,7 @@ public class GameUIController : MonoBehaviour
     {
         if (gameManager == null) return;
 
-        ClearSelectedAttacker();
-        ClearSelectedSpell();
-        ClearHeroSkillSelection();
+        ClearOperationSelection();
 
         if (IsSpellCard(card))
         {
@@ -153,38 +152,17 @@ public class GameUIController : MonoBehaviour
 
     /// <summary>
     /// 选择一张法术牌，等待玩家点击目标。
-    /// 法术详细结果还没接入前，这里暂时保留法术选择所需的 UI 前置检查。
+    /// 出牌规则交给 GameManager 验证；UI 只记录“正在选择法术目标”的操作状态。
     /// </summary>
     private void SelectSpellCardForTargeting(Card card)
     {
-        if (gameManager.IsGameOver)
+        GameActionResult validationResult = gameManager.ValidatePlaySpellCard(card);
+        if (validationResult.Failed)
         {
-            SetFeedback("游戏已经结束，不能继续出牌。");
-            return;
-        }
-
-        if (card == null || card.CardData == null)
-        {
-            SetFeedback("这张卡的数据无效。");
-            return;
-        }
-
-        Player currentPlayer = gameManager.CurrentPlayer;
-        if (currentPlayer == null)
-        {
-            SetFeedback("当前没有行动玩家。");
-            return;
-        }
-
-        if (!currentPlayer.HasCardInHand(card))
-        {
-            SetFeedback("这张卡不在当前玩家手牌里。");
-            return;
-        }
-
-        if (card.CurrentCost > currentPlayer.CurrentMana)
-        {
-            SetFeedback($"{card.CardData.CardName} 需要 {card.CurrentCost} 点法力，当前只有 {currentPlayer.CurrentMana} 点。");
+            SetFeedback(GetActionResultMessageOrFallback(
+                validationResult,
+                "",
+                "现在不能使用这张法术牌。"));
             return;
         }
 
@@ -206,9 +184,7 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        ClearSelectedAttacker();
-        ClearSelectedSpell();
-        ClearHeroSkillSelection();
+        ClearOperationSelection();
         gameManager.EndTurn();
         SetFeedback($"{GetPlayerLabel(gameManager.CurrentPlayer)} 回合开始。");
         RefreshAll();
@@ -230,8 +206,7 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        ClearSelectedAttacker();
-        ClearSelectedSpell();
+        ClearOperationSelection();
 
         GameActionResult validationResult = gameManager.ValidateHeroSkill();
         if (validationResult.Failed)
@@ -372,42 +347,18 @@ public class GameUIController : MonoBehaviour
 
     /// <summary>
     /// 尝试把某个随从设置为当前攻击者。
-    /// 只允许选择当前玩家、可攻击、未死亡的随从。
+    /// 攻击规则交给 GameManager 验证；UI 只记录“正在选择攻击目标”的操作状态。
     /// </summary>
     private void SelectAttacker(Minion minion)
     {
-        if (minion == null)
+        GameActionResult validationResult = gameManager.ValidateAttack(minion);
+        if (validationResult.Failed)
         {
             ClearSelectedAttacker();
-            SetFeedback("没有选中有效随从。");
-            return;
-        }
-
-        if (gameManager.CurrentPlayer == null)
-        {
-            ClearSelectedAttacker();
-            SetFeedback("当前没有行动玩家。");
-            return;
-        }
-
-        if (minion.Owner != gameManager.CurrentPlayer)
-        {
-            ClearSelectedAttacker();
-            SetFeedback("只能选择当前玩家自己的随从。");
-            return;
-        }
-
-        if (minion.IsDead)
-        {
-            ClearSelectedAttacker();
-            SetFeedback($"{GetMinionName(minion)} 已经死亡，不能攻击。");
-            return;
-        }
-
-        if (!minion.CanAttack)
-        {
-            ClearSelectedAttacker();
-            SetFeedback($"{GetMinionName(minion)} 现在不能攻击。");
+            SetFeedback(GetActionResultMessageOrFallback(
+                validationResult,
+                "",
+                "现在不能选择这个随从攻击。"));
             return;
         }
 
@@ -424,12 +375,6 @@ public class GameUIController : MonoBehaviour
         if (selectedAttacker == null)
         {
             SetFeedback("请先选择一个可以攻击的随从。");
-            return;
-        }
-
-        if (target == null)
-        {
-            SetFeedback("攻击目标无效。");
             return;
         }
 
@@ -451,29 +396,18 @@ public class GameUIController : MonoBehaviour
     {
         if (gameManager == null) return;
 
-        if (gameManager.IsGameOver)
-        {
-            SetFeedback("游戏已经结束，不能继续攻击。");
-            return;
-        }
-
         if (selectedAttacker == null)
         {
             SetFeedback("请先选择一个可以攻击的随从。");
             return;
         }
 
-        if (targetHero == null)
-        {
-            SetFeedback("攻击目标英雄无效。");
-            return;
-        }
-
         string attackerName = GetMinionName(selectedAttacker);
+        string targetName = GetHeroName(targetHero);
         GameActionResult result = gameManager.TryAttackHeroDetailed(selectedAttacker, targetHero);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
-            $"{attackerName} 攻击 {targetHero.Name}。",
+            $"{attackerName} 攻击 {targetName}。",
             "目标英雄非法，攻击失败。"));
         ClearSelectedAttacker();
     }
@@ -486,19 +420,6 @@ public class GameUIController : MonoBehaviour
         if (selectedSpellCard == null)
         {
             SetFeedback("请先选择一张法术牌。");
-            return;
-        }
-
-        if (gameManager.IsGameOver)
-        {
-            SetFeedback("游戏已经结束，不能继续施放法术。");
-            ClearSelectedSpell();
-            return;
-        }
-
-        if (target == null)
-        {
-            SetFeedback("法术目标无效。");
             return;
         }
 
@@ -526,28 +447,13 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        if (gameManager.IsGameOver)
-        {
-            SetFeedback("游戏已经结束，不能继续使用英雄技能。");
-            ClearHeroSkillSelection();
-            return;
-        }
-
-        if (target == null)
-        {
-            SetFeedback("英雄技能目标无效。");
-            return;
-        }
-
         string targetName = GetMinionName(target);
         GameActionResult result = gameManager.TryUseHeroSkillOnMinionDetailed(target);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
             "英雄技能目标非法，使用失败。"));
-        ClearHeroSkillSelection();
-        ClearSelectedAttacker();
-        ClearSelectedSpell();
+        ClearOperationSelection();
     }
 
     /// <summary>
@@ -561,28 +467,13 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        if (gameManager.IsGameOver)
-        {
-            SetFeedback("游戏已经结束，不能继续使用英雄技能。");
-            ClearHeroSkillSelection();
-            return;
-        }
-
-        if (targetHero == null)
-        {
-            SetFeedback("英雄技能目标英雄无效。");
-            return;
-        }
-
-        string targetName = targetHero.Name;
+        string targetName = GetHeroName(targetHero);
         GameActionResult result = gameManager.TryUseHeroSkillOnHeroDetailed(targetHero);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
             "英雄技能目标英雄非法，使用失败。"));
-        ClearHeroSkillSelection();
-        ClearSelectedAttacker();
-        ClearSelectedSpell();
+        ClearOperationSelection();
     }
 
     /// <summary>
@@ -596,21 +487,8 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
-        if (gameManager.IsGameOver)
-        {
-            SetFeedback("游戏已经结束，不能继续施放法术。");
-            ClearSelectedSpell();
-            return;
-        }
-
-        if (targetHero == null)
-        {
-            SetFeedback("法术目标英雄无效。");
-            return;
-        }
-
         string spellName = GetCardName(selectedSpellCard);
-        string targetName = targetHero.Name;
+        string targetName = GetHeroName(targetHero);
 
         GameActionResult result = gameManager.TryPlaySpellCardOnHeroDetailed(selectedSpellCard, targetHero);
         string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
@@ -644,6 +522,17 @@ public class GameUIController : MonoBehaviour
     private void ClearHeroSkillSelection()
     {
         isSelectingHeroSkillTarget = false;
+    }
+
+    /// <summary>
+    /// 清空所有 UI 操作选择状态。
+    /// 它只影响“下一次点击想做什么”，不修改 Core 层规则状态。
+    /// </summary>
+    private void ClearOperationSelection()
+    {
+        ClearSelectedAttacker();
+        ClearSelectedSpell();
+        ClearHeroSkillSelection();
     }
 
     /// <summary>
@@ -703,7 +592,8 @@ public class GameUIController : MonoBehaviour
 
         SetHeroText(playerHeroText, "Player", gameManager.Player);
         SetHeroText(enemyHeroText, "Enemy", gameManager.Enemy);
-        SetGameOverText();
+        RefreshFeedbackText();
+        RefreshGameOverText();
 
         if (endTurnButton != null)
         {
@@ -720,10 +610,7 @@ public class GameUIController : MonoBehaviour
             enemyHeroButton.interactable = !gameManager.IsGameOver;
         }
 
-        if (heroSkillButton != null)
-        {
-            heroSkillButton.interactable = !gameManager.IsGameOver;
-        }
+        RefreshHeroSkillButton();
     }
 
     /// <summary>
@@ -731,9 +618,7 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void ClearAll()
     {
-        ClearSelectedAttacker();
-        ClearSelectedSpell();
-        ClearHeroSkillSelection();
+        ClearOperationSelection();
         ClearFeedback();
 
         if (handView != null)
@@ -756,33 +641,48 @@ public class GameUIController : MonoBehaviour
         SetText(manaText, "Mana: -");
         SetText(playerHeroText, "Player: -");
         SetText(enemyHeroText, "Enemy: -");
+        SetText(feedbackText, "");
         SetText(gameOverText, "");
     }
 
     /// <summary>
     /// 生成当前玩家文本。
-    /// 如果已经选中攻击者，顺便显示选中的随从名，方便调试点击流程。
+    /// 如果存在 UI 操作选择状态，会显示玩家当前正在选择什么。
     /// </summary>
     private string GetCurrentPlayerText(Player currentPlayer)
     {
         string text = $"Current: {GetPlayerLabel(currentPlayer)}";
+        string operationText = GetCurrentOperationText();
 
+        if (!string.IsNullOrWhiteSpace(operationText))
+        {
+            text += $" | {operationText}";
+        }
+
+        return text;
+    }
+
+    /// <summary>
+    /// 生成当前 UI 操作状态文本，方便玩家知道下一次点击会被解释成什么操作。
+    /// </summary>
+    private string GetCurrentOperationText()
+    {
         if (selectedAttacker != null && selectedAttacker.CardData != null)
         {
-            text += $" | Selected: {selectedAttacker.CardData.CardName}";
+            return $"攻击：{selectedAttacker.CardData.CardName}";
         }
 
         if (selectedSpellCard != null && selectedSpellCard.CardData != null)
         {
-            text += $" | Spell: {selectedSpellCard.CardData.CardName}";
+            return $"法术：{selectedSpellCard.CardData.CardName}";
         }
 
         if (isSelectingHeroSkillTarget)
         {
-            text += " | Hero Skill";
+            return "英雄技能";
         }
 
-        return text;
+        return "";
     }
 
     /// <summary>
@@ -809,6 +709,19 @@ public class GameUIController : MonoBehaviour
         }
 
         return card.CardData.CardName;
+    }
+
+    /// <summary>
+    /// 安全获取英雄名称，避免提示文本因为空目标报错。
+    /// </summary>
+    private string GetHeroName(Hero hero)
+    {
+        if (hero == null)
+        {
+            return "未知英雄";
+        }
+
+        return hero.Name;
     }
 
     /// <summary>
@@ -868,23 +781,34 @@ public class GameUIController : MonoBehaviour
     }
 
     /// <summary>
+    /// 根据最近一次操作反馈刷新普通反馈文本。
+    /// </summary>
+    private void RefreshFeedbackText()
+    {
+        if (feedbackText == null) return;
+
+        if (string.IsNullOrWhiteSpace(feedbackMessage))
+        {
+            feedbackText.text = "";
+            feedbackText.gameObject.SetActive(false);
+            return;
+        }
+
+        feedbackText.gameObject.SetActive(true);
+        feedbackText.text = feedbackMessage;
+    }
+
+    /// <summary>
     /// 根据当前胜负状态显示或隐藏游戏结束文本。
     /// </summary>
-    private void SetGameOverText()
+    private void RefreshGameOverText()
     {
         if (gameOverText == null) return;
 
         if (!gameManager.IsGameOver)
         {
-            if (string.IsNullOrWhiteSpace(feedbackMessage))
-            {
-                gameOverText.text = "";
-                gameOverText.gameObject.SetActive(false);
-                return;
-            }
-
-            gameOverText.gameObject.SetActive(true);
-            gameOverText.text = feedbackMessage;
+            gameOverText.text = "";
+            gameOverText.gameObject.SetActive(false);
             return;
         }
 
@@ -897,6 +821,18 @@ public class GameUIController : MonoBehaviour
         }
 
         gameOverText.text = $"Game Over: {GetPlayerLabel(gameManager.Winner)} wins";
+    }
+
+    /// <summary>
+    /// 刷新英雄技能按钮状态。
+    /// 当前阶段保持按钮可点，让玩家点击后能看到 GameManager.ValidateHeroSkill 返回的失败原因。
+    /// 不可用时的灰色视觉表现后续和合法目标高亮一起整理。
+    /// </summary>
+    private void RefreshHeroSkillButton()
+    {
+        if (heroSkillButton == null) return;
+
+        heroSkillButton.interactable = !gameManager.IsGameOver;
     }
 
     /// <summary>

@@ -1,24 +1,24 @@
 # Current Status
 
-最后更新：2026-07-01
+最后更新：2026-07-02
 
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划，下一步进入阶段 4.1。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划；阶段 4.1 反馈文本和操作状态整理的代码链路已写入，下一步进入阶段 4.2。
 
 当前停靠点：
 
 ```text
 阶段 3.13 已完成：英雄技能最小闭环
-阶段 4 已规划：UI / 交互 / 表现打磨
-当前重点：进入阶段 4.1，先做反馈文本和操作状态整理
-已完成：Player 英雄技能状态 -> GameAction 英雄技能动作 -> GameManager 英雄技能规则结算 -> GameActionGenerator 合法动作生成 -> AI 快照映射和模拟 -> ActionSelector / AIController 识别英雄技能 -> GameUIController 英雄技能按钮入口和选目标状态
+阶段 4.1 已写入：反馈文本和操作状态整理
+当前重点：阶段 4.1 Play 模式回归后进入阶段 4.2 合法目标高亮和按钮视觉状态
+已完成：FeedbackText / GameOverText 拆分；GameOverText 只显示胜负；FeedbackText 显示普通操作反馈；selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态已集中整理；法术、攻击、英雄技能的主要规则失败反馈已改为读取 Core 返回的 GameActionResult.Message
 已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理；玩家和 AI 都能正常使用英雄技能
 已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败
 已规划：阶段 4.1 反馈文本和操作状态 -> 阶段 4.2 合法目标高亮和按钮状态 -> 阶段 4.3 炉石式信息层级 -> 阶段 4.4 卡牌和随从显示拆分 -> 阶段 4.5 基础动画和音效 -> 阶段 4.6 View 复用和性能意识
 后续路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：阶段 4.1，拆分普通反馈和 Game Over 文本，整理攻击、法术、英雄技能三种操作状态
+下一步：阶段 4.1 Play 模式回归，确认费用不足、非法目标、法术选目标、攻击选目标、英雄技能选目标和游戏结束文本都符合预期；通过后进入阶段 4.2
 学习节奏：每个小任务开始前先列必学点和属性清单，确认后再写代码
 ```
 
@@ -76,6 +76,8 @@ Play 模式已观察：AI 连续出牌和连续攻击选择基本合理；当前
 阶段 3.13 英雄技能最小闭环已完成：`Player` 记录英雄技能费用、伤害和本回合使用状态；`GameActionType` / `GameAction` 支持英雄技能打随从和打英雄；`GameManager` 支持 2 费、每回合一次、对敌方角色造成 1 点伤害的英雄技能结算；`GameActionGenerator` 会把合法英雄技能动作加入动作列表；`BattleLogEntryType` 支持 `HeroSkill` 日志类型；AI 快照链路已能映射、模拟和后续预估英雄技能，`ActionSelector` 可把英雄技能纳入斩杀和评分选择，`AIController` 日志能显示“使用英雄技能”；`GameUIController` 已新增英雄技能按钮入口和“选择英雄技能目标”的 UI 状态。
 Unity Play 模式已确认：玩家和 AI 都能正常使用英雄技能。
 
+阶段 4.1 反馈文本和操作状态整理已写入：`GameUIController` 新增 `feedbackText`，普通操作反馈与 `gameOverText` 分离；`gameOverText` 未结束时保持隐藏，只在对局结束时显示胜负。`ClearOperationSelection()` 集中清空攻击、法术和英雄技能三种 UI 操作状态；`GetCurrentOperationText()` 会在当前玩家文本中显示“攻击 / 法术 / 英雄技能”操作状态。法术选牌、攻击者选择、法术目标结算、英雄技能目标结算、攻击目标结算等主要规则失败反馈已改为读取 `GameActionResult.Message`；UI 只保留“请选择目标”“请先选择攻击者 / 法术 / 英雄技能”等操作状态文案。英雄技能按钮当前在游戏未结束时保持可点击，以便费用不足或本回合已使用时能显示 Core 返回的失败原因；不可用视觉表现留到阶段 4.2 和按钮状态一起处理。
+
 后续计划已经按求职导向重新排序：先补英雄技能，让对局完整度更像炉石类项目；再把 UI、交互反馈、动画和主流程作为重点；随后补移动端性能意识、数据配置工具和求职包装。这个路线的目标是让项目从“规则系统原型”转向“可展示的商业项目 Demo”。
 
 ## 阶段 4 执行计划摘要
@@ -96,11 +98,11 @@ Unity Play 模式已确认：玩家和 AI 都能正常使用英雄技能。
 阶段 4.1 第一刀：
 
 ```text
-拆分 FeedbackText 和 GameOverText
-普通反馈显示费用不足、目标非法、请选择目标、圣盾抵消等操作结果
-GameOverText 只显示胜负结果
-整理 selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态
-保持 UI 只显示和转发输入，不直接修改 Core 规则状态
+已写入：拆分 FeedbackText 和 GameOverText
+已写入：普通反馈显示费用不足、目标非法、请选择目标、圣盾抵消等操作结果
+已写入：GameOverText 只显示胜负结果
+已写入：整理 selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态
+已写入：保持 UI 只显示和转发输入，不直接修改 Core 规则状态
 ```
 
 学习节奏：
@@ -278,6 +280,9 @@ AI 使用英雄技能
 - `GameUIController` 法术成功反馈已改为显示 Core 返回的 `GameActionResult.Message`，避免 UI 直接猜测实际结算结果。
 - `CardView` 和 `MinionView` 已复用 `KeywordTextFormatter` 显示关键词。
 - `GameManager.TryPlayMinionCardDetailed()`、`TryPlaySpellCardOnMinionDetailed()`、`TryPlaySpellCardOnHeroDetailed()` 已接入详细操作结果。
+- 阶段 4.1 已确认：`FeedbackText` 和 `GameOverText` 分离，普通反馈不再占用游戏结束文本。
+- 阶段 4.1 已确认：法术、攻击和英雄技能的主要规则失败反馈由 `GameActionResult.Message` 提供，UI 不再自己重复判断费用不足、目标非法、嘲讽限制或游戏结束等规则结果。
+- 阶段 4.1 已确认：UI 仍然自己处理“已选择 X，请选择目标”“请先选择攻击者 / 法术 / 英雄技能”等操作状态文案。
 - `Player.Hand` / `Player.Deck` 已改为只读列表，外部不能直接 `Add` / `Remove` 手牌或牌库。
 - `GameManager` 和 `GameUIController` 已通过 `Player.HasCardInHand(card)` 判断手牌归属。
 - `GameActionGenerator.GenerateLegalActions(gameManager)` 已能枚举当前玩家的出牌、施法、攻击和结束回合动作。
@@ -525,7 +530,7 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 阶段 3.13：英雄技能最小闭环已完成，玩家和 AI 都能正常使用英雄技能
 阶段 3 AI v1 回归清单：已整理到 Docs/08_AIReview.md
 后续求职导向路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：进入 UI / 交互 / 表现打磨，优先整理对局操作反馈、按钮状态、选中状态和演示清晰度
+下一步：阶段 4.1 Play 模式回归，确认反馈文本和三种选择状态稳定；通过后进入阶段 4.2 合法目标高亮和按钮视觉状态
 
 UI 拆分 / UI 复用刷新：
 暂缓到功能更完整后统一整理。
