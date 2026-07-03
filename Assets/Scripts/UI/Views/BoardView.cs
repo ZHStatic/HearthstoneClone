@@ -30,13 +30,28 @@ public class BoardView : MonoBehaviour
     /// </summary>
     public void Refresh(IReadOnlyList<Minion> minions, Action<Minion> onMinionClicked)
     {
-        Refresh(minions, onMinionClicked, null);
+        Refresh(minions, onMinionClicked, (Minion)null);
     }
 
     /// <summary>
     /// 重新生成这一方战场的随从 UI，并根据 selectedMinion 显示选中高亮。
     /// </summary>
     public void Refresh(IReadOnlyList<Minion> minions, Action<Minion> onMinionClicked, Minion selectedMinion)
+    {
+        Refresh(
+            minions,
+            onMinionClicked,
+            minion => minion == selectedMinion ? TargetHighlightState.Selected : TargetHighlightState.None);
+    }
+
+    /// <summary>
+    /// 重新生成这一方战场的随从 UI，并由上层决定每个随从的高亮状态。
+    /// BoardView 只负责转交状态，不判断目标是否合法。
+    /// </summary>
+    public void Refresh(
+        IReadOnlyList<Minion> minions,
+        Action<Minion> onMinionClicked,
+        Func<Minion, TargetHighlightState> getHighlightState)
     {
         Clear();
 
@@ -48,7 +63,11 @@ public class BoardView : MonoBehaviour
         {
             MinionView minionView = Instantiate(minionViewPrefab, minionContainer);
             minionView.SetMinion(minion, onMinionClicked);
-            minionView.SetSelected(minion == selectedMinion);
+            TargetHighlightState highlightState = getHighlightState != null
+                ? getHighlightState(minion)
+                : TargetHighlightState.None;
+
+            minionView.SetHighlightState(highlightState);
             minionViews.Add(minionView);
         }
     }

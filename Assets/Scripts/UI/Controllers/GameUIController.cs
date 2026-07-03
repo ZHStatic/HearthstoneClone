@@ -32,6 +32,13 @@ public class GameUIController : MonoBehaviour
     [SerializeField] private Button heroSkillButton;
     [SerializeField] private Button endTurnButton;
 
+    // 按钮运行时颜色。位置、字号和美术样式仍然优先在 Unity Editor / Prefab 中调整。
+    [SerializeField] private Color normalButtonColor = Color.white;
+    [SerializeField] private Color selectedButtonColor = new Color(1f, 0.9f, 0.35f, 1f);
+    [SerializeField] private Color validTargetButtonColor = new Color(0.45f, 1f, 0.45f, 1f);
+    [SerializeField] private Color invalidTargetButtonColor = new Color(1f, 0.55f, 0.55f, 1f);
+    [SerializeField] private Color disabledButtonColor = new Color(0.65f, 0.65f, 0.65f, 1f);
+
     // 当前被选中的攻击者。
     // 第一次点击己方可攻击随从时设置，攻击或结束回合后清空。
     private Minion selectedAttacker;
@@ -562,13 +569,80 @@ public class GameUIController : MonoBehaviour
 
         if (playerBoardView != null)
         {
-            playerBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Player), HandleMinionClicked, selectedAttacker);
+            playerBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Player), HandleMinionClicked, GetMinionHighlightState);
         }
 
         if (enemyBoardView != null)
         {
-            enemyBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Enemy), HandleMinionClicked, selectedAttacker);
+            enemyBoardView.Refresh(gameManager.Board.GetMinions(gameManager.Enemy), HandleMinionClicked, GetMinionHighlightState);
         }
+    }
+
+    /// <summary>
+    /// 根据当前 UI 操作状态，计算一个随从应该显示什么高亮。
+    /// 这里只读取 GameManager 的验证结果，不在 UI 中复制规则。
+    /// </summary>
+    private TargetHighlightState GetMinionHighlightState(Minion minion)
+    {
+        if (minion == null) return TargetHighlightState.None;
+
+        if (selectedAttacker != null)
+        {
+            if (minion == selectedAttacker)
+            {
+                return TargetHighlightState.Selected;
+            }
+
+            return ToHighlightState(gameManager.ValidateAttackTarget(selectedAttacker, minion));
+        }
+
+        if (selectedSpellCard != null && selectedSpellCard.CardData != null)
+        {
+            return ToHighlightState(gameManager.ValidateSpellTargetMinion(selectedSpellCard.CardData, minion));
+        }
+
+        if (isSelectingHeroSkillTarget)
+        {
+            return ToHighlightState(gameManager.ValidateHeroSkillTargetMinion(minion));
+        }
+
+        return TargetHighlightState.None;
+    }
+
+    /// <summary>
+    /// 根据当前 UI 操作状态，计算一个英雄按钮应该显示什么高亮。
+    /// 英雄区域和随从一样只做提示，点击后仍然由 Core 做最终校验。
+    /// </summary>
+    private TargetHighlightState GetHeroHighlightState(Hero hero)
+    {
+        if (hero == null) return TargetHighlightState.None;
+
+        if (selectedAttacker != null)
+        {
+            return ToHighlightState(gameManager.ValidateAttackHeroTarget(selectedAttacker, hero));
+        }
+
+        if (selectedSpellCard != null && selectedSpellCard.CardData != null)
+        {
+            return ToHighlightState(gameManager.ValidateSpellTargetHero(selectedSpellCard.CardData, hero));
+        }
+
+        if (isSelectingHeroSkillTarget)
+        {
+            return ToHighlightState(gameManager.ValidateHeroSkillTargetHero(hero));
+        }
+
+        return TargetHighlightState.None;
+    }
+
+    /// <summary>
+    /// 把 Core 验证结果转换成 UI 高亮状态。
+    /// </summary>
+    private TargetHighlightState ToHighlightState(GameActionResult validationResult)
+    {
+        if (validationResult == null) return TargetHighlightState.Invalid;
+
+        return validationResult.Success ? TargetHighlightState.Valid : TargetHighlightState.Invalid;
     }
 
     /// <summary>
@@ -595,21 +669,8 @@ public class GameUIController : MonoBehaviour
         RefreshFeedbackText();
         RefreshGameOverText();
 
-        if (endTurnButton != null)
-        {
-            endTurnButton.interactable = !gameManager.IsGameOver;
-        }
-
-        if (playerHeroButton != null)
-        {
-            playerHeroButton.interactable = !gameManager.IsGameOver;
-        }
-
-        if (enemyHeroButton != null)
-        {
-            enemyHeroButton.interactable = !gameManager.IsGameOver;
-        }
-
+        RefreshEndTurnButton();
+        RefreshHeroButtons();
         RefreshHeroSkillButton();
     }
 
@@ -643,6 +704,11 @@ public class GameUIController : MonoBehaviour
         SetText(enemyHeroText, "Enemy: -");
         SetText(feedbackText, "");
         SetText(gameOverText, "");
+
+        ApplyButtonHighlightState(playerHeroButton, TargetHighlightState.None, false);
+        ApplyButtonHighlightState(enemyHeroButton, TargetHighlightState.None, false);
+        ApplyButtonHighlightState(heroSkillButton, TargetHighlightState.None, false);
+        ApplyButtonHighlightState(endTurnButton, TargetHighlightState.None, false);
     }
 
     /// <summary>
@@ -824,15 +890,69 @@ public class GameUIController : MonoBehaviour
     }
 
     /// <summary>
+    /// 刷新结束回合按钮状态。
+    /// </summary>
+    private void RefreshEndTurnButton()
+    {
+        ApplyButtonHighlightState(endTurnButton, TargetHighlightState.None, !gameManager.IsGameOver);
+    }
+
+    /// <summary>
+    /// 刷新双方英雄按钮的目标高亮。
+    /// </summary>
+    private void RefreshHeroButtons()
+    {
+        Hero playerHero = gameManager.Player?.Hero;
+        Hero enemyHero = gameManager.Enemy?.Hero;
+
+        ApplyButtonHighlightState(playerHeroButton, GetHeroHighlightState(playerHero), !gameManager.IsGameOver);
+        ApplyButtonHighlightState(enemyHeroButton, GetHeroHighlightState(enemyHero), !gameManager.IsGameOver);
+    }
+
+    /// <summary>
     /// 刷新英雄技能按钮状态。
-    /// 当前阶段保持按钮可点，让玩家点击后能看到 GameManager.ValidateHeroSkill 返回的失败原因。
-    /// 不可用时的灰色视觉表现后续和合法目标高亮一起整理。
+    /// 游戏未结束时保持可点，让费用不足或本回合已使用也能显示 Core 返回的失败原因。
     /// </summary>
     private void RefreshHeroSkillButton()
     {
-        if (heroSkillButton == null) return;
+        if (gameManager.IsGameOver)
+        {
+            ApplyButtonHighlightState(heroSkillButton, TargetHighlightState.None, false);
+            return;
+        }
 
-        heroSkillButton.interactable = !gameManager.IsGameOver;
+        TargetHighlightState highlightState = isSelectingHeroSkillTarget
+            ? TargetHighlightState.Selected
+            : ToHighlightState(gameManager.ValidateHeroSkill());
+
+        ApplyButtonHighlightState(heroSkillButton, highlightState, true);
+    }
+
+    /// <summary>
+    /// 把目标高亮状态套用到按钮上。
+    /// </summary>
+    private void ApplyButtonHighlightState(Button button, TargetHighlightState highlightState, bool interactable)
+    {
+        if (button == null) return;
+
+        button.interactable = interactable;
+
+        Graphic targetGraphic = button.targetGraphic;
+        if (targetGraphic == null) return;
+
+        if (!interactable)
+        {
+            targetGraphic.color = disabledButtonColor;
+            return;
+        }
+
+        targetGraphic.color = highlightState switch
+        {
+            TargetHighlightState.Selected => selectedButtonColor,
+            TargetHighlightState.Valid => validTargetButtonColor,
+            TargetHighlightState.Invalid => invalidTargetButtonColor,
+            _ => normalButtonColor,
+        };
     }
 
     /// <summary>

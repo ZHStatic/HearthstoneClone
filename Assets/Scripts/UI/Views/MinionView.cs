@@ -16,10 +16,12 @@ public class MinionView : MonoBehaviour
     [SerializeField] private Text healthText;
     [SerializeField] private Text canAttackText;
 
-    // 用背景颜色显示选中状态。没有绑定时会自动尝试从当前物体上获取 Image。
+    // 用背景颜色显示选中、合法目标和非法目标状态。没有绑定时会自动尝试从当前物体上获取 Image。
     [SerializeField] private Image backgroundImage;
     [SerializeField] private Color normalColor = Color.white;
     [SerializeField] private Color selectedColor = new Color(1f, 0.9f, 0.35f, 1f);
+    [SerializeField] private Color validTargetColor = new Color(0.45f, 1f, 0.45f, 1f);
+    [SerializeField] private Color invalidTargetColor = new Color(1f, 0.55f, 0.55f, 1f);
 
     // 接收点击的按钮组件。
     // 如果 Inspector 没有绑定，Awake 会尝试从当前物体上自动获取。
@@ -30,7 +32,7 @@ public class MinionView : MonoBehaviour
 
     // 点击回调：MinionView 不自己处理攻击，只把被点击的 Minion 交给上层。
     private Action<Minion> onClicked;
-    private bool isSelected;
+    private TargetHighlightState highlightState = TargetHighlightState.None;
 
     // Unity 生命周期方法：对象创建后注册按钮点击事件。
     private void Awake()
@@ -94,7 +96,7 @@ public class MinionView : MonoBehaviour
         SetText(attackText, minion.Attack.ToString());
         SetText(healthText, minion.CurrentHealth.ToString());
         SetText(canAttackText, GetStatusText(minion));
-        ApplySelectedState();
+        ApplyHighlightState();
 
         if (button != null)
         {
@@ -107,8 +109,17 @@ public class MinionView : MonoBehaviour
     /// </summary>
     public void SetSelected(bool isSelected)
     {
-        this.isSelected = isSelected;
-        ApplySelectedState();
+        SetHighlightState(isSelected ? TargetHighlightState.Selected : TargetHighlightState.None);
+    }
+
+    /// <summary>
+    /// 设置这个随从 UI 的目标高亮状态。
+    /// MinionView 只根据传入状态改变显示，不判断这个目标是否合法。
+    /// </summary>
+    public void SetHighlightState(TargetHighlightState highlightState)
+    {
+        this.highlightState = highlightState;
+        ApplyHighlightState();
     }
 
     /// <summary>
@@ -118,13 +129,13 @@ public class MinionView : MonoBehaviour
     {
         minion = null;
         onClicked = null;
-        isSelected = false;
+        highlightState = TargetHighlightState.None;
 
         SetText(nameText, "");
         SetText(attackText, "");
         SetText(healthText, "");
         SetText(canAttackText, "");
-        ApplySelectedState();
+        ApplyHighlightState();
 
         if (button != null)
         {
@@ -144,14 +155,19 @@ public class MinionView : MonoBehaviour
     }
 
     /// <summary>
-    /// 根据选中状态刷新背景颜色。
+    /// 根据高亮状态刷新背景颜色。
     /// </summary>
-    private void ApplySelectedState()
+    private void ApplyHighlightState()
     {
-        if (backgroundImage != null)
+        if (backgroundImage == null) return;
+
+        backgroundImage.color = highlightState switch
         {
-            backgroundImage.color = isSelected ? selectedColor : normalColor;
-        }
+            TargetHighlightState.Selected => selectedColor,
+            TargetHighlightState.Valid => validTargetColor,
+            TargetHighlightState.Invalid => invalidTargetColor,
+            _ => normalColor,
+        };
     }
 
     /// <summary>
