@@ -237,7 +237,7 @@ public static class GameActionGenerator
 
         foreach (Minion target in targets)
         {
-            if (!gameManager.ValidateHeroSkillTargetMinion(target).Success) continue;
+            if (!gameManager.ValidateHeroSkillTargetMinion(actor, target).Success) continue;
 
             actions.Add(GameAction.CreateUseHeroSkillOnMinion(actor, target));
         }
@@ -255,7 +255,7 @@ public static class GameActionGenerator
         if (actions == null) return;
         if (gameManager == null) return;
         if (actor == null) return;
-        if (!gameManager.ValidateHeroSkillTargetHero(targetHero).Success) return;
+        if (!gameManager.ValidateHeroSkillTargetHero(actor, targetHero).Success) return;
 
         actions.Add(GameAction.CreateUseHeroSkillOnHero(actor, targetHero));
     }

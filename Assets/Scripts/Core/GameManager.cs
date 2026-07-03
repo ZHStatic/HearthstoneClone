@@ -680,7 +680,7 @@ public partial class GameManager : MonoBehaviour
         GameActionResult skillValidationResult = ValidateHeroSkill();
         if (skillValidationResult.Failed) return skillValidationResult;
 
-        GameActionResult targetValidationResult = ValidateHeroSkillTargetMinion(target);
+        GameActionResult targetValidationResult = ValidateHeroSkillTargetMinion(CurrentPlayer, target);
         if (targetValidationResult.Failed) return targetValidationResult;
 
         if (!CurrentPlayer.SpendMana(Player.HeroSkillCost))
@@ -717,7 +717,7 @@ public partial class GameManager : MonoBehaviour
         GameActionResult skillValidationResult = ValidateHeroSkill();
         if (skillValidationResult.Failed) return skillValidationResult;
 
-        GameActionResult targetValidationResult = ValidateHeroSkillTargetHero(targetHero);
+        GameActionResult targetValidationResult = ValidateHeroSkillTargetHero(CurrentPlayer, targetHero);
         if (targetValidationResult.Failed) return targetValidationResult;
 
         if (!CurrentPlayer.SpendMana(Player.HeroSkillCost))
@@ -788,6 +788,15 @@ public partial class GameManager : MonoBehaviour
     /// </summary>
     internal GameActionResult ValidateHeroSkillTargetMinion(Minion target)
     {
+        return ValidateHeroSkillTargetMinion(CurrentPlayer, target);
+    }
+
+    /// <summary>
+    /// 检查一个随从是否能成为指定玩家的英雄技能目标。
+    /// 第一版英雄技能只能选择敌方随从，不受嘲讽限制。
+    /// </summary>
+    internal GameActionResult ValidateHeroSkillTargetMinion(Player actor, Minion target)
+    {
         if (target == null)
         {
             return GameActionResult.FailedWith(
@@ -802,7 +811,7 @@ public partial class GameManager : MonoBehaviour
                 $"{GetMinionLogName(target)} 已经死亡，不能成为英雄技能目标。");
         }
 
-        Player opponent = GetOpponent(CurrentPlayer);
+        Player opponent = GetOpponent(actor);
         if (opponent == null)
         {
             return GameActionResult.FailedWith(
@@ -813,7 +822,7 @@ public partial class GameManager : MonoBehaviour
         if (target.Owner != opponent)
         {
             return GameActionResult.FailedWith(
-                target.Owner == CurrentPlayer ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                target.Owner == actor ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
                 "英雄技能只能选择敌方随从。");
         }
 
@@ -825,6 +834,15 @@ public partial class GameManager : MonoBehaviour
     /// 第一版英雄技能只能选择敌方英雄。
     /// </summary>
     internal GameActionResult ValidateHeroSkillTargetHero(Hero targetHero)
+    {
+        return ValidateHeroSkillTargetHero(CurrentPlayer, targetHero);
+    }
+
+    /// <summary>
+    /// 检查一个英雄是否能成为指定玩家的英雄技能目标。
+    /// 第一版英雄技能只能选择敌方英雄。
+    /// </summary>
+    internal GameActionResult ValidateHeroSkillTargetHero(Player actor, Hero targetHero)
     {
         if (targetHero == null)
         {
@@ -840,7 +858,7 @@ public partial class GameManager : MonoBehaviour
                 $"{GetHeroLogName(targetHero)} 已经死亡，不能成为英雄技能目标。");
         }
 
-        Player opponent = GetOpponent(CurrentPlayer);
+        Player opponent = GetOpponent(actor);
         if (opponent == null)
         {
             return GameActionResult.FailedWith(
@@ -851,7 +869,7 @@ public partial class GameManager : MonoBehaviour
         if (targetHero != opponent.Hero)
         {
             return GameActionResult.FailedWith(
-                CurrentPlayer != null && targetHero == CurrentPlayer.Hero ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
+                actor != null && targetHero == actor.Hero ? GameActionFailureReason.TargetIsFriendly : GameActionFailureReason.InvalidTarget,
                 "英雄技能只能选择敌方英雄。");
         }
 
