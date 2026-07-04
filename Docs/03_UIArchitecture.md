@@ -373,6 +373,103 @@ Unity Editor 已做或需要保持：
 - 把它绑定到 `GameUIController`。
 - `GameOverText` 只用于游戏结束。
 
+### 阶段 4.3：战斗界面信息层级
+
+阶段 4.3 主要是 Editor / Prefab 布局阶段，不新增 C# 类。
+当前代码已经负责运行时变化：血量、法力、当前回合、普通反馈、胜负提示、英雄按钮高亮、英雄技能按钮状态、结束回合按钮状态和目标高亮。
+
+做之前先学：
+
+```text
+Canvas：所有 UGUI 物体的根节点。
+RectTransform：控制 UI 位置、宽高、锚点和轴心。
+Anchor：决定 UI 跟随屏幕哪一侧或哪一区域缩放。
+Layout Group：让手牌、战场随从按规则自动排列。
+```
+
+本阶段要建立的屏幕区域：
+
+```text
+EnemyArea：敌方信息区，包含敌方英雄血量、敌方战场、必要时显示敌方资源。
+BattlefieldArea：主要战场区，敌方随从在上，玩家随从在下，中间留攻击和目标选择空间。
+PlayerArea：玩家操作区，包含玩家英雄血量、法力、英雄技能、结束回合按钮和手牌。
+FeedbackArea：当前回合状态和最近反馈，放在玩家扫视路径上。
+GameOverArea：只显示胜负结果，可以覆盖或居中显示，但平时隐藏。
+```
+
+建议的 Unity 层级命名：
+
+```text
+Canvas
+├── EnemyArea
+│   ├── EnemyHeroButton
+│   ├── EnemyHeroText
+│   └── EnemyBoardView
+├── BattlefieldArea
+│   ├── EnemyBoardContainer
+│   └── PlayerBoardContainer
+├── PlayerArea
+│   ├── PlayerHeroButton
+│   ├── PlayerHeroText
+│   ├── ManaText
+│   ├── HeroSkillButton
+│   ├── EndTurnButton
+│   └── HandView
+├── FeedbackArea
+│   ├── CurrentPlayerText
+│   ├── TurnText
+│   └── FeedbackText
+└── GameOverText
+```
+
+如果当前场景已有不同命名，不需要为了命名强行重建。优先保持 Inspector 绑定不丢，必要时只重命名空父物体或逐个拖拽归类。
+
+Editor 调整顺序：
+
+1. 先复制或备份 `BattlePrototype` 场景，避免误删绑定后难恢复。
+2. 在 `Canvas` 下整理 4 个空父物体：`EnemyArea`、`BattlefieldArea`、`PlayerArea`、`FeedbackArea`。
+3. 把敌方英雄、敌方血量和敌方战场放到上方；把玩家战场、玩家英雄、法力、英雄技能、结束回合和手牌放到下方。
+4. `EnemyBoardView` 和 `PlayerBoardView` 的容器尽量使用水平排列，最多 7 个随从时仍不遮挡英雄和手牌。
+5. `HandView` 放在最底部，手牌可以略微重叠，但卡名、费用和主要数值必须可读。
+6. `ManaText`、`HeroSkillButton`、`EndTurnButton` 放在玩家操作区右侧或下方固定位置，形成稳定操作区。
+7. `CurrentPlayerText`、`TurnText`、`FeedbackText` 放在中下方或右侧信息区，不要盖住随从和手牌。
+8. `GameOverText` 平时隐藏，结束时显示在中心偏上或中心位置，不和普通反馈共用同一块 Text。
+
+代码与 Editor 分工：
+
+| 内容 | 放哪里 | 原因 |
+|------|--------|------|
+| 血量、法力、当前回合、按钮状态、高亮颜色 | 代码 / Inspector 字段 | 运行时会变化，需要由 `GameUIController` 刷新 |
+| 位置、宽高、字号、颜色、边距、背景色块 | Unity Editor / Prefab | 静态视觉参数不应该硬编码 |
+| 手牌和战场排列方式 | Editor 的 Layout Group / RectTransform | 属于布局规则，方便边看边调 |
+| 费用不足、目标非法、胜负结果文本 | 代码读取 Core 结果 | 不能让 UI 自己猜规则 |
+
+验收清单：
+
+- 5 秒内能看出：谁的回合、双方血量、当前法力、手牌、双方场面、最近一次操作反馈。
+- 敌方区、战场区、玩家操作区一眼可分，不依赖说明文字才能理解。
+- 选中攻击者、法术或英雄技能时，目标高亮不被其他 UI 遮挡。
+- 手牌最多 7-10 张时，卡牌仍能点击，核心数值不被遮住。
+- 双方各 7 个随从时，随从不会盖住英雄血量、反馈文本或结束回合按钮。
+- `FeedbackText` 和 `GameOverText` 仍然分别绑定到 `GameUIController`，普通反馈不会覆盖胜负提示。
+- Play 模式里完成一次：出牌、攻击、法术、英雄技能、结束回合、胜负显示。
+
+阶段性简化：
+
+```text
+当前继续使用 UGUI Text 和简洁色块，不做最终美术。
+当前不手写响应式布局代码，先用 Anchor 和 Layout Group 解决常见屏幕比例。
+当前不改 CardViewPrefab / MinionViewPrefab 的字段拆分，这部分留到阶段 4.4。
+```
+
+面试表达：
+
+```text
+阶段 4.3 我没有把 UI 位置写死在代码里，因为位置、字号、边距属于表现配置，应该交给 Prefab 和 Scene。
+代码只负责运行时状态，例如当前回合、法力、按钮可用、高亮和 Core 返回的反馈文本。
+这样后续换美术、改分辨率或调整布局时，不需要动核心规则代码。
+```
+
 ### 卡牌显示拆分
 
 当前 `CardView` 用攻击位置显示法术伤害，并把关键词、战吼、亡语、描述都塞进 `DescriptionText`。

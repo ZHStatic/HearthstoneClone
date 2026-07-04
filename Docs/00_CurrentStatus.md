@@ -1,6 +1,6 @@
 # Current Status
 
-最后更新：2026-07-02
+最后更新：2026-07-03
 
 ## 当前阶段
 
@@ -16,10 +16,10 @@
 当前重点：阶段 4.3 炉石式战斗界面信息层级
 已完成：FeedbackText / GameOverText 拆分；GameOverText 只显示胜负；FeedbackText 显示普通操作反馈；selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态已集中整理；法术、攻击、英雄技能的主要规则失败反馈已改为读取 Core 返回的 GameActionResult.Message；攻击、法术、英雄技能选目标时会基于 Core 验证结果显示合法/非法目标高亮；英雄、英雄技能和结束回合按钮已有基础视觉状态
 已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理；玩家和 AI 都能正常使用英雄技能
-已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败
+已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败；阶段 4.3 Editor 布局执行清单见 `Docs/03_UIArchitecture.md`
 已规划：阶段 4.1 反馈文本和操作状态 -> 阶段 4.2 合法目标高亮和按钮状态 -> 阶段 4.3 炉石式信息层级 -> 阶段 4.4 卡牌和随从显示拆分 -> 阶段 4.5 基础动画和音效 -> 阶段 4.6 View 复用和性能意识
 后续路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：进入阶段 4.3，优先整理敌方区、战场区、玩家操作区的信息层级；视觉布局、字号、颜色和边距继续优先在 Unity Editor / Prefab 中调整
+下一步：在 Unity Editor 中按阶段 4.3 清单调整 `BattlePrototype` 的 Canvas 层级和布局；视觉布局、字号、颜色和边距继续优先在 Unity Editor / Prefab 中调整，代码只负责运行时状态和文本刷新
 学习节奏：每个小任务开始前先列必学点和属性清单，确认后再写代码
 ```
 
