@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,8 +13,10 @@ public class CardView : MonoBehaviour
     // 这些组件来自 CardViewPrefab 下面的子物体。
     [SerializeField] private Text nameText;
     [SerializeField] private Text costText;
+    [SerializeField] private Text typeText;
     [SerializeField] private Text attackText;
     [SerializeField] private Text healthText;
+    [SerializeField] private Text effectText;
     [SerializeField] private Text descriptionText;
     [SerializeField] private Button button;
 
@@ -67,8 +68,10 @@ public class CardView : MonoBehaviour
 
         SetText(nameText, card.CardData.CardName);
         SetText(costText, card.CurrentCost.ToString());
+        SetText(typeText, CardTextFormatter.GetCardTypeText(card.CardData));
         SetCardStatsText(card.CardData);
-        SetText(descriptionText, GetDescriptionText(card.CardData));
+        SetText(effectText, CardTextFormatter.GetCardEffectText(card.CardData));
+        SetText(descriptionText, card.CardData.Description);
 
         if (button != null)
         {
@@ -86,8 +89,10 @@ public class CardView : MonoBehaviour
 
         SetText(nameText, "");
         SetText(costText, "");
+        SetText(typeText, "");
         SetText(attackText, "");
         SetText(healthText, "");
+        SetText(effectText, "");
         SetText(descriptionText, "");
 
         if (button != null)
@@ -109,7 +114,8 @@ public class CardView : MonoBehaviour
 
     /// <summary>
     /// 根据卡牌类型显示数值。
-    /// 随从显示攻击/生命，法术暂时用攻击位置显示伤害值。
+    /// 随从显示攻击/生命。
+    /// 法术使用独立效果文本，不占用攻击/生命位置。
     /// </summary>
     private void SetCardStatsText(CardData cardData)
     {
@@ -122,86 +128,13 @@ public class CardView : MonoBehaviour
 
         if (cardData.CardType == CardType.Spell)
         {
-            SetText(attackText, cardData.SpellDamage.ToString());
+            SetText(attackText, "");
             SetText(healthText, "");
             return;
         }
 
         SetText(attackText, cardData.Attack.ToString());
         SetText(healthText, cardData.Health.ToString());
-    }
-
-    /// <summary>
-    /// 生成卡牌描述区显示的文字。
-    /// 当前先复用 descriptionText，同时显示关键词和卡牌描述，避免改 Prefab。
-    /// </summary>
-    private string GetDescriptionText(CardData cardData)
-    {
-        if (cardData == null) return "";
-
-        List<string> lines = new List<string>();
-
-        AddDescriptionLine(lines, GetKeywordsText(cardData));
-        AddDescriptionLine(lines, GetBattlecryText(cardData));
-        AddDescriptionLine(lines, GetDeathrattleText(cardData));
-        AddDescriptionLine(lines, cardData.Description);
-
-        return string.Join("\n", lines);
-    }
-
-    /// <summary>
-    /// 把卡牌模板上的关键词列表转成 UI 文本。
-    /// 多个关键词之间先用空格分隔，之后做正式 UI 时可以换成图标或独立标签。
-    /// </summary>
-    private string GetKeywordsText(CardData cardData)
-    {
-        if (cardData == null) return "";
-
-        return KeywordTextFormatter.BuildKeywordsText(cardData.Keywords);
-    }
-
-    /// <summary>
-    /// 生成战吼显示文字。
-    /// 战吼是出牌时触发的一次性效果，所以只显示在手牌描述区。
-    /// </summary>
-    private string GetBattlecryText(CardData cardData)
-    {
-        if (cardData == null) return "";
-        if (!cardData.HasBattlecry) return "";
-
-        return cardData.BattlecryType switch
-        {
-            BattlecryType.DealDamageToEnemyHero => $"战吼：对敌方英雄造成 {cardData.BattlecryValue} 点伤害",
-            BattlecryType.DrawCard => $"战吼：抽 {cardData.BattlecryValue} 张牌",
-            _ => "",
-        };
-    }
-
-    /// <summary>
-    /// 生成亡语显示文字。
-    /// 亡语是随从死亡时触发的一次性效果，所以显示在手牌描述区。
-    /// </summary>
-    private string GetDeathrattleText(CardData cardData)
-    {
-        if (cardData == null) return "";
-        if (!cardData.HasDeathrattle) return "";
-
-        return cardData.DeathrattleType switch
-        {
-            DeathrattleType.DealDamageToEnemyHero => $"亡语：对敌方英雄造成 {cardData.DeathrattleValue} 点伤害",
-            _ => "",
-        };
-    }
-
-    /// <summary>
-    /// 向描述行列表中加入一行非空内容。
-    /// </summary>
-    private void AddDescriptionLine(List<string> lines, string line)
-    {
-        if (lines == null) return;
-        if (string.IsNullOrWhiteSpace(line)) return;
-
-        lines.Add(line);
     }
 
     /// <summary>

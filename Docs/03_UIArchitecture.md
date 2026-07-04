@@ -179,7 +179,7 @@ Taunt -> 嘲讽
 真正的攻击规则仍然由 `GameManager` 判断。
 选中高亮只表现 UI 状态，不参与规则判断。
 
-阶段 2.2 / 2.3 中，`MinionView` 会复用 `canAttackText` 显示 Ready 和关键词：
+阶段 2.2 / 2.3 中，`MinionView` 曾复用 `canAttackText` 显示 Ready 和关键词：
 
 ```text
 Ready 冲锋
@@ -187,10 +187,10 @@ Ready 冲锋
 Ready 嘲讽
 ```
 
-这是阶段性简化。
-正式 UI 可以把 Ready 状态和关键词拆成独立图标或标签。
+这是当时的阶段性简化。
+阶段 4.4 已经拆成 `statusText`、`keywordText` 和 `deathrattleText`。
 
-阶段 2.6 中，`MinionView` 继续复用 `canAttackText` 显示亡语摘要：
+阶段 2.6 中，`MinionView` 曾继续复用 `canAttackText` 显示亡语摘要：
 
 ```text
 亡语:1
@@ -198,8 +198,8 @@ Ready 亡语:1
 Ready 嘲讽 亡语:1
 ```
 
-这是阶段性简化。
-正式 UI 可以把亡语做成独立图标或详情面板，不和 Ready 状态挤在同一个文本里。
+这是当时的阶段性简化。
+阶段 4.4 后，亡语摘要由 `deathrattleText` 单独显示。
 
 ### BoardView
 
@@ -472,31 +472,44 @@ Editor 调整顺序：
 
 ### 卡牌显示拆分
 
-当前 `CardView` 用攻击位置显示法术伤害，并把关键词、战吼、亡语、描述都塞进 `DescriptionText`。
-这是阶段性简化，不是成熟项目最终做法。
+阶段 4.4 代码层已让 `CardView` 拆分卡牌类型和法术效果文本。
+当前要求 `CardViewPrefab` 绑定 `typeText` 和 `effectText`，不再保留旧 Prefab 的法术伤害回退显示。
 
-后续计划：
+当前显示策略：
 
 ```text
 随从牌：显示攻击 / 生命
 法术牌：显示类型和效果，例如“法术”“造成 2 点伤害”
-描述区：继续显示关键词、战吼、亡语和卡牌描述，但后续可拆成独立 Text
+规则文本区：显示关键词、法术效果、战吼和亡语
+描述区：只显示 CardData.Description
 ```
 
-代码上 `CardView` 会新增可选字段，例如 `typeText` / `effectText`。
-Prefab 没绑定时，仍然保留当前旧显示方式。
+代码字段：
+
+```text
+typeText：显示“随从 / 法术”
+effectText：显示规则文本，例如“嘲讽”“造成 2 点伤害”“战吼：抽 1 张牌”
+descriptionText：只显示 CardData.Description
+```
+
+`CardView` 不再自己维护战吼和亡语文案。
+关键词、法术效果、战吼和亡语文案已经统一到 `CardTextFormatter.GetCardEffectText()`，避免以后多个 View 各写一套 `switch`。
 
 Unity Editor 需要做：
 
-- 在 `CardViewPrefab` 中增加类型/效果文本区域。
-- 增大 `DescriptionText` 的可用空间，避免关键词、战吼、亡语挤在一行小框里。
+- 回到 Unity，让 Unity 自动导入 `CardTextFormatter.cs` 并生成 `.meta`。
+- 在 `CardViewPrefab` 中新增或整理两个 `Text`：`TypeText` 和 `EffectText`。
+- 把 `TypeText` 拖到 `CardView` 的 `Type Text` 字段。
+- 把 `EffectText` 拖到 `CardView` 的 `Effect Text` 字段。
+- 把 `EffectText` 和 `DescriptionText` 做成上下两个不同区域，避免规则文本和描述重叠。
+- 绑定完成后，法术牌的攻击位置会固定清空，法术效果显示在 `EffectText`。
 
 ### 随从状态拆分
 
-当前 `MinionView` 复用 `CanAttackText` 显示 Ready、关键词和亡语摘要。
-这会导致信息越来越挤。
+阶段 4.4 代码层已让 `MinionView` 拆分 Ready、关键词和亡语文本。
+当前要求 `MinionViewPrefab` 绑定 `statusText`、`keywordText` 和 `deathrattleText`，不再保留旧的 `CanAttackText` 合并显示。
 
-后续计划：
+当前显示策略：
 
 ```text
 StatusText：Ready
@@ -504,29 +517,36 @@ KeywordText：冲锋 / 嘲讽 / 圣盾
 DeathrattleText：亡语:1
 ```
 
-代码上 `MinionView` 会新增可选字段。
-Prefab 没绑定时，仍然回退到旧的合并文本。
+代码字段：
+
+```text
+statusText：只显示 Ready
+keywordText：只显示关键词
+deathrattleText：只显示亡语短文本
+```
 
 Unity Editor 需要做：
 
-- 在 `MinionViewPrefab` 中新增或整理 2-3 个 Text。
-- `CanAttackText` 可以保留兼容，但后续不再承担所有状态。
+- 在 `MinionViewPrefab` 中新增或整理 3 个 `Text`：`StatusText`、`KeywordText`、`DeathrattleText`。
+- 把它们分别拖到 `MinionView` 的 `Status Text`、`Keyword Text`、`Deathrattle Text` 字段。
+- 原来的 `CanAttackText` 可以从 Prefab 上删除，或保留为未绑定的普通物体；代码不再读取它。
+- Play 模式检查普通随从、冲锋随从、嘲讽随从、圣盾随从和亡语随从的显示是否清楚。
 
 ### 文本格式化统一
 
 当前关键词已经由 `KeywordTextFormatter` 统一。
-后续计划继续整理战吼、亡语、法术效果和随从状态文本。
+阶段 4.4 新增了 `CardTextFormatter`，用于整理战吼、亡语和法术效果文本。
 
-目标：
+当前分工：
 
 ```text
-CardView 不自己写一套战吼/亡语文案
-MinionView 不自己写一套亡语摘要文案
-新增效果时优先改 formatter，而不是到多个 View 里复制 switch
+KeywordTextFormatter：关键词文本，例如“冲锋 / 嘲讽 / 圣盾”
+CardTextFormatter：卡牌类型、法术效果、战吼文本、亡语完整文本、亡语短文本
+CardView：读取 formatter 结果并刷新手牌 UI
+MinionView：读取 formatter 结果并刷新场上随从 UI
 ```
 
-可以新增 `CardTextFormatter`，或者扩展现有 formatter。
-具体写代码前先列属性清单。
+新增简单效果文案时，优先改 formatter，不在多个 View 里复制 `switch`。
 
 ### 刷新方式优化
 
@@ -578,7 +598,8 @@ EnemyHeroButton
 阶段 2.6 的手牌亡语文字继续复用 `CardView` 的 `Description Text`，场上亡语文字继续复用 `MinionView` 的 `CanAttackText`，没有新增 Prefab 字段。
 阶段 2.9 已把关键词文本格式化抽到 `KeywordTextFormatter`。
 阶段 4.1 已拆分 `FeedbackText` 和 `GameOverText`，并整理三种 UI 选择状态。
-后续仍计划拆分卡牌效果文本、随从状态文本，并优化刷新复用。
+阶段 4.4 已拆分卡牌类型、法术效果、随从 Ready、关键词和亡语文本。
+后续仍计划优化刷新复用。
 
 Prefab：
 

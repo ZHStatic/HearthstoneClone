@@ -14,7 +14,9 @@ public class MinionView : MonoBehaviour
     [SerializeField] private Text nameText;
     [SerializeField] private Text attackText;
     [SerializeField] private Text healthText;
-    [SerializeField] private Text canAttackText;
+    [SerializeField] private Text statusText;
+    [SerializeField] private Text keywordText;
+    [SerializeField] private Text deathrattleText;
 
     // 用背景颜色显示选中、合法目标和非法目标状态。没有绑定时会自动尝试从当前物体上获取 Image。
     [SerializeField] private Image backgroundImage;
@@ -95,7 +97,7 @@ public class MinionView : MonoBehaviour
         SetText(nameText, minion.CardData.CardName);
         SetText(attackText, minion.Attack.ToString());
         SetText(healthText, minion.CurrentHealth.ToString());
-        SetText(canAttackText, GetStatusText(minion));
+        SetStatusTexts(minion);
         ApplyHighlightState();
 
         if (button != null)
@@ -134,7 +136,9 @@ public class MinionView : MonoBehaviour
         SetText(nameText, "");
         SetText(attackText, "");
         SetText(healthText, "");
-        SetText(canAttackText, "");
+        SetText(statusText, "");
+        SetText(keywordText, "");
+        SetText(deathrattleText, "");
         ApplyHighlightState();
 
         if (button != null)
@@ -171,20 +175,26 @@ public class MinionView : MonoBehaviour
     }
 
     /// <summary>
-    /// 生成随从状态文字。
-    /// 当前复用 canAttackText，同时显示 Ready 和关键词，避免改 Prefab。
+    /// 刷新随从状态文字。
+    /// 分别显示 Ready、关键词和亡语，避免多个状态挤在同一行临时文本里。
     /// </summary>
-    private string GetStatusText(Minion minion)
+    private void SetStatusTexts(Minion minion)
     {
-        if (minion == null) return "";
+        if (minion == null)
+        {
+            SetText(statusText, "");
+            SetText(keywordText, "");
+            SetText(deathrattleText, "");
+            return;
+        }
 
-        string statusText = "";
+        string readyText = minion.CanAttack ? "Ready" : "";
+        string keywordsText = GetKeywordsText(minion);
+        string deathrattleSummaryText = GetDeathrattleText(minion);
 
-        AddStatusText(ref statusText, minion.CanAttack ? "Ready" : "");
-        AddStatusText(ref statusText, GetKeywordsText(minion));
-        AddStatusText(ref statusText, GetDeathrattleText(minion));
-
-        return statusText;
+        SetText(statusText, readyText);
+        SetText(keywordText, keywordsText);
+        SetText(deathrattleText, deathrattleSummaryText);
     }
 
     /// <summary>
@@ -205,26 +215,7 @@ public class MinionView : MonoBehaviour
         if (minion == null || minion.CardData == null) return "";
         if (!minion.CardData.HasDeathrattle) return "";
 
-        return minion.CardData.DeathrattleType switch
-        {
-            DeathrattleType.DealDamageToEnemyHero => $"亡语:{minion.CardData.DeathrattleValue}",
-            _ => "",
-        };
-    }
-
-    /// <summary>
-    /// 向状态文本中拼接一段非空内容。
-    /// </summary>
-    private void AddStatusText(ref string statusText, string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return;
-
-        if (!string.IsNullOrWhiteSpace(statusText))
-        {
-            statusText += " ";
-        }
-
-        statusText += text;
+        return CardTextFormatter.GetDeathrattleSummaryText(minion.CardData);
     }
 
     /// <summary>
