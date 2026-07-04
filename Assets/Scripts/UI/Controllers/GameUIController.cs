@@ -10,6 +10,7 @@ public class GameUIController : MonoBehaviour
 {
     // 对局核心入口。UI 通过它读取状态和发起操作。
     [SerializeField] private GameManager gameManager;
+    [SerializeField] private BattlePresentationController presentationController;
 
     // 手牌和双方战场视图。
     [SerializeField] private HandView handView;
@@ -149,11 +150,13 @@ public class GameUIController : MonoBehaviour
             return;
         }
 
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryPlayMinionCardDetailed(card);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"打出 {GetCardName(card)}。",
             "出牌失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         RefreshAll();
     }
 
@@ -192,8 +195,10 @@ public class GameUIController : MonoBehaviour
         }
 
         ClearOperationSelection();
+        int logCountBefore = GetBattleLogCount();
         gameManager.EndTurn();
         SetFeedback($"{GetPlayerLabel(gameManager.CurrentPlayer)} 回合开始。");
+        PlayPresentationForLatestBattleLog(logCountBefore);
         RefreshAll();
     }
 
@@ -387,11 +392,13 @@ public class GameUIController : MonoBehaviour
 
         string attackerName = GetMinionName(selectedAttacker);
         string targetName = GetMinionName(target);
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryAttackMinionDetailed(selectedAttacker, target);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"{attackerName} 攻击 {targetName}。",
             "目标非法，攻击失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         ClearSelectedAttacker();
     }
 
@@ -411,11 +418,13 @@ public class GameUIController : MonoBehaviour
 
         string attackerName = GetMinionName(selectedAttacker);
         string targetName = GetHeroName(targetHero);
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryAttackHeroDetailed(selectedAttacker, targetHero);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"{attackerName} 攻击 {targetName}。",
             "目标英雄非法，攻击失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         ClearSelectedAttacker();
     }
 
@@ -433,12 +442,14 @@ public class GameUIController : MonoBehaviour
         string spellName = GetCardName(selectedSpellCard);
         string targetName = GetMinionName(target);
 
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryPlaySpellCardOnMinionDetailed(selectedSpellCard, target);
         string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             fallbackMessage,
             "法术目标非法，释放失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -455,11 +466,13 @@ public class GameUIController : MonoBehaviour
         }
 
         string targetName = GetMinionName(target);
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryUseHeroSkillOnMinionDetailed(target);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
             "英雄技能目标非法，使用失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         ClearOperationSelection();
     }
 
@@ -475,11 +488,13 @@ public class GameUIController : MonoBehaviour
         }
 
         string targetName = GetHeroName(targetHero);
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryUseHeroSkillOnHeroDetailed(targetHero);
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
             "英雄技能目标英雄非法，使用失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         ClearOperationSelection();
     }
 
@@ -497,12 +512,14 @@ public class GameUIController : MonoBehaviour
         string spellName = GetCardName(selectedSpellCard);
         string targetName = GetHeroName(targetHero);
 
+        int logCountBefore = GetBattleLogCount();
         GameActionResult result = gameManager.TryPlaySpellCardOnHeroDetailed(selectedSpellCard, targetHero);
         string fallbackMessage = $"{spellName} 对 {targetName} 释放成功。";
         SetFeedback(GetActionResultMessageOrFallback(
             result,
             fallbackMessage,
             "法术目标英雄非法，释放失败。"));
+        PlayPresentationForResult(result, logCountBefore);
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -672,6 +689,43 @@ public class GameUIController : MonoBehaviour
         RefreshEndTurnButton();
         RefreshHeroButtons();
         RefreshHeroSkillButton();
+    }
+
+    /// <summary>
+    /// 获取当前战斗日志数量，用于判断一次 UI 操作后有没有产生新的规则日志。
+    /// </summary>
+    private int GetBattleLogCount()
+    {
+        if (gameManager == null || gameManager.BattleLogger == null) return 0;
+
+        return gameManager.BattleLogger.Count;
+    }
+
+    /// <summary>
+    /// 如果 Core 操作成功，就播放这次操作产生的表现反馈。
+    /// </summary>
+    private void PlayPresentationForResult(GameActionResult result, int previousLogCount)
+    {
+        if (result == null || result.Failed) return;
+
+        PlayPresentationForLatestBattleLog(previousLogCount, result.LogEntry);
+    }
+
+    /// <summary>
+    /// 播放指定日志数量之后产生的最后一条日志。
+    /// 如果没有新日志，就使用调用方传入的 fallbackEntry。
+    /// </summary>
+    private void PlayPresentationForLatestBattleLog(int previousLogCount, BattleLogEntry fallbackEntry = null)
+    {
+        if (presentationController == null) return;
+
+        BattleLogEntry entry = fallbackEntry;
+        if (gameManager != null && gameManager.BattleLogger != null && gameManager.BattleLogger.Count > previousLogCount)
+        {
+            entry = gameManager.BattleLogger.Entries[gameManager.BattleLogger.Count - 1];
+        }
+
+        presentationController.PlayLogFeedback(entry);
     }
 
     /// <summary>

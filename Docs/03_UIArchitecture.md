@@ -15,12 +15,13 @@
 | `MinionView` | `Assets/Scripts/UI/Views/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表生成多个 `MinionView`，并传递随从点击回调和选中状态 |
 | `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
+| `BattlePresentationController` | `Assets/Scripts/UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
 
 - 拖拽出牌
-- 动画和音效
+- 具体目标动画，例如卡牌飞行、随从受击闪烁、英雄受击反馈
 - 敌方手牌隐藏
 - 最终视觉样式和完整美术资源
 - 英雄技能独立图标、动画和冷却表现
@@ -295,11 +296,87 @@ UI 操作状态包括：
 它们只负责记录玩家下一次点击想做什么，不直接修改 Core 规则状态。
 `ClearOperationSelection()` 用于统一清空这三种状态，避免切换操作时残留旧选择。
 
+阶段 4.5 第一刀后，`GameUIController` 还会在 Core 操作成功后触发基础表现：
+
+```text
+玩家点击 UI
+-> GameManager 完成规则结算
+-> GameManager / BattleLogger 记录 BattleLogEntry
+-> GameUIController 找到本次操作后新增的最后一条日志
+-> BattlePresentationController 根据日志类型播放音效和通用 UI 脉冲
+```
+
+这个流程仍然保持 UI 不决定规则结果。费用不足、目标非法等失败操作不会播放战斗表现；出牌、攻击、法术、英雄技能、圣盾抵消、回合切换和游戏结束等成功结算才会触发表现。
+
+### BattlePresentationController
+
+`BattlePresentationController` 是阶段 4.5 新增的第一版战斗表现入口。
+
+它负责：
+
+```text
+接收一条 BattleLogEntry
+根据 BattleLogEntryType 选择对应 AudioClip
+通过 AudioSource.PlayOneShot() 播放一次性音效
+让 DefaultPulseTarget 做一次轻微缩放脉冲
+```
+
+它不负责：
+
+```text
+判断伤害是否生效
+判断圣盾是否抵消
+判断随从是否死亡
+判断游戏是否结束
+移动卡牌或随从
+修改 Core 状态
+```
+
+当前音效映射：
+
+```text
+TurnStarted / TurnEnded -> Turn Started Clip
+CardPlayed / MinionSummoned -> Card Played Clip
+Attack -> Attack Clip
+Spell / HeroSkill / Battlecry / Deathrattle / Damage -> Damage Clip
+DivineShieldPrevented -> Divine Shield Clip
+MinionDied -> Death Clip
+GameEnded -> Game Ended Clip
+```
+
+Unity Editor 绑定：
+
+```text
+BattlePresentationController 物体上挂 BattlePresentationController
+同一个物体上挂 AudioSource，Play On Awake 关闭，Spatial Blend 设为 2D
+GameUIController 的 Presentation Controller 字段绑定这个物体
+Default Pulse Target 当前可以绑定 FeedbackText 或反馈区域
+音效资源放在 Assets/Audio/SFX
+```
+
+当前导入的音效资源：
+
+```text
+Assets/Audio/SFX
+来源：Kenney Casino Audio
+许可证：CC0
+```
+
+阶段性简化：
+
+```text
+当前只播放一条关键日志对应的基础表现。
+当前多个伤害来源共用 Damage Clip。
+当前只做通用 UI 脉冲，不做具体目标闪烁或飞行动画。
+下一刀再考虑把随从 View、英雄按钮和卡牌 View 映射到具体表现目标。
+```
+
 ## 引用关系
 
 ```mermaid
 flowchart TD
     GameUIController --> GameManager
+    GameUIController --> BattlePresentationController
     GameUIController --> HandView
     GameUIController --> BoardViewPlayer["PlayerBoardView"]
     GameUIController --> BoardViewEnemy["EnemyBoardView"]
@@ -310,6 +387,7 @@ flowchart TD
 
     GameManager --> Player
     GameManager --> Board
+    GameManager --> BattleLogger
 ```
 
 文字版：
@@ -322,6 +400,7 @@ BoardView 根据 Board.GetMinions(...) 创建 MinionView
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 阶段 2.10 中，随从出牌和法术释放反馈改为读取 GameActionResult.Message
 阶段 4.1 中，法术选牌、攻击者选择、法术目标、英雄技能目标和攻击目标的主要规则失败反馈都改为读取 GameActionResult.Message
+阶段 4.5 中，GameUIController 会把成功操作产生的 BattleLogEntry 交给 BattlePresentationController 播放基础音效和通用 UI 脉冲
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -548,6 +627,35 @@ MinionView：读取 formatter 结果并刷新场上随从 UI
 
 新增简单效果文案时，优先改 formatter，不在多个 View 里复制 `switch`。
 
+### 基础音效和通用脉冲
+
+阶段 4.5 第一刀已接入基础表现入口。
+
+代码与 Editor 分工：
+
+| 内容 | 放哪里 | 原因 |
+|------|--------|------|
+| 根据 `BattleLogEntryType` 选择音效 | `BattlePresentationController` | 属于运行时表现逻辑 |
+| `AudioSource`、`AudioClip`、默认脉冲目标 | Unity Editor / Inspector | 属于资源和表现配置 |
+| 实际伤害、圣盾抵消、死亡、胜负 | Core / `GameManager` | 属于规则结果，UI 只读取 |
+| 音效文件和许可证 | `Assets/Audio/SFX` | 资源集中管理，方便提交和检查授权 |
+
+当前播放链路：
+
+```text
+Core 规则结算成功
+-> BattleLogger 记录日志
+-> GameUIController 找到新日志
+-> BattlePresentationController 播放音效和通用脉冲
+```
+
+面试表达：
+
+```text
+我没有让动画或音效决定规则结果，而是让 Core 先完成结算，再把结算日志交给表现层播放。
+这样可以避免 UI 自己猜伤害、圣盾、死亡等结果，也方便以后把表现升级成队列。
+```
+
 ### 刷新方式优化
 
 当前 `HandView` / `BoardView` 每次刷新都会：
@@ -581,9 +689,11 @@ Canvas
 EventSystem
 GameManager
 GameUIController
+BattlePresentationController
 HandView
 PlayerBoardView
 EnemyBoardView
+AudioSource
 EndTurnButton
 PlayerHeroButton
 EnemyHeroButton
@@ -599,6 +709,7 @@ EnemyHeroButton
 阶段 2.9 已把关键词文本格式化抽到 `KeywordTextFormatter`。
 阶段 4.1 已拆分 `FeedbackText` 和 `GameOverText`，并整理三种 UI 选择状态。
 阶段 4.4 已拆分卡牌类型、法术效果、随从 Ready、关键词和亡语文本。
+阶段 4.5 第一刀已新增 `BattlePresentationController`，并通过 `GameUIController` 在成功操作后触发基础音效和通用 UI 脉冲。
 后续仍计划优化刷新复用。
 
 Prefab：
