@@ -198,7 +198,7 @@ public class GameUIController : MonoBehaviour
         int logCountBefore = GetBattleLogCount();
         gameManager.EndTurn();
         SetFeedback($"{GetPlayerLabel(gameManager.CurrentPlayer)} 回合开始。");
-        PlayPresentationForLatestBattleLog(logCountBefore);
+        PlayPresentationForLatestBattleLog(logCountBefore, null);
         RefreshAll();
     }
 
@@ -424,7 +424,7 @@ public class GameUIController : MonoBehaviour
             result,
             $"{attackerName} 攻击 {targetName}。",
             "目标英雄非法，攻击失败。"));
-        PlayPresentationForResult(result, logCountBefore);
+        PlayPresentationForResult(result, logCountBefore, GetHeroPulseTarget(targetHero));
         ClearSelectedAttacker();
     }
 
@@ -494,7 +494,7 @@ public class GameUIController : MonoBehaviour
             result,
             $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
             "英雄技能目标英雄非法，使用失败。"));
-        PlayPresentationForResult(result, logCountBefore);
+        PlayPresentationForResult(result, logCountBefore, GetHeroPulseTarget(targetHero));
         ClearOperationSelection();
     }
 
@@ -519,7 +519,7 @@ public class GameUIController : MonoBehaviour
             result,
             fallbackMessage,
             "法术目标英雄非法，释放失败。"));
-        PlayPresentationForResult(result, logCountBefore);
+        PlayPresentationForResult(result, logCountBefore, GetHeroPulseTarget(targetHero));
         ClearSelectedSpell();
         ClearSelectedAttacker();
     }
@@ -706,9 +706,18 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void PlayPresentationForResult(GameActionResult result, int previousLogCount)
     {
+        PlayPresentationForResult(result, previousLogCount, null);
+    }
+
+    /// <summary>
+    /// 如果 Core 操作成功，就播放这次操作产生的表现反馈。
+    /// preferredTarget 不为空时，表现层会优先让这个 UI 目标播放脉冲。
+    /// </summary>
+    private void PlayPresentationForResult(GameActionResult result, int previousLogCount, Transform preferredTarget)
+    {
         if (result == null || result.Failed) return;
 
-        PlayPresentationForLatestBattleLog(previousLogCount, result.LogEntry);
+        PlayPresentationForLatestBattleLog(previousLogCount, result.LogEntry, preferredTarget);
     }
 
     /// <summary>
@@ -716,6 +725,15 @@ public class GameUIController : MonoBehaviour
     /// 如果没有新日志，就使用调用方传入的 fallbackEntry。
     /// </summary>
     private void PlayPresentationForLatestBattleLog(int previousLogCount, BattleLogEntry fallbackEntry = null)
+    {
+        PlayPresentationForLatestBattleLog(previousLogCount, fallbackEntry, null);
+    }
+
+    /// <summary>
+    /// 播放指定日志数量之后产生的最后一条日志，并把指定 UI 目标作为优先脉冲目标。
+    /// 如果本次操作已经结束游戏，优先让 GameOverText 播放反馈。
+    /// </summary>
+    private void PlayPresentationForLatestBattleLog(int previousLogCount, BattleLogEntry fallbackEntry, Transform preferredTarget)
     {
         if (presentationController == null) return;
 
@@ -725,7 +743,42 @@ public class GameUIController : MonoBehaviour
             entry = gameManager.BattleLogger.Entries[gameManager.BattleLogger.Count - 1];
         }
 
-        presentationController.PlayLogFeedback(entry);
+        presentationController.PlayLogFeedback(entry, GetPresentationPulseTarget(preferredTarget));
+    }
+
+    /// <summary>
+    /// 根据英雄对象找到对应英雄按钮，作为受击或结算反馈的目标。
+    /// 英雄按钮是稳定存在的 UI 物体，不会像随从 View 一样在 RefreshAll 时被重建。
+    /// </summary>
+    private Transform GetHeroPulseTarget(Hero hero)
+    {
+        if (hero == null || gameManager == null) return null;
+
+        if (gameManager.Player != null && hero == gameManager.Player.Hero && playerHeroButton != null)
+        {
+            return playerHeroButton.transform;
+        }
+
+        if (gameManager.Enemy != null && hero == gameManager.Enemy.Hero && enemyHeroButton != null)
+        {
+            return enemyHeroButton.transform;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 选择本次表现要脉冲的 UI 目标。
+    /// 游戏结束时优先使用 GameOverText；否则使用调用方传入的具体目标。
+    /// </summary>
+    private Transform GetPresentationPulseTarget(Transform preferredTarget)
+    {
+        if (gameManager != null && gameManager.IsGameOver && gameOverText != null)
+        {
+            return gameOverText.transform;
+        }
+
+        return preferredTarget;
     }
 
     /// <summary>

@@ -70,10 +70,19 @@ public class BattlePresentationController : MonoBehaviour
     /// </summary>
     public void PlayLogFeedback(BattleLogEntry entry)
     {
+        PlayLogFeedback(entry, null);
+    }
+
+    /// <summary>
+    /// 根据一条战斗日志播放基础表现，并优先让指定 UI 目标播放脉冲。
+    /// target 为空时回退到 defaultPulseTarget，保留第一刀的通用反馈行为。
+    /// </summary>
+    public void PlayLogFeedback(BattleLogEntry entry, Transform target)
+    {
         if (entry == null) return;
 
         PlayAudio(GetClipForEntry(entry));
-        PlayButtonPulse(defaultPulseTarget);
+        PlayTargetPulse(target != null ? target : defaultPulseTarget);
     }
 
     /// <summary>
@@ -82,6 +91,15 @@ public class BattlePresentationController : MonoBehaviour
     /// 如果上一次脉冲还没结束，会先停掉旧协程并恢复旧目标缩放，再播放新的脉冲。
     /// </summary>
     public void PlayButtonPulse(Transform target)
+    {
+        PlayTargetPulse(target);
+    }
+
+    /// <summary>
+    /// 对指定 UI 目标做轻微缩放反馈。
+    /// 第二刀开始，英雄按钮和游戏结束文本会通过这个入口播放更具体的反馈。
+    /// </summary>
+    public void PlayTargetPulse(Transform target)
     {
         if (target == null) return;
 

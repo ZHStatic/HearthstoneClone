@@ -21,7 +21,7 @@
 当前还没有做：
 
 - 拖拽出牌
-- 具体目标动画，例如卡牌飞行、随从受击闪烁、英雄受击反馈
+- 随从受击闪烁、卡牌飞行等更具体的目标动画
 - 敌方手牌隐藏
 - 最终视觉样式和完整美术资源
 - 英雄技能独立图标、动画和冷却表现
@@ -296,7 +296,7 @@ UI 操作状态包括：
 它们只负责记录玩家下一次点击想做什么，不直接修改 Core 规则状态。
 `ClearOperationSelection()` 用于统一清空这三种状态，避免切换操作时残留旧选择。
 
-阶段 4.5 第一刀后，`GameUIController` 还会在 Core 操作成功后触发基础表现：
+阶段 4.5 后，`GameUIController` 还会在 Core 操作成功后触发基础表现：
 
 ```text
 玩家点击 UI
@@ -308,9 +308,20 @@ UI 操作状态包括：
 
 这个流程仍然保持 UI 不决定规则结果。费用不足、目标非法等失败操作不会播放战斗表现；出牌、攻击、法术、英雄技能、圣盾抵消、回合切换和游戏结束等成功结算才会触发表现。
 
+阶段 4.5 第二刀后，英雄目标会优先播放具体目标反馈：
+
+```text
+随从攻击英雄成功 -> 目标英雄按钮脉冲
+法术打英雄成功 -> 目标英雄按钮脉冲
+英雄技能打英雄成功 -> 目标英雄按钮脉冲
+游戏结束 -> GameOverText 脉冲
+```
+
+因此随从攻击英雄时，`FeedbackText` 不再作为优先脉冲目标。当前设计是让被攻击的英雄按钮反馈，帮助玩家把表现和实际目标对应起来。
+
 ### BattlePresentationController
 
-`BattlePresentationController` 是阶段 4.5 新增的第一版战斗表现入口。
+`BattlePresentationController` 是阶段 4.5 新增的战斗表现入口。
 
 它负责：
 
@@ -319,6 +330,7 @@ UI 操作状态包括：
 根据 BattleLogEntryType 选择对应 AudioClip
 通过 AudioSource.PlayOneShot() 播放一次性音效
 让 DefaultPulseTarget 做一次轻微缩放脉冲
+在调用方传入具体目标时，优先让这个目标做轻微缩放脉冲
 ```
 
 它不负责：
@@ -367,8 +379,9 @@ Assets/Audio/SFX
 ```text
 当前只播放一条关键日志对应的基础表现。
 当前多个伤害来源共用 Damage Clip。
-当前只做通用 UI 脉冲，不做具体目标闪烁或飞行动画。
-下一刀再考虑把随从 View、英雄按钮和卡牌 View 映射到具体表现目标。
+当前英雄按钮和 GameOverText 已支持具体目标脉冲。
+当前仍不做随从受击闪烁或卡牌飞行动画。
+下一刀再考虑把 Minion 映射到稳定的 MinionView。
 ```
 
 ## 引用关系
@@ -400,7 +413,7 @@ BoardView 根据 Board.GetMinions(...) 创建 MinionView
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 阶段 2.10 中，随从出牌和法术释放反馈改为读取 GameActionResult.Message
 阶段 4.1 中，法术选牌、攻击者选择、法术目标、英雄技能目标和攻击目标的主要规则失败反馈都改为读取 GameActionResult.Message
-阶段 4.5 中，GameUIController 会把成功操作产生的 BattleLogEntry 交给 BattlePresentationController 播放基础音效和通用 UI 脉冲
+阶段 4.5 中，GameUIController 会把成功操作产生的 BattleLogEntry 交给 BattlePresentationController 播放基础音效和 UI 脉冲；英雄目标和游戏结束会优先使用具体 UI 目标
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -627,9 +640,9 @@ MinionView：读取 formatter 结果并刷新场上随从 UI
 
 新增简单效果文案时，优先改 formatter，不在多个 View 里复制 `switch`。
 
-### 基础音效和通用脉冲
+### 基础音效和目标脉冲
 
-阶段 4.5 第一刀已接入基础表现入口。
+阶段 4.5 第一刀已接入基础表现入口；第二刀已补上英雄目标和游戏结束目标的具体脉冲。
 
 代码与 Editor 分工：
 
@@ -637,6 +650,7 @@ MinionView：读取 formatter 结果并刷新场上随从 UI
 |------|--------|------|
 | 根据 `BattleLogEntryType` 选择音效 | `BattlePresentationController` | 属于运行时表现逻辑 |
 | `AudioSource`、`AudioClip`、默认脉冲目标 | Unity Editor / Inspector | 属于资源和表现配置 |
+| 英雄按钮和 `GameOverText` 作为具体脉冲目标 | `GameUIController` | 它知道 UI 绑定和当前操作目标 |
 | 实际伤害、圣盾抵消、死亡、胜负 | Core / `GameManager` | 属于规则结果，UI 只读取 |
 | 音效文件和许可证 | `Assets/Audio/SFX` | 资源集中管理，方便提交和检查授权 |
 
@@ -646,14 +660,16 @@ MinionView：读取 formatter 结果并刷新场上随从 UI
 Core 规则结算成功
 -> BattleLogger 记录日志
 -> GameUIController 找到新日志
--> BattlePresentationController 播放音效和通用脉冲
+-> GameUIController 选择具体 UI 目标，例如英雄按钮或 GameOverText
+-> BattlePresentationController 播放音效和目标脉冲
 ```
 
 面试表达：
 
 ```text
 我没有让动画或音效决定规则结果，而是让 Core 先完成结算，再把结算日志交给表现层播放。
-这样可以避免 UI 自己猜伤害、圣盾、死亡等结果，也方便以后把表现升级成队列。
+这样可以避免 UI 自己猜伤害、圣盾、死亡等结果。
+第二刀里我先让稳定存在的英雄按钮和 GameOverText 做具体反馈，因为它们不会像随从 View 一样在刷新时被重建。
 ```
 
 ### 刷新方式优化
@@ -710,6 +726,7 @@ EnemyHeroButton
 阶段 4.1 已拆分 `FeedbackText` 和 `GameOverText`，并整理三种 UI 选择状态。
 阶段 4.4 已拆分卡牌类型、法术效果、随从 Ready、关键词和亡语文本。
 阶段 4.5 第一刀已新增 `BattlePresentationController`，并通过 `GameUIController` 在成功操作后触发基础音效和通用 UI 脉冲。
+阶段 4.5 第二刀已让英雄按钮和 `GameOverText` 支持具体目标脉冲；随从受击反馈留到下一刀处理。
 后续仍计划优化刷新复用。
 
 Prefab：
