@@ -16,6 +16,9 @@ public class BoardView : MonoBehaviour
 
     // 当前已经生成出来的随从 UI 列表，用于刷新时统一清理。
     private readonly List<MinionView> minionViews = new List<MinionView>();
+    // 当前场上随从和 UI View 的对应关系。
+    // BoardView 仍然不判断规则，只提供“这个随从现在显示在哪个 View 上”的查询能力。
+    private readonly Dictionary<Minion, MinionView> minionViewByMinion = new Dictionary<Minion, MinionView>();
 
     /// <summary>
     /// 重新生成这一方战场的随从 UI。
@@ -69,7 +72,23 @@ public class BoardView : MonoBehaviour
 
             minionView.SetHighlightState(highlightState);
             minionViews.Add(minionView);
+            minionViewByMinion[minion] = minionView;
         }
+    }
+
+    /// <summary>
+    /// 尝试找到某个运行时随从当前对应的 UI View。
+    /// 给表现层使用，例如 Core 结算后让受击随从播放一次脉冲。
+    /// </summary>
+    public bool TryGetMinionView(Minion minion, out MinionView minionView)
+    {
+        if (minion == null)
+        {
+            minionView = null;
+            return false;
+        }
+
+        return minionViewByMinion.TryGetValue(minion, out minionView) && minionView != null;
     }
 
     /// <summary>
@@ -87,5 +106,6 @@ public class BoardView : MonoBehaviour
         }
 
         minionViews.Clear();
+        minionViewByMinion.Clear();
     }
 }

@@ -320,14 +320,12 @@ public class GameUIController : MonoBehaviour
         if (selectedSpellCard != null)
         {
             TryPlaySelectedSpellOnMinion(clickedMinion);
-            RefreshAll();
             return;
         }
 
         if (isSelectingHeroSkillTarget)
         {
             TryUseSelectedHeroSkillOnMinion(clickedMinion);
-            RefreshAll();
             return;
         }
 
@@ -354,7 +352,6 @@ public class GameUIController : MonoBehaviour
         }
 
         TryAttackSelectedTarget(clickedMinion);
-        RefreshAll();
     }
 
     /// <summary>
@@ -398,8 +395,9 @@ public class GameUIController : MonoBehaviour
             result,
             $"{attackerName} 攻击 {targetName}。",
             "目标非法，攻击失败。"));
-        PlayPresentationForResult(result, logCountBefore);
         ClearSelectedAttacker();
+        RefreshAll();
+        PlayPresentationForResult(result, logCountBefore, GetMinionPulseTarget(target));
     }
 
     /// <summary>
@@ -449,9 +447,10 @@ public class GameUIController : MonoBehaviour
             result,
             fallbackMessage,
             "法术目标非法，释放失败。"));
-        PlayPresentationForResult(result, logCountBefore);
         ClearSelectedSpell();
         ClearSelectedAttacker();
+        RefreshAll();
+        PlayPresentationForResult(result, logCountBefore, GetMinionPulseTarget(target));
     }
 
     /// <summary>
@@ -472,8 +471,9 @@ public class GameUIController : MonoBehaviour
             result,
             $"英雄技能对 {targetName} 造成 {Player.HeroSkillDamage} 点伤害。",
             "英雄技能目标非法，使用失败。"));
-        PlayPresentationForResult(result, logCountBefore);
         ClearOperationSelection();
+        RefreshAll();
+        PlayPresentationForResult(result, logCountBefore, GetMinionPulseTarget(target));
     }
 
     /// <summary>
@@ -765,6 +765,31 @@ public class GameUIController : MonoBehaviour
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// 根据随从对象找到它当前所在的 MinionView，作为受击反馈目标。
+    /// 这个方法只在 RefreshAll 之后调用，因为 BoardView.Refresh 会重建 View。
+    /// </summary>
+    private Transform GetMinionPulseTarget(Minion minion)
+    {
+        if (minion == null || gameManager == null) return null;
+
+        BoardView boardView = null;
+        if (gameManager.Player != null && minion.Owner == gameManager.Player)
+        {
+            boardView = playerBoardView;
+        }
+        else if (gameManager.Enemy != null && minion.Owner == gameManager.Enemy)
+        {
+            boardView = enemyBoardView;
+        }
+
+        if (boardView == null) return null;
+
+        return boardView.TryGetMinionView(minion, out MinionView minionView) && minionView != null
+            ? minionView.transform
+            : null;
     }
 
     /// <summary>
