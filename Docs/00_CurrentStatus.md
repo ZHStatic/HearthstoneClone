@@ -1,11 +1,11 @@
 # Current Status
 
-最后更新：2026-07-05
+最后更新：2026-07-06
 
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划；阶段 4.1 反馈文本和操作状态整理已完成；阶段 4.2 合法目标高亮和按钮视觉状态已完成代码链路和 Play 模式验证；阶段 4.3 炉石式战斗界面信息层级已完成 Editor 布局调整和 Play 模式验收；阶段 4.4 卡牌和随从显示拆分已完成代码、Prefab 绑定和 Play 模式验收；阶段 4.5 基础动画和音效第一刀已完成基础表现入口和音效资源接入，第二刀已完成英雄按钮和 GameOverText 的具体目标反馈，第三刀已完成随从受击目标脉冲代码和 Play 模式验收。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划；阶段 4.1 反馈文本和操作状态整理已完成；阶段 4.2 合法目标高亮和按钮视觉状态已完成代码链路和 Play 模式验证；阶段 4.3 炉石式战斗界面信息层级已完成 Editor 布局调整和 Play 模式验收；阶段 4.4 卡牌和随从显示拆分已完成代码、Prefab 绑定和 Play 模式验收；阶段 4.5 基础动画和音效第一刀已完成基础表现入口和音效资源接入，第二刀已完成英雄按钮和 GameOverText 的具体目标反馈，第三刀已完成随从受击目标脉冲代码和 Play 模式验收。阶段 4.6 View 复用和性能意识已完成：`BoardView` 和 `HandView` 已从全量销毁重建改为轻量复用，并通过 Unity Play 模式验证。
 
 当前停靠点：
 
@@ -18,13 +18,15 @@
 阶段 4.5 第一刀已完成：基础音效和通用 UI 脉冲表现入口
 阶段 4.5 第二刀已完成：英雄目标和游戏结束目标的具体脉冲反馈
 阶段 4.5 第三刀已完成：随从受击目标脉冲反馈
-当前重点：进入阶段 4.6 View 复用和性能意识，先从 `BoardView` 轻量复用开始
-已完成：FeedbackText / GameOverText 拆分；GameOverText 只显示胜负；FeedbackText 显示普通操作反馈；selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态已集中整理；法术、攻击、英雄技能的主要规则失败反馈已改为读取 Core 返回的 GameActionResult.Message；攻击、法术、英雄技能选目标时会基于 Core 验证结果显示合法/非法目标高亮；英雄、英雄技能和结束回合按钮已有基础视觉状态；`BattlePrototype` 已完成阶段 4.3 Canvas 信息层级布局调整；阶段 4.4 已新增 `CardTextFormatter`，手牌卡牌使用 `TypeText` / `EffectText` 拆分卡牌类型和规则文本，场上随从使用 `StatusText` / `KeywordText` / `DeathrattleText` 拆分 Ready、关键词和亡语；阶段 4.5 第一刀新增 `BattlePresentationController`，`GameUIController` 会在 Core 操作成功后把新产生的 `BattleLogEntry` 交给表现层播放音效和通用脉冲；阶段 4.5 第二刀中攻击英雄、法术打英雄、英雄技能打英雄会优先让目标英雄按钮脉冲，游戏结束会优先让 `GameOverText` 脉冲；阶段 4.5 第三刀中 `BoardView` 记录当前 `Minion` 到 `MinionView` 的映射，`GameUIController` 在随从目标操作结算后先刷新 UI，再查找受击随从 View 播放目标脉冲
-已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理；玩家和 AI 都能正常使用英雄技能；阶段 4.3 布局验收中出牌、攻击、法术、英雄技能、结束回合和反馈显示均正常；阶段 4.4 中随从牌、法术牌、Ready、关键词和亡语显示已通过 Prefab 绑定和 Play 模式验证；阶段 4.5 第一刀中音频资源已导入并在 Unity 中完成对应字段绑定，基础音效播放链路已确认没问题；阶段 4.5 第二刀中英雄目标反馈已确认没问题，随从攻击英雄时当前设计是英雄按钮脉冲而不是 FeedbackText 脉冲；阶段 4.5 第三刀 Play 模式验收没问题，随从攻击随从、法术打随从和英雄技能打随从时，存活目标随从会播放目标脉冲
-已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败；阶段 4.3 Editor 布局执行清单、阶段 4.4 Prefab 绑定清单和阶段 4.5 音效表现入口说明见 `Docs/03_UIArchitecture.md`
+阶段 4.6 第一刀已完成：`BoardView` 轻量复用
+阶段 4.6 第二刀已完成：`HandView` 轻量复用
+当前重点：进入阶段 4.7 主流程与套牌选择，先规划主菜单、套牌选择和结算界面的最小闭环
+已完成：FeedbackText / GameOverText 拆分；GameOverText 只显示胜负；FeedbackText 显示普通操作反馈；selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态已集中整理；法术、攻击、英雄技能的主要规则失败反馈已改为读取 Core 返回的 GameActionResult.Message；攻击、法术、英雄技能选目标时会基于 Core 验证结果显示合法/非法目标高亮；英雄、英雄技能和结束回合按钮已有基础视觉状态；`BattlePrototype` 已完成阶段 4.3 Canvas 信息层级布局调整；阶段 4.4 已新增 `CardTextFormatter`，手牌卡牌使用 `TypeText` / `EffectText` 拆分卡牌类型和规则文本，场上随从使用 `StatusText` / `KeywordText` / `DeathrattleText` 拆分 Ready、关键词和亡语；阶段 4.5 第一刀新增 `BattlePresentationController`，`GameUIController` 会在 Core 操作成功后把新产生的 `BattleLogEntry` 交给表现层播放音效和通用脉冲；阶段 4.5 第二刀中攻击英雄、法术打英雄、英雄技能打英雄会优先让目标英雄按钮脉冲，游戏结束会优先让 `GameOverText` 脉冲；阶段 4.5 第三刀中 `BoardView` 记录当前 `Minion` 到 `MinionView` 的映射，`GameUIController` 在随从目标操作结算后先刷新 UI，再查找受击随从 View 播放目标脉冲；阶段 4.6 中 `BoardView.Refresh()` 和 `HandView.Refresh()` 已改为按索引复用 View，不够才创建，多余则清空并隐藏
+已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理；玩家和 AI 都能正常使用英雄技能；阶段 4.3 布局验收中出牌、攻击、法术、英雄技能、结束回合和反馈显示均正常；阶段 4.4 中随从牌、法术牌、Ready、关键词和亡语显示已通过 Prefab 绑定和 Play 模式验证；阶段 4.5 第一刀中音频资源已导入并在 Unity 中完成对应字段绑定，基础音效播放链路已确认没问题；阶段 4.5 第二刀中英雄目标反馈已确认没问题，随从攻击英雄时当前设计是英雄按钮脉冲而不是 FeedbackText 脉冲；阶段 4.5 第三刀 Play 模式验收没问题，随从攻击随从、法术打随从和英雄技能打随从时，存活目标随从会播放目标脉冲；阶段 4.6 第一刀 Play 模式验收没问题，`BoardView` 复用后出牌、死亡、目标高亮和随从受击脉冲正常；阶段 4.6 第二刀 Play 模式验收没问题，`HandView` 复用后抽牌、出牌、切换回合和法术选牌正常
+已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败；阶段 4.3 Editor 布局执行清单、阶段 4.4 Prefab 绑定清单、阶段 4.5 音效表现入口说明和阶段 4.6 轻量复用性能说明见 `Docs/03_UIArchitecture.md`
 已规划：阶段 4.1 反馈文本和操作状态 -> 阶段 4.2 合法目标高亮和按钮状态 -> 阶段 4.3 炉石式信息层级 -> 阶段 4.4 卡牌和随从显示拆分 -> 阶段 4.5 基础动画和音效 -> 阶段 4.6 View 复用和性能意识
 后续路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：阶段 4.6 第一刀前先列属性清单；目标是把 `BoardView.Refresh()` 从全量销毁重建改为轻量复用，为后续死亡前动画和减少 UI 创建销毁打基础
+下一步：阶段 4.7 第一刀前先列属性清单；目标是做主流程最小闭环的规划，不急着直接改 Scene 或 Prefab
 学习节奏：每个小任务开始前先列必学点和属性清单，确认后再写代码
 ```
 
@@ -234,10 +236,10 @@ AI 使用英雄技能
 | 文件 | 职责 |
 |------|------|
 | `UI/Views/CardView.cs` | 显示一张手牌、关键词文字、战吼文字、亡语文字并转发点击 |
-| `UI/Views/HandView.cs` | 根据手牌列表生成多个 `CardView` |
+| `UI/Views/HandView.cs` | 根据手牌列表复用并刷新多个 `CardView` |
 | `UI/Views/TargetHighlightState.cs` | UI 目标高亮状态枚举：普通、合法、非法、选中 |
 | `UI/Views/MinionView.cs` | 显示一个场上随从、关键词文字、亡语文字、点击和目标高亮 |
-| `UI/Views/BoardView.cs` | 根据一方战场列表生成多个 `MinionView`，接收目标高亮状态，并提供当前 `Minion` 到 `MinionView` 的查询 |
+| `UI/Views/BoardView.cs` | 根据一方战场列表复用并刷新多个 `MinionView`，接收目标高亮状态，并提供当前 `Minion` 到 `MinionView` 的查询 |
 | `UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现，不参与规则结算 |
 | `UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理点击、选择状态、英雄技能目标选择、反馈、目标高亮和按钮状态刷新 |
 | `UI/Formatters/KeywordTextFormatter.cs` | UI 层关键词文本格式化工具，供 `CardView` 和 `MinionView` 复用 |
@@ -557,7 +559,10 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 阶段 3.13：英雄技能最小闭环已完成，玩家和 AI 都能正常使用英雄技能
 阶段 3 AI v1 回归清单：已整理到 Docs/08_AIReview.md
 后续求职导向路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：阶段 4.6 第一刀，优先把 `BoardView` 改成轻量复用：已有 `MinionView` 够用则刷新，不够再创建，多余则隐藏；先不碰 `HandView`，避免一次改动过大
+阶段 4.6 第一刀：`BoardView` 轻量复用已完成并通过 Play 模式验证。已有 `MinionView` 够用则刷新，不够再创建，多余则隐藏。
+阶段 4.6 第二刀：`HandView` 轻量复用已完成并通过 Play 模式验证。已有 `CardView` 够用则刷新，不够再创建，多余则隐藏。
+阶段 4.6 结论：当前只做轻量复用，不引入完整对象池。这样能减少战斗中反复 `Instantiate` / `Destroy`，也让后续动画目标更稳定；完整对象池等死亡前动画、攻击动画和更复杂 UI 出现后再考虑。
+下一步：阶段 4.7 主流程与套牌选择。
 
 UI 拆分 / UI 复用刷新：
 从阶段 4.6 开始分刀整理。

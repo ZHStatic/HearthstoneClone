@@ -11,9 +11,9 @@
 | 类 | 文件 | 主要职责 |
 |----|------|----------|
 | `CardView` | `Assets/Scripts/UI/Views/CardView.cs` | 显示一张手牌，区分随从/法术的基础数值显示，显示关键词、战吼和亡语文字，点击后把 `Card` 通知给上层 |
-| `HandView` | `Assets/Scripts/UI/Views/HandView.cs` | 根据当前玩家手牌生成多个 `CardView` |
+| `HandView` | `Assets/Scripts/UI/Views/HandView.cs` | 根据当前玩家手牌复用并刷新多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/Views/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
-| `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表生成多个 `MinionView`，传递随从点击回调和目标高亮状态，并提供当前 `Minion` 到 `MinionView` 的查询 |
+| `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表复用并刷新多个 `MinionView`，传递随从点击回调和目标高亮状态，并提供当前 `Minion` 到 `MinionView` 的查询 |
 | `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
 | `BattlePresentationController` | `Assets/Scripts/UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
@@ -27,7 +27,6 @@
 - 英雄技能独立图标、动画和冷却表现
 - 独立的法术类型/效果显示区域
 - 独立的随从 Ready、关键词、亡语显示区域
-- `HandView` / `BoardView` 的 View 复用刷新
 
 ## 总体思路
 
@@ -151,13 +150,16 @@ Taunt -> 嘲讽
 它负责：
 
 ```text
-清空旧手牌 UI
 读取当前手牌列表
-为每张 Card 创建一个 CardView
+复用或创建 CardView
 把点击回调传给 CardView
+隐藏本次没有用到的 CardView
 ```
 
 它不负责判断卡牌能不能打出。
+
+阶段 4.6 第二刀后，`HandView` 不再每次刷新都销毁重建 `CardView`。
+它会优先复用已经创建过的 View，不够时再创建新的，多余时清空并隐藏。
 
 ### MinionView
 
@@ -219,6 +221,10 @@ EnemyBoardView
 阶段 4.5 第三刀后，`BoardView` 还会记录当前 `Minion` 到 `MinionView` 的映射。
 这个映射只用于表现层查询，例如 Core 结算后让存活的受击随从播放一次脉冲。
 `BoardView` 仍然不判断随从是否受伤、是否死亡或攻击是否合法。
+
+阶段 4.6 第一刀后，`BoardView` 不再每次刷新都销毁重建 `MinionView`。
+它会优先复用已经创建过的 View，不够时再创建新的，多余时清空并隐藏。
+这是阶段性简化，不是完整对象池；当前目标是减少战斗中反复 `Instantiate` / `Destroy`，并让后续动画目标更稳定。
 
 ### GameUIController
 
@@ -331,7 +337,7 @@ UI 操作状态包括：
 英雄技能打随从成功 -> 刷新 UI -> 存活目标随从 View 脉冲
 ```
 
-因为 `BoardView.Refresh()` 当前仍会重建 `MinionView`，所以随从目标脉冲必须在刷新后重新查询目标 View。
+因为 `BoardView.Refresh()` 会刷新当前随从到 `MinionView` 的映射，所以随从目标脉冲必须在刷新后重新查询目标 View。
 如果目标随从已经死亡并被刷新移除，当前阶段允许退回通用反馈；死亡前动画后续单独处理。
 
 ### BattlePresentationController
@@ -422,8 +428,8 @@ flowchart TD
 
 ```text
 GameUIController 读取 GameManager 当前状态
-HandView 根据只读的 Player.Hand 创建 CardView
-BoardView 根据 Board.GetMinions(...) 创建 MinionView
+HandView 根据只读的 Player.Hand 复用并刷新 CardView
+BoardView 根据 Board.GetMinions(...) 复用并刷新 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
 GameUIController 使用反馈文本显示费用不足、不能攻击、目标非法等操作结果
 阶段 2.10 中，随从出牌和法术释放反馈改为读取 GameActionResult.Message
@@ -685,13 +691,13 @@ Core 规则结算成功
 ```text
 我没有让动画或音效决定规则结果，而是让 Core 先完成结算，再把结算日志交给表现层播放。
 这样可以避免 UI 自己猜伤害、圣盾、死亡等结果。
-第二刀里我先让稳定存在的英雄按钮和 GameOverText 做具体反馈，因为它们不会像随从 View 一样在刷新时被重建。
-第三刀里随从目标反馈先通过 BoardView 的运行时映射解决，但这仍是阶段性简化；后续做 View 复用后，动画目标会更稳定。
+第二刀里我先让稳定存在的英雄按钮和 GameOverText 做具体反馈。
+第三刀里随从目标反馈先通过 BoardView 的运行时映射解决；阶段 4.6 第一刀后，BoardView 开始复用 MinionView，后续做死亡前动画和攻击动画时目标会更稳定。
 ```
 
 ### 刷新方式优化
 
-当前 `HandView` / `BoardView` 每次刷新都会：
+阶段 4.6 前，`HandView` / `BoardView` 每次刷新都会：
 
 ```text
 Destroy 旧 View
@@ -701,7 +707,7 @@ Instantiate 新 View
 
 卡牌少时可以接受，但后续加入动画、选中状态、AI 自动行动和更多日志时，会不稳定也浪费。
 
-后续计划改成简单复用：
+阶段 4.6 第一刀已经先把 `BoardView` 改成简单复用；第二刀继续把 `HandView` 也改成同样的轻量复用：
 
 ```text
 已有 View 足够：复用并刷新数据
@@ -712,6 +718,15 @@ Clear()：隐藏而不是销毁
 
 这不是完整对象池系统，只是阶段性整理。
 完整对象池等动画和复杂 UI 出现后再考虑。
+
+阶段 4.6 的收口结论：
+
+```text
+当前战斗中手牌和战场 View 数量很小，所以不急着上完整对象池框架。
+但频繁 Destroy / Instantiate 会带来 GC 压力，也会让后续动画目标不稳定。
+因此先做轻量复用：View 创建后保留，刷新时改数据，多余时 Clear + SetActive(false)。
+这个取舍便于解释，也为后续死亡前动画、攻击动画和移动端性能说明打基础。
+```
 
 ## Unity 对象关系
 
@@ -767,8 +782,8 @@ Assets/Prefabs/UI/MinionViewPrefab.prefab
 
 ```text
 当前 UI 层只负责表现和输入，不负责规则。
-单张卡牌由 CardView 显示，手牌区域由 HandView 批量生成。
-战场随从由 MinionView 显示，BoardView 负责显示一方战场。
+单张卡牌由 CardView 显示，手牌区域由 HandView 批量刷新。
+战场随从由 MinionView 显示，BoardView 负责刷新一方战场。
 GameUIController 作为 UI 层入口，把出牌、随从攻击随从、随从攻击英雄等点击操作转换成 GameManager 的规则方法调用。
 阶段 1.5 中，选中高亮和操作提示属于 UI 层反馈；阶段 2.1 中，法术选目标也属于 UI 层操作状态。
 阶段 2.2 / 2.3 中，关键词显示属于纯表现层逻辑，CardView 读取 CardData.Keywords，MinionView 读取 Minion.Keywords，不判断关键词规则。

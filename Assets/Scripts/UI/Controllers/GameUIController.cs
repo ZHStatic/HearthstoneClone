@@ -769,7 +769,7 @@ public class GameUIController : MonoBehaviour
 
     /// <summary>
     /// 根据随从对象找到它当前所在的 MinionView，作为受击反馈目标。
-    /// 这个方法只在 RefreshAll 之后调用，因为 BoardView.Refresh 会重建 View。
+    /// 这个方法只在 RefreshAll 之后调用，确保 BoardView 的随从到 View 映射已经刷新。
     /// </summary>
     private Transform GetMinionPulseTarget(Minion minion)
     {

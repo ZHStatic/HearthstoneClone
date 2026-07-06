@@ -195,7 +195,9 @@ GameManager 在出牌、召唤和死亡时发布事件，调试日志可以监�
 
 ```text
 手牌和战场都是重复元素，所以我用 CardViewPrefab 和 MinionViewPrefab 作为模板。
-HandView 和 BoardView 根据运行时数据动态生成 UI，避免为每张牌手动摆一个对象。
+HandView 和 BoardView 根据运行时数据刷新 UI，已有 View 够用就复用，不够时才从 Prefab 创建。
+这样既避免为每张牌手动摆对象，也减少了战斗中反复 Instantiate / Destroy 带来的 GC 和动画目标不稳定问题。
+当前我没有引入完整对象池，因为 Demo 的手牌和随从数量很小；先做轻量复用更容易维护和讲清楚，后续有更复杂动画时再扩展成对象池。
 ```
 
 ### 10. 阶段 1.5 的 UI 反馈取舍

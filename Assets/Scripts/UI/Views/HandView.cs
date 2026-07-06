@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// 手牌区域 UI。
-/// 根据传入的 Card 列表生成多张 CardView。
+/// 根据传入的 Card 列表刷新多张 CardView。
 /// 它只负责显示手牌，不判断卡牌是否能打出。
 /// </summary>
 public class HandView : MonoBehaviour
@@ -14,7 +14,8 @@ public class HandView : MonoBehaviour
     [SerializeField] private Transform cardContainer;
     [SerializeField] private CardView cardViewPrefab;
 
-    // 当前已经生成出来的手牌 UI 列表，用于刷新时统一清理。
+    // 当前已经生成出来的手牌 UI 列表。
+    // 刷新时优先复用已有 View，不够再创建，多余的隐藏起来。
     private readonly List<CardView> cardViews = new List<CardView>();
 
     // 单张卡牌被点击后，要通知给上层的方法。
@@ -30,39 +31,76 @@ public class HandView : MonoBehaviour
     }
 
     /// <summary>
-    /// 重新生成手牌 UI。
-    /// 先清空旧 UI，再根据 cards 创建新的 CardView。
+    /// 刷新手牌 UI。
+    /// 已有 CardView 够用就复用，不够时才创建新的。
     /// </summary>
     public void Refresh(IReadOnlyList<Card> cards)
     {
-        Clear();
-
-        if (cards == null) return;
-        if (cardContainer == null) return;
-        if (cardViewPrefab == null) return;
-
-        foreach (Card card in cards)
+        if (cards == null || cardContainer == null || cardViewPrefab == null)
         {
-            CardView cardView = Instantiate(cardViewPrefab, cardContainer);
-            cardView.SetCard(card, onCardClicked);
-            cardViews.Add(cardView);
+            HideUnusedViews(0);
+            return;
         }
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            Card card = cards[i];
+            CardView cardView = GetOrCreateCardView(i);
+
+            if (cardView == null) continue;
+
+            cardView.gameObject.SetActive(true);
+            cardView.SetCard(card, onCardClicked);
+        }
+
+        HideUnusedViews(cards.Count);
     }
 
     /// <summary>
-    /// 清理当前生成的所有 CardView。
+    /// 清空当前显示的所有 CardView。
+    /// View 会被隐藏并保留，供后续刷新复用。
     /// </summary>
     public void Clear()
     {
-        foreach (CardView cardView in cardViews)
+        HideUnusedViews(0);
+    }
+
+    /// <summary>
+    /// 获取指定位置的 CardView。
+    /// 已经创建过就复用，不够时才创建新的。
+    /// </summary>
+    private CardView GetOrCreateCardView(int index)
+    {
+        if (index < cardViews.Count)
         {
-            if (cardView != null)
+            CardView existingView = cardViews[index];
+            if (existingView != null)
             {
-                cardView.gameObject.SetActive(false);
-                Destroy(cardView.gameObject);
+                return existingView;
             }
+
+            CardView replacementView = Instantiate(cardViewPrefab, cardContainer);
+            cardViews[index] = replacementView;
+            return replacementView;
         }
 
-        cardViews.Clear();
+        CardView newView = Instantiate(cardViewPrefab, cardContainer);
+        cardViews.Add(newView);
+        return newView;
+    }
+
+    /// <summary>
+    /// 隐藏本次刷新没有用到的 CardView。
+    /// </summary>
+    private void HideUnusedViews(int usedCount)
+    {
+        for (int i = usedCount; i < cardViews.Count; i++)
+        {
+            CardView cardView = cardViews[i];
+            if (cardView == null) continue;
+
+            cardView.Clear();
+            cardView.gameObject.SetActive(false);
+        }
     }
 }
