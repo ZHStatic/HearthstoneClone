@@ -103,6 +103,10 @@ crashlytics-build.properties
 # 6. 项目特定排除
 # ============================================================
 
+# 本地 AI 工具配置/缓存，不属于 Unity 项目源码
+.agents/
+.claude/
+
 # 如果你使用 Unity Memory Profiler 等工具，它们生成的数据很大
 # MemoryCaptures/
 

@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(\\(Get-Item \"d:\\\\demo\\\\HearthstoneClone\\\\Docs\\\\ProjectOverview.html\"\\).Length / 1KB)",
-      "PowerShell(Start-Process \"d:\\\\demo\\\\HearthstoneClone\\\\Docs\\\\ProjectOverview.html\")"
-    ]
-  }
-}
