@@ -11,6 +11,8 @@ using UnityEngine;
 public static class AITestDeckEditorTool
 {
     private const string CardFolderPath = "Assets/ScriptableObjects/Cards";
+    private const string ScriptableObjectFolderPath = "Assets/ScriptableObjects";
+    private const string DeckFolderPath = "Assets/ScriptableObjects/Decks";
 
     private static readonly DeckEntry[] ComprehensiveDeckEntries =
     {
@@ -61,7 +63,14 @@ public static class AITestDeckEditorTool
             return;
         }
 
-        ApplyDecks(deck, deck, "Comprehensive Deck To Both Players");
+        DeckData deckData = CreateOrUpdateDeckAsset(
+            "ai_test_comprehensive",
+            "AI 测试综合套牌",
+            "覆盖低费随从、法术、嘲讽、圣盾、战吼和亡语的综合测试套牌。",
+            deck);
+        if (deckData == null) return;
+
+        ApplyDecks(deckData, deckData, "Comprehensive Deck To Both Players");
     }
 
     [MenuItem("HearthstoneClone/AI Test Deck/Apply Fixed Observation Deck")]
@@ -77,10 +86,22 @@ public static class AITestDeckEditorTool
             return;
         }
 
-        ApplyDecks(playerDeck, enemyDeck, "Fixed Observation Deck");
+        DeckData playerDeckData = CreateOrUpdateDeckAsset(
+            "ai_test_observation_player",
+            "AI 观察玩家套牌",
+            "用于 AI 观察局的玩家侧综合套牌。",
+            playerDeck);
+        DeckData enemyDeckData = CreateOrUpdateDeckAsset(
+            "ai_test_observation_enemy",
+            "AI 观察敌方套牌",
+            "按固定顺序排列，便于关闭洗牌后观察 AI 起手和行动选择。",
+            enemyDeck);
+        if (playerDeckData == null || enemyDeckData == null) return;
+
+        ApplyDecks(playerDeckData, enemyDeckData, "Fixed Observation Deck");
     }
 
-    private static void ApplyDecks(List<CardData> playerDeck, List<CardData> enemyDeck, string presetName)
+    private static void ApplyDecks(DeckData playerDeck, DeckData enemyDeck, string presetName)
     {
         GameManager gameManager = FindGameManagerInScene();
         if (gameManager == null)
@@ -90,8 +111,8 @@ public static class AITestDeckEditorTool
         }
 
         SerializedObject serializedGameManager = new SerializedObject(gameManager);
-        bool wrotePlayerDeck = WriteDeckProperty(serializedGameManager, "playerDeckData", playerDeck);
-        bool wroteEnemyDeck = WriteDeckProperty(serializedGameManager, "enemyDeckData", enemyDeck);
+        bool wrotePlayerDeck = WriteObjectProperty(serializedGameManager, "defaultPlayerDeck", playerDeck);
+        bool wroteEnemyDeck = WriteObjectProperty(serializedGameManager, "defaultEnemyDeck", enemyDeck);
         if (!wrotePlayerDeck || !wroteEnemyDeck)
         {
             return;
@@ -164,12 +185,67 @@ public static class AITestDeckEditorTool
         return cardData;
     }
 
-    private static bool WriteDeckProperty(SerializedObject serializedObject, string propertyName, List<CardData> deck)
+    private static DeckData CreateOrUpdateDeckAsset(string deckKey, string deckName, string description, List<CardData> cards)
+    {
+        EnsureDeckFolder();
+
+        string assetPath = $"{DeckFolderPath}/{deckKey}.asset";
+        DeckData deckData = AssetDatabase.LoadAssetAtPath<DeckData>(assetPath);
+        if (deckData == null)
+        {
+            deckData = ScriptableObject.CreateInstance<DeckData>();
+            AssetDatabase.CreateAsset(deckData, assetPath);
+        }
+
+        SerializedObject serializedDeck = new SerializedObject(deckData);
+        bool wroteKey = WriteStringProperty(serializedDeck, "deckKey", deckKey);
+        bool wroteName = WriteStringProperty(serializedDeck, "deckName", deckName);
+        bool wroteDescription = WriteStringProperty(serializedDeck, "description", description);
+        bool wroteCards = WriteCardListProperty(serializedDeck, "cards", cards);
+        if (!wroteKey || !wroteName || !wroteDescription || !wroteCards)
+        {
+            Debug.LogError($"AI Test Deck: 写入套牌资源失败 {assetPath}。");
+            return null;
+        }
+
+        serializedDeck.ApplyModifiedProperties();
+        EditorUtility.SetDirty(deckData);
+        AssetDatabase.SaveAssets();
+        return deckData;
+    }
+
+    private static void EnsureDeckFolder()
+    {
+        if (!AssetDatabase.IsValidFolder(ScriptableObjectFolderPath))
+        {
+            AssetDatabase.CreateFolder("Assets", "ScriptableObjects");
+        }
+
+        if (!AssetDatabase.IsValidFolder(DeckFolderPath))
+        {
+            AssetDatabase.CreateFolder(ScriptableObjectFolderPath, "Decks");
+        }
+    }
+
+    private static bool WriteStringProperty(SerializedObject serializedObject, string propertyName, string value)
+    {
+        SerializedProperty property = serializedObject.FindProperty(propertyName);
+        if (property == null || property.propertyType != SerializedPropertyType.String)
+        {
+            Debug.LogError($"AI Test Deck: 找不到 string 字段 {propertyName}。");
+            return false;
+        }
+
+        property.stringValue = value ?? "";
+        return true;
+    }
+
+    private static bool WriteCardListProperty(SerializedObject serializedObject, string propertyName, List<CardData> deck)
     {
         SerializedProperty deckProperty = serializedObject.FindProperty(propertyName);
         if (deckProperty == null || !deckProperty.isArray)
         {
-            Debug.LogError($"AI Test Deck: 找不到 GameManager 字段 {propertyName}。");
+            Debug.LogError($"AI Test Deck: 找不到套牌字段 {propertyName}。");
             return false;
         }
 
@@ -179,6 +255,19 @@ public static class AITestDeckEditorTool
             deckProperty.GetArrayElementAtIndex(i).objectReferenceValue = deck[i];
         }
 
+        return true;
+    }
+
+    private static bool WriteObjectProperty(SerializedObject serializedObject, string propertyName, UnityEngine.Object value)
+    {
+        SerializedProperty property = serializedObject.FindProperty(propertyName);
+        if (property == null || property.propertyType != SerializedPropertyType.ObjectReference)
+        {
+            Debug.LogError($"AI Test Deck: 找不到对象引用字段 {propertyName}。");
+            return false;
+        }
+
+        property.objectReferenceValue = value;
         return true;
     }
 
@@ -204,23 +293,35 @@ public static class AITestDeckEditorTool
         property.boolValue = value;
     }
 
-    private static string BuildAppliedDeckLog(string presetName, List<CardData> playerDeck, List<CardData> enemyDeck)
+    private static string BuildAppliedDeckLog(string presetName, DeckData playerDeck, DeckData enemyDeck)
     {
         StringBuilder builder = new StringBuilder();
         builder.AppendLine($"AI Test Deck: 已应用 {presetName}。");
-        builder.AppendLine($"Player Deck: {playerDeck.Count} 张 - {BuildDeckSummary(playerDeck)}");
-        builder.AppendLine($"Enemy Deck: {enemyDeck.Count} 张 - {BuildDeckSummary(enemyDeck)}");
+        builder.AppendLine($"Player Deck: {BuildDeckLabel(playerDeck)}");
+        builder.AppendLine($"Enemy Deck: {BuildDeckLabel(enemyDeck)}");
         builder.Append("调试开关：关闭洗牌、打印 AI 手牌、打印快照评分、打印快照模拟。确认 Inspector 后请手动保存场景。");
         return builder.ToString();
     }
 
-    private static void LogAppliedDeck(string presetName, List<CardData> playerDeck, List<CardData> enemyDeck)
+    private static void LogAppliedDeck(string presetName, DeckData playerDeck, DeckData enemyDeck)
     {
         Debug.Log(BuildAppliedDeckLog(presetName, playerDeck, enemyDeck));
     }
 
-    private static string BuildDeckSummary(List<CardData> deck)
+    private static string BuildDeckLabel(DeckData deckData)
     {
+        if (deckData == null)
+        {
+            return "未配置";
+        }
+
+        return $"{deckData.DeckName} ({deckData.DeckKey}) - {deckData.CardCount} 张 - {BuildDeckSummary(deckData.Cards)}";
+    }
+
+    private static string BuildDeckSummary(IReadOnlyList<CardData> deck)
+    {
+        if (deck == null) return "空";
+
         Dictionary<string, int> counts = new Dictionary<string, int>();
         foreach (CardData cardData in deck)
         {

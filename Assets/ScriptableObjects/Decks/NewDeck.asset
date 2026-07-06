@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdea4afb417c8544697e31cb85332527, type: 3}
+  m_Name: NewDeck
+  m_EditorClassIdentifier: 
+  deckKey: new_deck
+  deckName: "\u672A\u547D\u540D\u5957\u724C"
+  description: 
+  cards:
+  - {fileID: 11400000, guid: daa9c1e5b349e1a408f9992438ad9808, type: 2}
+  - {fileID: 11400000, guid: 797f54b6637dbbd49b8f37bc619adf88, type: 2}
+  - {fileID: 11400000, guid: 588939b567efd944cafbd087f276b48d, type: 2}
+  - {fileID: 11400000, guid: 588939b567efd944cafbd087f276b48d, type: 2}
+  - {fileID: 11400000, guid: 3e03a446bb1a78f489a26a0fcadf53c5, type: 2}
+  - {fileID: 11400000, guid: b718337dcfd08c9489f99d6dc7503862, type: 2}
+  - {fileID: 11400000, guid: b718337dcfd08c9489f99d6dc7503862, type: 2}

@@ -2213,37 +2213,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67d95a3b3024e34a7b673af5d0d5b24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  logAIHandOnTurnStart: 0
-  logSnapshotEvaluationOnTurnStart: 0
-  logSnapshotSimulationOnTurnStart: 0
+  logAIHandOnTurnStart: 1
+  logSnapshotEvaluationOnTurnStart: 1
+  logSnapshotSimulationOnTurnStart: 1
   enableEnemyAI: 1
   maxAIActionsPerTurn: 20
-  playerDeckData:
-  - {fileID: 11400000, guid: b718337dcfd08c9489f99d6dc7503862, type: 2}
-  - {fileID: 11400000, guid: 3e03a446bb1a78f489a26a0fcadf53c5, type: 2}
-  - {fileID: 11400000, guid: daa9c1e5b349e1a408f9992438ad9808, type: 2}
-  - {fileID: 11400000, guid: baeeb28d032f2c546b563262d434d32e, type: 2}
-  - {fileID: 11400000, guid: 696d51d3b97de034d9db47226bae6559, type: 2}
-  - {fileID: 11400000, guid: d3744839a61f89e489fd4e181bdf5f9d, type: 2}
-  - {fileID: 11400000, guid: daa9c1e5b349e1a408f9992438ad9808, type: 2}
-  - {fileID: 11400000, guid: baeeb28d032f2c546b563262d434d32e, type: 2}
-  - {fileID: 11400000, guid: daaa80806f06b73419868a9c05cc287e, type: 2}
-  - {fileID: 11400000, guid: 3e03a446bb1a78f489a26a0fcadf53c5, type: 2}
-  - {fileID: 11400000, guid: 797f54b6637dbbd49b8f37bc619adf88, type: 2}
-  - {fileID: 11400000, guid: b718337dcfd08c9489f99d6dc7503862, type: 2}
-  enemyDeckData:
-  - {fileID: 11400000, guid: daa9c1e5b349e1a408f9992438ad9808, type: 2}
-  - {fileID: 11400000, guid: 3e03a446bb1a78f489a26a0fcadf53c5, type: 2}
-  - {fileID: 11400000, guid: 797f54b6637dbbd49b8f37bc619adf88, type: 2}
-  - {fileID: 11400000, guid: d3744839a61f89e489fd4e181bdf5f9d, type: 2}
-  - {fileID: 11400000, guid: 3e03a446bb1a78f489a26a0fcadf53c5, type: 2}
-  - {fileID: 11400000, guid: baeeb28d032f2c546b563262d434d32e, type: 2}
-  - {fileID: 11400000, guid: d3744839a61f89e489fd4e181bdf5f9d, type: 2}
-  - {fileID: 11400000, guid: 588939b567efd944cafbd087f276b48d, type: 2}
-  - {fileID: 11400000, guid: 588939b567efd944cafbd087f276b48d, type: 2}
-  - {fileID: 11400000, guid: daaa80806f06b73419868a9c05cc287e, type: 2}
-  - {fileID: 11400000, guid: 74d5432a1bd66e0489c58be47a2e9162, type: 2}
-  - {fileID: 11400000, guid: 588939b567efd944cafbd087f276b48d, type: 2}
+  defaultPlayerDeck: {fileID: 11400000, guid: 2bae192861f20a640a3168efc4fa433a, type: 2}
+  defaultEnemyDeck: {fileID: 11400000, guid: 2bae192861f20a640a3168efc4fa433a, type: 2}
   startingHandCount: 3
   logLegalActionsOnTurnStart: 0
   disableDeckShuffleForDebug: 1

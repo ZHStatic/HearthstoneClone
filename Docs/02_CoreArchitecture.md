@@ -47,6 +47,7 @@ Core 不依赖 UI
 | 类 | 文件 | 当前职责 |
 |----|------|----------|
 | `CardData` | `Assets/Scripts/Core/Cards/CardData.cs` | 卡牌模板数据，Unity Inspector 中配置 |
+| `DeckData` | `Assets/Scripts/Core/Cards/DeckData.cs` | 预制套牌模板数据，保存稳定套牌 key、显示名、说明和 `CardData` 列表 |
 | `CardType` | `Assets/Scripts/Core/Cards/CardType.cs` | 区分随从牌和法术牌 |
 | `SpellTargetType` | `Assets/Scripts/Core/Effects/SpellTargetType.cs` | 描述单目标法术可选目标范围 |
 | `KeywordType` | `Assets/Scripts/Core/Effects/KeywordType.cs` | 关键词类型，当前支持冲锋、嘲讽和圣盾 |
@@ -111,6 +112,7 @@ flowchart TD
     Player --> Card
     Player --> CardData
 
+    DeckData --> CardData
     Card --> CardData
 
     Minion --> CardData
@@ -151,6 +153,7 @@ Minion = 战场上的运行时随从
 
 ```text
 一张 2 费 3/2 的卡牌模板是 CardData。
+一套快攻、嘲讽或亡语主题套牌是 DeckData。
 牌库和手牌里的每一张牌是 Card。
 打到场上以后，它变成 Minion，并拥有当前生命、是否能攻击等状态。
 ```
@@ -161,6 +164,17 @@ Minion = 战场上的运行时随从
 - 同一张模板可以创建多张运行时卡牌。
 - 后续减费、Buff、受伤、圣盾等运行时变化有地方存。
 
+阶段 4.7 开始，`GameManager` 不再直接保存旧版 `playerDeckData` / `enemyDeckData` 卡牌列表，而是通过 `DeckData` 开局：
+
+```text
+DeckData 配置一套 CardData 列表
+-> GameManager.StartNewGame(playerDeck, enemyDeck)
+-> DeckData.CreateCardList()
+-> Player 根据 CardData 列表创建运行时 Card 牌库
+```
+
+`DeckData.DeckKey` 当前只是预制套牌的稳定标识，例如 `ai_test_comprehensive`，不是成熟项目里的压缩分享码。后续如果要做真正的套牌分享码，需要先给每张卡建立稳定卡牌 ID，再编码卡牌 ID 和数量。
+
 ## 当前规则入口
 
 `GameManager` 当前提供这些主要规则入口：
@@ -168,6 +182,7 @@ Minion = 战场上的运行时随从
 | 方法 | 用途 |
 |------|------|
 | `StartNewGame()` | 创建玩家、战场、起手牌并进入第一回合 |
+| `StartNewGame(DeckData playerDeck, DeckData enemyDeck)` | 使用指定预制套牌创建玩家牌库并开始一局新游戏 |
 | `StartTurn(Player targetPlayer)` | 切换当前玩家、补法力、抽牌、重置攻击权限 |
 | `EndTurn()` | 结束当前回合并进入对手回合 |
 | `TryPlayMinionCard(Card card)` | 尝试打出随从牌并召唤随从 |

@@ -8,10 +8,9 @@ using UnityEngine;
 /// </summary>
 public partial class GameManager : MonoBehaviour
 {
-    // 在 Inspector 里配置的双方初始牌库模板。
-    // 每个元素都是一个 CardData asset，运行时会被 Player 转成 Card 实例。
-    [SerializeField] private List<CardData> playerDeckData = new List<CardData>();
-    [SerializeField] private List<CardData> enemyDeckData = new List<CardData>();
+    // 阶段 4.7 起，一局对战通过 DeckData 配置双方预制套牌。
+    [SerializeField] private DeckData defaultPlayerDeck;
+    [SerializeField] private DeckData defaultEnemyDeck;
 
     // 开局每名玩家抽几张牌。先用 3，之后如果要还原炉石规则可以再扩展。
     [SerializeField] private int startingHandCount = 3;
@@ -27,6 +26,8 @@ public partial class GameManager : MonoBehaviour
     public GameEventBus EventBus { get; private set; }
     public BattleLogger BattleLogger { get; private set; }
     public BattleLogEntry LastActionLogEntry { get; private set; }
+    public DeckData CurrentPlayerDeckData { get; private set; }
+    public DeckData CurrentEnemyDeckData { get; private set; }
 
     // 当前正在行动的玩家，以及本局游戏的结果状态。
     public Player CurrentPlayer { get; private set; }
@@ -42,17 +43,30 @@ public partial class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 开始一局新游戏：创建玩家、战场、抽起手牌，然后进入玩家的第一个回合。
+    /// 使用 Inspector 默认套牌开始一局新游戏。
     /// </summary>
     public void StartNewGame()
+    {
+        StartNewGame(defaultPlayerDeck, defaultEnemyDeck);
+    }
+
+    /// <summary>
+    /// 使用指定套牌开始一局新游戏：创建玩家、战场、抽起手牌，然后进入玩家的第一个回合。
+    /// 主菜单和套牌选择界面后续会调用这个入口。
+    /// </summary>
+    public void StartNewGame(DeckData playerDeck, DeckData enemyDeck)
     {
         EventBus = new GameEventBus();
         BattleLogger = new BattleLogger();
         LastActionLogEntry = null;
+        CurrentPlayerDeckData = playerDeck;
+        CurrentEnemyDeckData = enemyDeck;
 
         bool shuffleDeck = !disableDeckShuffleForDebug;
-        Player = new Player(playerDeckData, "Player", shuffleDeck: shuffleDeck);
-        Enemy = new Player(enemyDeckData, "Enemy", shuffleDeck: shuffleDeck);
+        List<CardData> playerCards = CreateCardsFromDeck(playerDeck, "Player");
+        List<CardData> enemyCards = CreateCardsFromDeck(enemyDeck, "Enemy");
+        Player = new Player(playerCards, "Player", shuffleDeck: shuffleDeck);
+        Enemy = new Player(enemyCards, "Enemy", shuffleDeck: shuffleDeck);
         Board = new Board(Player, Enemy);
         InitializeEnemyAI();
 
@@ -65,6 +79,21 @@ public partial class GameManager : MonoBehaviour
         DrawStartingHands(Player);
         DrawStartingHands(Enemy);
         StartTurn(CurrentPlayer);
+    }
+
+    /// <summary>
+    /// 把 DeckData 转换成运行时创建 Player 需要的 CardData 列表。
+    /// 没有配置套牌时返回空列表并输出警告，方便在 Inspector 中发现配置遗漏。
+    /// </summary>
+    private List<CardData> CreateCardsFromDeck(DeckData deckData, string ownerLabel)
+    {
+        if (deckData == null)
+        {
+            Debug.LogWarning($"GameManager: {ownerLabel} 没有配置默认套牌，将使用空牌库开始。");
+            return new List<CardData>();
+        }
+
+        return deckData.CreateCardList();
     }
 
     /// <summary>
