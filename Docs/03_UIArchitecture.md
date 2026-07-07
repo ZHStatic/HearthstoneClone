@@ -16,6 +16,7 @@
 | `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表复用并刷新多个 `MinionView`，传递随从点击回调和目标高亮状态，并提供当前 `Minion` 到 `MinionView` 的查询 |
 | `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
 | `BattlePresentationController` | `Assets/Scripts/UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现 |
+| `DeckSelectionController` | `Assets/Scripts/UI/Controllers/DeckSelectionController.cs` | 显示预制套牌选项，记录当前选中套牌，并调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 进入战斗 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
@@ -405,10 +406,87 @@ Assets/Audio/SFX
 当前仍不做卡牌飞行动画、死亡前动画或伤害数字。
 ```
 
+### DeckSelectionController
+
+`DeckSelectionController` 是阶段 4.7 第二刀新增的套牌选择 UI 入口。
+
+它负责：
+
+```text
+显示可选 DeckData 套牌
+显示套牌名称、说明和有效卡牌数量
+记录当前选中的套牌下标
+处理套牌按钮点击后的选中高亮
+处理“开始对战”按钮
+调用 GameManager.StartNewGame(playerDeck, enemyDeck)
+新开局后调用 GameUIController.RefreshAll()
+切换 DeckSelectionPanel 和 BattlePanel 的显示状态
+```
+
+它不负责：
+
+```text
+创建 Player
+创建 Board
+抽起手牌
+洗牌
+修改手牌、法力、英雄血量或战场
+决定 AI 行动
+处理胜负结算
+```
+
+当前流程：
+
+```text
+玩家进入 Play
+-> DeckSelectionController.ShowDeckSelection()
+-> 显示 DeckSelectionPanel，隐藏 BattlePanel
+-> 玩家点击套牌按钮
+-> SelectDeck(index) 记录 selectedDeckIndex 并刷新按钮高亮
+-> 玩家点击开始对战
+-> StartBattleWithSelectedDeck()
+-> GameManager.StartNewGame(playerDeck, enemyDeck)
+-> GameUIController.RefreshAll()
+-> 隐藏 DeckSelectionPanel，显示 BattlePanel
+```
+
+代码与 Editor 分工：
+
+| 内容 | 放哪里 | 原因 |
+|------|--------|------|
+| 可选套牌列表、默认 AI 套牌、按钮和文本绑定 | Unity Editor / Inspector | 套牌和 UI 选项属于配置，方便策划或制作者替换 |
+| 选中下标、按钮高亮、开始对战调用 | `DeckSelectionController` | 属于运行时 UI 交互状态 |
+| 创建玩家、创建牌库、起手抽牌、进入第一回合 | `GameManager` | 属于 Core 对局规则和初始化 |
+| 套牌选择面板和战斗面板的位置、大小、背景 | Unity Editor / RectTransform | 属于静态视觉布局 |
+
+阶段性简化：
+
+```text
+当前使用同一个 BattlePrototype 场景里的 DeckSelectionPanel / BattlePanel 切换界面。
+这能先验证“选套牌 -> 开局 -> 战斗”的主流程，不需要立刻引入多场景加载或完整 UI Flow Controller。
+成熟项目后续可以拆成 MainMenuScene、BattleScene 和 ResultPanel，或用统一的 UI 状态机管理主流程。
+```
+
+Unity 绑定要求：
+
+```text
+DeckSelectionController 物体上挂 DeckSelectionController
+Game Manager 绑定场景中的 GameManager
+Game UI Controller 绑定场景中的 GameUIController
+Available Decks 绑定 3 套或更多 DeckData.asset
+Default Enemy Deck 绑定 AI 默认 DeckData.asset
+Deck Buttons / Deck Name Texts / Deck Description Texts / Deck Count Texts 按同一顺序绑定
+Selection Panel 绑定 DeckSelectionPanel
+Battle Panel 绑定 BattlePanel
+开始对战按钮 OnClick 绑定 DeckSelectionController.StartBattleWithSelectedDeck()
+```
+
 ## 引用关系
 
 ```mermaid
 flowchart TD
+    DeckSelectionController --> GameManager
+    DeckSelectionController --> GameUIController
     GameUIController --> GameManager
     GameUIController --> BattlePresentationController
     GameUIController --> HandView
@@ -427,6 +505,8 @@ flowchart TD
 文字版：
 
 ```text
+DeckSelectionController 根据玩家选择的 DeckData 调用 GameManager.StartNewGame(playerDeck, enemyDeck)
+DeckSelectionController 在新对局创建后调用 GameUIController.RefreshAll()
 GameUIController 读取 GameManager 当前状态
 HandView 根据只读的 Player.Hand 复用并刷新 CardView
 BoardView 根据 Board.GetMinions(...) 复用并刷新 MinionView
@@ -435,6 +515,7 @@ GameUIController 使用反馈文本显示费用不足、不能攻击、目标非
 阶段 2.10 中，随从出牌和法术释放反馈改为读取 GameActionResult.Message
 阶段 4.1 中，法术选牌、攻击者选择、法术目标、英雄技能目标和攻击目标的主要规则失败反馈都改为读取 GameActionResult.Message
 阶段 4.5 中，GameUIController 会把成功操作产生的 BattleLogEntry 交给 BattlePresentationController 播放基础音效和 UI 脉冲；英雄目标和游戏结束会优先使用具体 UI 目标
+阶段 4.7 第二刀中，DeckSelectionController 只负责套牌选择 UI 和开局入口，不创建 Player / Board，不处理对局规则
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -737,11 +818,15 @@ Canvas
 EventSystem
 GameManager
 GameUIController
+DeckSelectionController
 BattlePresentationController
+DeckSelectionPanel
+BattlePanel
 HandView
 PlayerBoardView
 EnemyBoardView
 AudioSource
+DeckButtons
 EndTurnButton
 PlayerHeroButton
 EnemyHeroButton
@@ -760,6 +845,7 @@ EnemyHeroButton
 阶段 4.5 第一刀已新增 `BattlePresentationController`，并通过 `GameUIController` 在成功操作后触发基础音效和通用 UI 脉冲。
 阶段 4.5 第二刀已让英雄按钮和 `GameOverText` 支持具体目标脉冲。
 阶段 4.5 第三刀已完成存活随从受击目标脉冲代码和 Unity Play 模式验收。
+阶段 4.7 第二刀已新增 `DeckSelectionController`，用同场景 `DeckSelectionPanel` / `BattlePanel` 切换完成套牌选择到战斗开局。
 后续仍计划优化刷新复用。
 
 Prefab：
