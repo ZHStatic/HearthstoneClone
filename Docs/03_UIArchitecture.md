@@ -14,6 +14,7 @@
 | `HandView` | `Assets/Scripts/UI/Views/HandView.cs` | 根据当前玩家手牌复用并刷新多个 `CardView` |
 | `MinionView` | `Assets/Scripts/UI/Views/MinionView.cs` | 显示一个场上随从，点击后把 `Minion` 通知给上层，并显示选中高亮 |
 | `BoardView` | `Assets/Scripts/UI/Views/BoardView.cs` | 根据战场列表复用并刷新多个 `MinionView`，传递随从点击回调和目标高亮状态，并提供当前 `Minion` 到 `MinionView` 的查询 |
+| `DeckOptionView` | `Assets/Scripts/UI/Views/DeckOptionView.cs` | 显示一个套牌选项的名称、说明和卡牌数量，并把点击下标通知给上层 |
 | `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
 | `BattlePresentationController` | `Assets/Scripts/UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现 |
 | `DeckSelectionController` | `Assets/Scripts/UI/Controllers/DeckSelectionController.cs` | 显示预制套牌选项，记录当前选中套牌，并调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 进入战斗 |
@@ -226,6 +227,55 @@ EnemyBoardView
 阶段 4.6 第一刀后，`BoardView` 不再每次刷新都销毁重建 `MinionView`。
 它会优先复用已经创建过的 View，不够时再创建新的，多余时清空并隐藏。
 这是阶段性简化，不是完整对象池；当前目标是减少战斗中反复 `Instantiate` / `Destroy`，并让后续动画目标更稳定。
+
+### DeckOptionView
+
+`DeckOptionView` 是阶段 4.7 第二刀中补充的单个套牌选项 UI。
+
+它负责：
+
+```text
+显示一套 DeckData 的 DeckName
+显示一套 DeckData 的 Description
+显示一套 DeckData 的 CardCount
+根据是否选中切换按钮颜色
+没有 DeckData 时禁用按钮
+点击后把 optionIndex 回传给上层
+```
+
+它不负责：
+
+```text
+保存所有可选套牌列表
+决定当前选中哪套牌
+开始对局
+调用 GameManager
+切换 DeckSelectionPanel / BattlePanel
+```
+
+当前代码关系：
+
+```text
+DeckOptionView.SetOption(index, deckData, onSelected)
+-> 保存这个选项对应的下标和套牌
+-> 点击按钮时调用 onSelected(index)
+```
+
+这和 `CardView` / `MinionView` 的思想一致：
+
+```text
+单个 View 只显示自己负责的数据
+点击后把数据或下标通知给上层
+真正的流程控制交给 Controller
+```
+
+当前阶段说明：
+
+```text
+DeckSelectionController 第二刀已经通过数组绑定完成套牌选择主流程。
+DeckOptionView 已经作为可复用选项 View 存在，但当前 DeckSelectionController 还没有改成批量驱动 DeckOptionView。
+后续如果套牌选项 UI 继续变复杂，可以把 DeckSelectionController 中的按钮 / 名称 / 说明 / 数量数组收敛为 DeckOptionView 数组。
+```
 
 ### GameUIController
 
