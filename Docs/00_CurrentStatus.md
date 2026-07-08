@@ -7,6 +7,8 @@
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
 阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划；阶段 4.1 反馈文本和操作状态整理已完成；阶段 4.2 合法目标高亮和按钮视觉状态已完成代码链路和 Play 模式验证；阶段 4.3 炉石式战斗界面信息层级已完成 Editor 布局调整和 Play 模式验收；阶段 4.4 卡牌和随从显示拆分已完成代码、Prefab 绑定和 Play 模式验收；阶段 4.5 基础动画和音效第一刀已完成基础表现入口和音效资源接入，第二刀已完成英雄按钮和 GameOverText 的具体目标反馈，第三刀已完成随从受击目标脉冲代码和 Play 模式验收。阶段 4.6 View 复用和性能意识已完成：`BoardView` 和 `HandView` 已从全量销毁重建改为轻量复用，并通过 Unity Play 模式验证。阶段 4.7 第一刀已完成：`DeckData` 预制套牌数据、`GameManager` 套牌开局入口和 AI 测试套牌工具改造已通过 Unity 验证。阶段 4.7 第二刀已完成：`DeckSelectionController` 套牌选择 UI 控制器、`DeckOptionView` 单个套牌选项 View、同场景 Panel 切换入口和 Unity 绑定验证已收口。阶段 4.7 第三刀已完成：胜负结算入口、“再来一局”和“回到套牌选择”已通过 Unity 绑定和 Play 模式验证。阶段 4.7 第四刀已完成：演示模式入口、演示套牌创建菜单、两套演示 DeckData、Unity 绑定和 Play 模式验证均已收口。阶段 4.8 已完成：第一轮性能 / 移动端巡检文档已建立，Unity Game 视图中 `1920 x 1080` 和 `2340 x 1080` 布局检查通过，当前不需要修改 Scene、Prefab、ScriptableObject 或 C#。
 
+2026-07-08 决定停止继续扩展阶段 5 功能，项目进入复盘和作品包装阶段。
+
 当前停靠点：
 
 ```text
@@ -25,14 +27,14 @@
 阶段 4.7 第三刀已完成：胜负结算后的再来一局 / 回到套牌选择入口
 阶段 4.7 第四刀已完成：演示模式 / 快速开始入口；演示玩家套牌和演示敌方套牌已生成并绑定
 阶段 4.8 已完成：性能 / 移动端巡检记录；`1920 x 1080` 和 `2340 x 1080` 检查通过，无需修改
-当前重点：阶段 4.8 已收口，下一步进入阶段 5 数据配置和测试工具补强
+当前重点：功能开发冻结；进入复盘和作品包装阶段，不再继续扩展阶段 5 数据工具或新增卡牌机制
 已完成：FeedbackText / GameOverText 拆分；GameOverText 只显示胜负；FeedbackText 显示普通操作反馈；selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态已集中整理；法术、攻击、英雄技能的主要规则失败反馈已改为读取 Core 返回的 GameActionResult.Message；攻击、法术、英雄技能选目标时会基于 Core 验证结果显示合法/非法目标高亮；英雄、英雄技能和结束回合按钮已有基础视觉状态；`BattlePrototype` 已完成阶段 4.3 Canvas 信息层级布局调整；阶段 4.4 已新增 `CardTextFormatter`，手牌卡牌使用 `TypeText` / `EffectText` 拆分卡牌类型和规则文本，场上随从使用 `StatusText` / `KeywordText` / `DeathrattleText` 拆分 Ready、关键词和亡语；阶段 4.5 第一刀新增 `BattlePresentationController`，`GameUIController` 会在 Core 操作成功后把新产生的 `BattleLogEntry` 交给表现层播放音效和通用脉冲；阶段 4.5 第二刀中攻击英雄、法术打英雄、英雄技能打英雄会优先让目标英雄按钮脉冲，游戏结束会优先让 `GameOverText` 脉冲；阶段 4.5 第三刀中 `BoardView` 记录当前 `Minion` 到 `MinionView` 的映射，`GameUIController` 在随从目标操作结算后先刷新 UI，再查找受击随从 View 播放目标脉冲；阶段 4.6 中 `BoardView.Refresh()` 和 `HandView.Refresh()` 已改为按索引复用 View，不够才创建，多余则清空并隐藏；阶段 4.7 第一刀新增 `DeckData`，`GameManager` 已删除旧版 `playerDeckData` / `enemyDeckData`，改为只通过 `DeckData` 创建牌库；AI 测试套牌工具已改为创建 / 更新 `DeckData.asset` 并应用到 `GameManager.defaultPlayerDeck` / `defaultEnemyDeck`；阶段 4.7 第二刀新增 `DeckSelectionController`，通过 Inspector 配置可选 `DeckData`、默认 AI 套牌、套牌按钮和套牌信息文本，点击开始后调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 并刷新战斗 UI；阶段 4.7 第二刀期间补充 `DeckOptionView`，作为后续可复用的单个套牌选项 View，当前还没有替换 `DeckSelectionController` 的数组绑定流程
 已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理；玩家和 AI 都能正常使用英雄技能；阶段 4.3 布局验收中出牌、攻击、法术、英雄技能、结束回合和反馈显示均正常；阶段 4.4 中随从牌、法术牌、Ready、关键词和亡语显示已通过 Prefab 绑定和 Play 模式验证；阶段 4.5 第一刀中音频资源已导入并在 Unity 中完成对应字段绑定，基础音效播放链路已确认没问题；阶段 4.5 第二刀中英雄目标反馈已确认没问题，随从攻击英雄时当前设计是英雄按钮脉冲而不是 FeedbackText 脉冲；阶段 4.5 第三刀 Play 模式验收没问题，随从攻击随从、法术打随从和英雄技能打随从时，存活目标随从会播放目标脉冲；阶段 4.6 第一刀 Play 模式验收没问题，`BoardView` 复用后出牌、死亡、目标高亮和随从受击脉冲正常；阶段 4.6 第二刀 Play 模式验收没问题，`HandView` 复用后抽牌、出牌、切换回合和法术选牌正常；阶段 4.7 第一刀 Unity 验证没问题，DeckData 默认套牌开局和 AI 测试套牌工具可用；阶段 4.7 第二刀 Unity 绑定验证没问题，套牌选择界面可以切换选中按钮、显示名称/说明/数量，并用所选玩家套牌和默认 AI 套牌进入战斗；阶段 4.7 第三刀 Unity 绑定验证没问题，游戏结束后能进入结算入口，“再来一局 / 回到套牌选择”逻辑能走通；阶段 4.8 中 `1920 x 1080` 和 `2340 x 1080` Game 视图检查结果良好，不需要调整 UI 布局或新增代码
-已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败；阶段 4.3 Editor 布局执行清单、阶段 4.4 Prefab 绑定清单、阶段 4.5 音效表现入口说明、阶段 4.6 轻量复用性能说明和阶段 4.7 第二刀套牌选择 UI / 单个套牌选项 View 说明见 `Docs/03_UIArchitecture.md`；阶段 4.8 性能与移动端巡检见 `Docs/09_PerformanceMobileReview.md`
+已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败；阶段 4.3 Editor 布局执行清单、阶段 4.4 Prefab 绑定清单、阶段 4.5 音效表现入口说明、阶段 4.6 轻量复用性能说明和阶段 4.7 第二刀套牌选择 UI / 单个套牌选项 View 说明见 `Docs/03_UIArchitecture.md`；阶段 4.8 性能与移动端巡检见 `Docs/09_PerformanceMobileReview.md`；总复盘见 `Docs/10_ProjectRetrospective.md`
 已规划：阶段 4.1 反馈文本和操作状态 -> 阶段 4.2 合法目标高亮和按钮状态 -> 阶段 4.3 炉石式信息层级 -> 阶段 4.4 卡牌和随从显示拆分 -> 阶段 4.5 基础动画和音效 -> 阶段 4.6 View 复用和性能意识
-后续路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：进入阶段 5 数据配置和测试工具补强；继续不由 Codex 直接改 Scene、Prefab、ScriptableObject 或 `.meta`
-学习节奏：每个小任务开始前先列必学点和属性清单，确认后再写代码
+后续路线：冻结功能 -> 复盘架构妥协 -> 整理 README / 面试讲稿 / 截图 / 演示视频 -> 用更小的新项目练清晰架构
+下一步：只做包装材料和复盘补充；不继续由 Codex 修改 Scene、Prefab、ScriptableObject 或 `.meta`
+学习节奏：不再往当前项目继续堆功能；后续新项目仍然保持每个类先列清单、确认后再写代码
 ```
 
 冲锋的最小链路已经测试通过：`CardData` 配置关键词，`Minion` 复制关键词，`GameManager` 在召唤后让冲锋随从立刻可以攻击，`CardView` 可以在手牌描述区显示“冲锋”。
@@ -263,6 +265,8 @@ AI 使用英雄技能
 | `Docs/05_InterviewNotes.md` | 面试时怎么讲这个项目 |
 | `Docs/06_Stage2Review.md` | 阶段 2 收尾复盘、演示脚本和进入 AI 前检查点 |
 | `Docs/08_AIReview.md` | 阶段 3 AI v1 回归清单、演示观察点和阶段性简化 |
+| `Docs/09_PerformanceMobileReview.md` | 阶段 4.8 性能意识、移动端适配检查和优化取舍 |
+| `Docs/10_ProjectRetrospective.md` | 项目总复盘、架构妥协、包装清单和下一个项目建议 |
 | `Docs/Learning/` | 学习笔记，不要求和正式架构文档完全同步 |
 
 ## 固定巡检方法
@@ -545,37 +549,15 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 
 ## 下一步
 
-阶段 2.10 本轮核心优化已经完成，阶段 3 已进入评估和模拟链路：
+本项目当前不再继续进入阶段 5 数据配置和测试工具补强。阶段 4.8 后的判断已经调整为：功能开发冻结，进入复盘和作品包装。
 
 ```text
-阶段 3.0 / 3.1：AI 基础行动和自动回合已写入
-阶段 3.2：基础动作选择和选择原因日志已写入
-阶段 3.3：AI 调试验证入口和第一轮策略微调已写入
-阶段 3.4：评估函数和评分明细已写入
-阶段 3.5：快照数据、动作映射、单步模拟和调试验证入口已写入
-阶段 3.6：评分优先级选择、被选动作模拟评分日志、EndTurn 快照修正和最小收益门槛已写入
-阶段 3.7：允许小亏换节奏阈值和选择原因日志已写入
-阶段 3.8：出随从关键词和无目标战吼快照模拟已写入
-阶段 3.9：亡语伤害快照模拟已写入
-阶段 3.10：同回合后续攻击预估已写入
-阶段 3.11：具体手牌快照已写入
-阶段 3.12：基于 CardSnapshot 的继续出牌模拟已写入
-阶段 3.12 Play 模式观察：AI 连续出牌和连续攻击行为基本合理
-阶段 3.13：英雄技能最小闭环已完成，玩家和 AI 都能正常使用英雄技能
-阶段 3 AI v1 回归清单：已整理到 Docs/08_AIReview.md
-后续求职导向路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-阶段 4.6 第一刀：`BoardView` 轻量复用已完成并通过 Play 模式验证。已有 `MinionView` 够用则刷新，不够再创建，多余则隐藏。
-阶段 4.6 第二刀：`HandView` 轻量复用已完成并通过 Play 模式验证。已有 `CardView` 够用则刷新，不够再创建，多余则隐藏。
-阶段 4.6 结论：当前只做轻量复用，不引入完整对象池。这样能减少战斗中反复 `Instantiate` / `Destroy`，也让后续动画目标更稳定；完整对象池等死亡前动画、攻击动画和更复杂 UI 出现后再考虑。
-阶段 4.7 第一刀：`DeckData` 预制套牌数据、`GameManager` DeckData 开局入口和 AI 测试套牌工具改造已完成并通过 Unity 验证。
-阶段 4.7 第二刀：`DeckSelectionController` 套牌选择 UI 控制器已完成并通过 Unity 绑定验证。当前用同一场景里的 `DeckSelectionPanel` / `BattlePanel` 切换主流程，这是阶段性简化，不是成熟项目最终的场景流转方案。`DeckOptionView` 已补充为单个套牌选项 View，后续可以用它替换控制器里的按钮 / 文本数组绑定。
-阶段 4.7 第三刀：胜负结算后的“再来一局 / 回到套牌选择”入口已完成。`DeckSelectionController` 已支持 `SettlementPanel`、`SettlementResultText`、`RestartBattleButton`、`BackToDeckSelectionButton`、`ShowSettlement()`、`RestartBattleWithSelectedDeck()` 和 `ReturnToDeckSelection()`；`GameUIController` 会在检测到 `GameManager.IsGameOver` 后通知 `DeckSelectionController.ShowSettlement()`。Unity 绑定和 Play 模式验证已确认逻辑能走通。
-阶段 4.7 第四刀：演示模式 / 快速开始入口已完成。`GameManager` 新增 `StartNewGame(playerDeck, enemyDeck, shuffleDeck)`，`DeckSelectionController` 新增 `DemoPlayerDeck`、`DemoEnemyDeck`、`DemoShuffleDeck`、`DemoBattleButton` 和 `StartDemoBattle()`；演示入口默认不洗牌，用于录屏或面试时稳定起手。`AITestDeckEditorTool` 新增 `HearthstoneClone/Demo Deck/Create And Apply Demo Decks` 菜单，已创建 / 更新 `demo_player_showcase` 和 `demo_enemy_showcase` 两套 `DeckData`，并绑定到 `DeckSelectionController` 的演示套牌字段。Unity 绑定和 Play 模式验证已确认没问题。
-阶段 4.8：性能 / 移动端巡检已完成。`1920 x 1080` 和 `2340 x 1080` Game 视图检查结果良好，不需要修改 Scene、Prefab 或 C#。
-下一步：阶段 5 数据配置和测试工具补强。
-
-UI 拆分 / UI 复用刷新：
-从阶段 4.6 开始分刀整理。
+已完成：核心对局、关键词、法术、战吼、亡语、圣盾、英雄技能、AI、UI 打磨、套牌选择、演示模式、性能 / 移动端巡检
+已决定：停止继续新增阶段 5 工具和卡牌机制
+当前重点：README、项目复盘、面试讲稿、截图和演示视频
+复盘文档：Docs/10_ProjectRetrospective.md
+包装原则：诚实展示完整闭环和学习收获，不把当前架构包装成商业级终版
+下一个学习方向：另开更小的 CardBattleCoreV2，专门练清晰架构和自动化测试
 ```
 
-继续写代码前，仍然先写属性清单，再动代码。
+如果后续必须修改当前项目代码，只处理影响演示的明确 bug；新增 C# 类仍然先列属性清单，再动代码。

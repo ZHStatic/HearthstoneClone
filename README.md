@@ -4,7 +4,7 @@
 
 ## 简介
 
-HearthstoneClone 是一个使用 Unity 2020.3 和 C# 实现的炉石类单人卡牌对战项目。当前重点是完整的单局对战、清晰的规则层边界、可配置卡牌与套牌数据、基础 AI 行动和可读的 UI 反馈。
+HearthstoneClone 是一个使用 Unity 2020.3 和 C# 实现的炉石类单人卡牌对战项目。当前已经停止继续扩展功能，进入复盘和作品包装阶段；项目重点是保留完整的单局对战、规则扩展尝试、基础 AI 行动、可读 UI 反馈，以及对架构取舍的总结。
 
 ## 当前状态
 
@@ -22,7 +22,7 @@ HearthstoneClone 是一个使用 Unity 2020.3 和 C# 实现的炉石类单人卡
 
 - 阶段 4.7 已完成：预制套牌、套牌选择、胜负结算和演示模式入口。
 - 阶段 4.8 已完成：轻量复用和横屏比例检查通过，无需额外布局或代码修改。
-- 下一步进入阶段 5：数据配置和测试工具补强。
+- 功能开发已冻结：不再继续扩展阶段 5 数据工具或新增卡牌机制，后续只做复盘、截图、演示视频和面试材料整理。
 
 ## 技术栈
 
@@ -91,6 +91,19 @@ HearthstoneClone/AI Test Deck/Apply Fixed Observation Deck
 - 战斗日志记录关键结算结果，UI 反馈优先读取 Core 返回的实际结果。
 - 亡语通过 `MinionDied` 事件触发；基础法术、战吼和英雄技能仍保留直接结算的阶段性实现。
 
+## 复盘结论
+
+这个项目适合作为第一个完整 Unity 卡牌对战 Demo 保留，而不是继续扩展成长期维护的复杂卡牌框架。
+
+当前已知架构妥协：
+
+- `GameManager` 承担了较多流程、规则和调试职责。
+- 法术、战吼、亡语和英雄技能的效果执行方式还没有统一成完整效果系统。
+- UI 是在原型基础上逐步补强，`GameUIController` 仍承担较多输入状态协调。
+- AI 快照模拟能解释决策，但和真实规则之间存在重复模拟逻辑。
+
+这些问题会在面试中作为项目复盘和后续改进方向说明，而不是继续在当前结构上堆新功能。
+
 ## 文档入口
 
 - [当前进度](Docs/00_CurrentStatus.md)
@@ -100,6 +113,7 @@ HearthstoneClone/AI Test Deck/Apply Fixed Observation Deck
 - [功能流程](Docs/04_FeatureFlows.md)
 - [AI 回归清单](Docs/08_AIReview.md)
 - [性能与移动端巡检](Docs/09_PerformanceMobileReview.md)
+- [项目复盘](Docs/10_ProjectRetrospective.md)
 
 ## License
 
