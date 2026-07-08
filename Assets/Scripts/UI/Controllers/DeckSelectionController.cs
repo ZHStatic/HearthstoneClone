@@ -26,6 +26,18 @@ public class DeckSelectionController : MonoBehaviour
     // 当前阶段先让 AI 固定使用一套牌，方便验证“玩家选不同套牌后能进入战斗”这条主流程。
     [SerializeField] private DeckData defaultEnemyDeck;
 
+    // 演示模式使用的玩家套牌。
+    // 没有绑定时会退回当前选中的玩家套牌，避免演示入口因为漏绑直接失效。
+    [SerializeField] private DeckData demoPlayerDeck;
+
+    // 演示模式使用的 AI 套牌。
+    // 没有绑定时会退回默认 AI 套牌；默认 AI 套牌也没有时，临时使用玩家演示套牌。
+    [SerializeField] private DeckData demoEnemyDeck;
+
+    // 演示模式是否洗牌。
+    // 默认 false，方便录屏或面试时稳定看到同样的起手。
+    [SerializeField] private bool demoShuffleDeck = false;
+
     // 每个 DeckOptionView 对应屏幕上的一个套牌选项。
     // 一个选项内部自己绑定 Button、NameText、DescriptionText 和 CountText。
     [SerializeField] private DeckOptionView[] deckOptionViews;
@@ -50,6 +62,10 @@ public class DeckSelectionController : MonoBehaviour
     // 如果这里绑定了 Button 字段，代码会自动注册点击事件；不要再在 Inspector OnClick 里重复绑定同一个方法。
     [SerializeField] private Button restartBattleButton;
     [SerializeField] private Button backToDeckSelectionButton;
+
+    // 演示模式按钮。
+    // 如果这里绑定了 Button 字段，代码会自动注册点击事件；不要再在 Inspector OnClick 里重复绑定同一个方法。
+    [SerializeField] private Button demoBattleButton;
 
     // 当前选中的玩家套牌下标。
     // -1 表示还没有选中任何有效套牌。
@@ -78,12 +94,14 @@ public class DeckSelectionController : MonoBehaviour
         SetupDeckOptionViews();
         SelectFirstAvailableDeck();
         RegisterSettlementButtons();
+        RegisterDemoButton();
         ShowDeckSelection();
     }
 
     private void OnDestroy()
     {
         UnregisterSettlementButtons();
+        UnregisterDemoButton();
     }
 
     /// <summary>
@@ -127,6 +145,37 @@ public class DeckSelectionController : MonoBehaviour
 
         DeckData enemyDeck = defaultEnemyDeck != null ? defaultEnemyDeck : playerDeck;
         gameManager.StartNewGame(playerDeck, enemyDeck);
+
+        if (gameUIController != null)
+        {
+            gameUIController.RefreshAll();
+        }
+
+        ShowBattle();
+    }
+
+    /// <summary>
+    /// 使用演示模式配置开始一局稳定对战。
+    /// 这是“演示模式”按钮应该绑定的入口。
+    /// </summary>
+    public void StartDemoBattle()
+    {
+        if (gameManager == null)
+        {
+            Debug.LogWarning("DeckSelectionController: 没有绑定 GameManager，无法开始演示对局。");
+            return;
+        }
+
+        DeckData playerDeck = GetDemoPlayerDeck();
+        if (playerDeck == null)
+        {
+            Debug.LogWarning("DeckSelectionController: 没有配置演示玩家套牌，也没有选中有效套牌，无法开始演示对局。");
+            ShowDeckSelection();
+            return;
+        }
+
+        DeckData enemyDeck = GetDemoEnemyDeck(playerDeck);
+        gameManager.StartNewGame(playerDeck, enemyDeck, demoShuffleDeck);
 
         if (gameUIController != null)
         {
@@ -274,6 +323,22 @@ public class DeckSelectionController : MonoBehaviour
         }
     }
 
+    private void RegisterDemoButton()
+    {
+        if (demoBattleButton != null)
+        {
+            demoBattleButton.onClick.AddListener(StartDemoBattle);
+        }
+    }
+
+    private void UnregisterDemoButton()
+    {
+        if (demoBattleButton != null)
+        {
+            demoBattleButton.onClick.RemoveListener(StartDemoBattle);
+        }
+    }
+
     private void RefreshSettlementResultText()
     {
         if (settlementResultText == null) return;
@@ -300,6 +365,19 @@ public class DeckSelectionController : MonoBehaviour
         return IsValidDeckIndex(selectedDeckIndex)
             ? availableDecks[selectedDeckIndex]
             : null;
+    }
+
+    private DeckData GetDemoPlayerDeck()
+    {
+        return demoPlayerDeck != null ? demoPlayerDeck : GetSelectedDeck();
+    }
+
+    private DeckData GetDemoEnemyDeck(DeckData fallbackPlayerDeck)
+    {
+        if (demoEnemyDeck != null) return demoEnemyDeck;
+        if (defaultEnemyDeck != null) return defaultEnemyDeck;
+
+        return fallbackPlayerDeck;
     }
 
     private bool IsValidDeckIndex(int index)

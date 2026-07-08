@@ -56,13 +56,21 @@ public partial class GameManager : MonoBehaviour
     /// </summary>
     public void StartNewGame(DeckData playerDeck, DeckData enemyDeck)
     {
+        StartNewGame(playerDeck, enemyDeck, !disableDeckShuffleForDebug);
+    }
+
+    /// <summary>
+    /// 使用指定套牌和洗牌设置开始一局新游戏。
+    /// 演示模式可以传入 shuffleDeck = false，让起手更稳定；普通开局仍然走上面的入口。
+    /// </summary>
+    public void StartNewGame(DeckData playerDeck, DeckData enemyDeck, bool shuffleDeck)
+    {
         EventBus = new GameEventBus();
         BattleLogger = new BattleLogger();
         LastActionLogEntry = null;
         CurrentPlayerDeckData = playerDeck;
         CurrentEnemyDeckData = enemyDeck;
 
-        bool shuffleDeck = !disableDeckShuffleForDebug;
         List<CardData> playerCards = CreateCardsFromDeck(playerDeck, "Player");
         List<CardData> enemyCards = CreateCardsFromDeck(enemyDeck, "Enemy");
         Player = new Player(playerCards, "Player", shuffleDeck: shuffleDeck);

@@ -173,6 +173,15 @@ DeckData 配置一套 CardData 列表
 -> Player 根据 CardData 列表创建运行时 Card 牌库
 ```
 
+阶段 4.7 第四刀开始，`GameManager` 额外提供带洗牌参数的开局入口：
+
+```text
+GameManager.StartNewGame(playerDeck, enemyDeck, shuffleDeck)
+```
+
+这个入口让 UI 演示模式可以关闭洗牌，稳定起手，方便录屏或面试演示。
+Core 只接收“是否洗牌”这个规则参数，不知道按钮、Panel 或“演示模式”这些 UI 概念。
+
 `DeckData.DeckKey` 当前只是预制套牌的稳定标识，例如 `ai_test_comprehensive`，不是成熟项目里的压缩分享码。后续如果要做真正的套牌分享码，需要先给每张卡建立稳定卡牌 ID，再编码卡牌 ID 和数量。
 
 ## 当前规则入口
@@ -183,6 +192,7 @@ DeckData 配置一套 CardData 列表
 |------|------|
 | `StartNewGame()` | 创建玩家、战场、起手牌并进入第一回合 |
 | `StartNewGame(DeckData playerDeck, DeckData enemyDeck)` | 使用指定预制套牌创建玩家牌库并开始一局新游戏 |
+| `StartNewGame(DeckData playerDeck, DeckData enemyDeck, bool shuffleDeck)` | 使用指定套牌和洗牌设置开始一局新游戏，供演示模式稳定起手 |
 | `StartTurn(Player targetPlayer)` | 切换当前玩家、补法力、抽牌、重置攻击权限 |
 | `EndTurn()` | 结束当前回合并进入对手回合 |
 | `TryPlayMinionCard(Card card)` | 尝试打出随从牌并召唤随从 |

@@ -17,7 +17,7 @@
 | `DeckOptionView` | `Assets/Scripts/UI/Views/DeckOptionView.cs` | 显示一个套牌选项的名称、说明和卡牌数量，并把点击下标通知给上层 |
 | `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
 | `BattlePresentationController` | `Assets/Scripts/UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现 |
-| `DeckSelectionController` | `Assets/Scripts/UI/Controllers/DeckSelectionController.cs` | 显示预制套牌选项，记录当前选中套牌，调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 进入战斗，并在胜负后切换到结算入口 |
+| `DeckSelectionController` | `Assets/Scripts/UI/Controllers/DeckSelectionController.cs` | 显示预制套牌选项，记录当前选中套牌，调用 `GameManager.StartNewGame(...)` 进入普通战斗或演示模式，并在胜负后切换到结算入口 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
@@ -469,6 +469,7 @@ Assets/Audio/SFX
 处理套牌按钮点击后的选中高亮
 处理“开始对战”按钮
 调用 GameManager.StartNewGame(playerDeck, enemyDeck)
+处理“演示模式”按钮
 新开局后调用 GameUIController.RefreshAll()
 切换 DeckSelectionPanel 和 BattlePanel 的显示状态
 ```
@@ -500,6 +501,32 @@ Assets/Audio/SFX
 -> 隐藏 DeckSelectionPanel，显示 BattlePanel
 ```
 
+阶段 4.7 第四刀后，演示模式流程为：
+
+```text
+Unity Editor 执行 HearthstoneClone/Demo Deck/Create And Apply Demo Decks
+-> 创建 / 更新 demo_player_showcase 和 demo_enemy_showcase 两套 DeckData
+-> 把它们绑定到 DeckSelectionController 的 DemoPlayerDeck / DemoEnemyDeck
+-> DemoShuffleDeck 设为 false
+玩家点击演示模式按钮
+-> StartDemoBattle()
+-> 读取 DemoPlayerDeck / DemoEnemyDeck
+-> 如果演示套牌没绑，退回当前选中套牌 / 默认 AI 套牌
+-> GameManager.StartNewGame(playerDeck, enemyDeck, demoShuffleDeck)
+-> GameUIController.RefreshAll()
+-> 隐藏 DeckSelectionPanel，显示 BattlePanel
+```
+
+`DemoShuffleDeck` 默认关闭，用于录屏或面试时稳定起手。
+这是阶段性简化，不是完整“预设局面工具”；当前只控制套牌和是否洗牌，不直接指定双方血量、手牌、场面或法力。
+
+演示套牌设计：
+
+```text
+演示玩家套牌：优先展示冲锋、法术、战吼抽牌、圣盾和亡语。
+演示敌方套牌：优先提供圣盾、嘲讽、亡语和中后期随从，便于展示目标选择和结算反馈。
+```
+
 阶段 4.7 第三刀后，胜负结算流程为：
 
 ```text
@@ -523,7 +550,9 @@ GameManager.CheckGameOver() 标记 IsGameOver
 | 内容 | 放哪里 | 原因 |
 |------|--------|------|
 | 可选套牌列表、默认 AI 套牌、按钮和文本绑定 | Unity Editor / Inspector | 套牌和 UI 选项属于配置，方便策划或制作者替换 |
+| 演示套牌、演示按钮、是否洗牌 | Unity Editor / Inspector | 演示入口属于展示配置，方便录屏前调整 |
 | 选中下标、按钮高亮、开始对战调用 | `DeckSelectionController` | 属于运行时 UI 交互状态 |
+| 演示模式入口和 fallback | `DeckSelectionController` | 属于主流程 UI 快捷入口，不属于 Core 规则 |
 | 结算面板显示、结算文本、再来一局、回到套牌选择 | `DeckSelectionController` | 属于主流程 UI 状态，不属于 Core 规则 |
 | 创建玩家、创建牌库、起手抽牌、进入第一回合 | `GameManager` | 属于 Core 对局规则和初始化 |
 | 套牌选择面板和战斗面板的位置、大小、背景 | Unity Editor / RectTransform | 属于静态视觉布局 |
@@ -539,11 +568,15 @@ GameManager.CheckGameOver() 标记 IsGameOver
 Unity 绑定要求：
 
 ```text
+先执行菜单 HearthstoneClone/Demo Deck/Create And Apply Demo Decks，生成并绑定演示 DeckData
 DeckSelectionController 物体上挂 DeckSelectionController
 Game Manager 绑定场景中的 GameManager
 Game UI Controller 绑定场景中的 GameUIController
 Available Decks 绑定 3 套或更多 DeckData.asset
 Default Enemy Deck 绑定 AI 默认 DeckData.asset
+Demo Player Deck 绑定演示模式玩家 DeckData.asset
+Demo Enemy Deck 绑定演示模式 AI DeckData.asset
+Demo Shuffle Deck 默认关闭，用于稳定起手
 Deck Buttons / Deck Name Texts / Deck Description Texts / Deck Count Texts 按同一顺序绑定
 Selection Panel 绑定 DeckSelectionPanel
 Battle Panel 绑定 BattlePanel
@@ -551,8 +584,9 @@ Settlement Panel 绑定 SettlementPanel
 Settlement Result Text 绑定结算结果 Text
 Restart Battle Button 绑定“再来一局”按钮
 Back To Deck Selection Button 绑定“回到套牌选择”按钮
+Demo Battle Button 绑定“演示模式”按钮
 开始对战按钮 OnClick 绑定 DeckSelectionController.StartBattleWithSelectedDeck()
-如果 Restart Battle Button / Back To Deck Selection Button 字段已经绑定，不要再在按钮 OnClick 里重复绑定同一个方法
+如果 Restart Battle Button / Back To Deck Selection Button / Demo Battle Button 字段已经绑定，不要再在按钮 OnClick 里重复绑定同一个方法
 ```
 
 ## 引用关系
@@ -581,6 +615,7 @@ flowchart TD
 
 ```text
 DeckSelectionController 根据玩家选择的 DeckData 调用 GameManager.StartNewGame(playerDeck, enemyDeck)
+DeckSelectionController 根据演示配置调用 GameManager.StartNewGame(playerDeck, enemyDeck, shuffleDeck)
 DeckSelectionController 在新对局创建后调用 GameUIController.RefreshAll()
 GameUIController 读取 GameManager 当前状态
 GameUIController 检测到游戏结束后通知 DeckSelectionController.ShowSettlement()
@@ -593,6 +628,7 @@ GameUIController 使用反馈文本显示费用不足、不能攻击、目标非
 阶段 4.5 中，GameUIController 会把成功操作产生的 BattleLogEntry 交给 BattlePresentationController 播放基础音效和 UI 脉冲；英雄目标和游戏结束会优先使用具体 UI 目标
 阶段 4.7 第二刀中，DeckSelectionController 只负责套牌选择 UI 和开局入口，不创建 Player / Board，不处理对局规则
 阶段 4.7 第三刀中，DeckSelectionController 增加结算 Panel 切换、“再来一局”和“回到套牌选择”入口；重开对局仍然通过 GameManager.StartNewGame(...) 完成
+阶段 4.7 第四刀中，DeckSelectionController 增加演示模式入口；演示模式只决定使用哪套 DeckData 和是否洗牌，不直接修改 Core 局面
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -924,6 +960,7 @@ EnemyHeroButton
 阶段 4.5 第三刀已完成存活随从受击目标脉冲代码和 Unity Play 模式验收。
 阶段 4.7 第二刀已新增 `DeckSelectionController`，用同场景 `DeckSelectionPanel` / `BattlePanel` 切换完成套牌选择到战斗开局。
 阶段 4.7 第三刀已写入 `SettlementPanel` 代码入口，并已完成 Unity 绑定和 Play 模式验收。
+阶段 4.7 第四刀已写入演示模式代码入口和演示套牌创建菜单，并已完成 Unity 菜单执行、按钮绑定和 Play 模式验收。
 后续仍计划优化刷新复用。
 
 Prefab：

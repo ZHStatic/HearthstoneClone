@@ -55,6 +55,58 @@ public static class AITestDeckEditorTool
         "火花",
     };
 
+    private static readonly string[] DemoPlayerDeckCardNames =
+    {
+        "疾风斥候",
+        "火花",
+        "训练新兵",
+        "火焰学徒",
+        "书卷侍从",
+        "圣盾卫士",
+        "亡语炸弹人",
+        "河湾猎手",
+        "城墙守卫",
+        "战场斗士",
+        "岩石巨人",
+        "火花",
+        "疾风斥候",
+        "训练新兵",
+        "书卷侍从",
+        "火焰学徒",
+        "圣盾卫士",
+        "亡语炸弹人",
+        "河湾猎手",
+        "城墙守卫",
+        "战场斗士",
+        "岩石巨人",
+    };
+
+    private static readonly string[] DemoEnemyDeckCardNames =
+    {
+        "训练新兵",
+        "圣盾卫士",
+        "城墙守卫",
+        "亡语炸弹人",
+        "火花",
+        "河湾猎手",
+        "书卷侍从",
+        "火焰学徒",
+        "战场斗士",
+        "岩石巨人",
+        "训练新兵",
+        "圣盾卫士",
+        "城墙守卫",
+        "亡语炸弹人",
+        "火花",
+        "河湾猎手",
+        "书卷侍从",
+        "火焰学徒",
+        "战场斗士",
+        "岩石巨人",
+        "疾风斥候",
+        "火花",
+    };
+
     [MenuItem("HearthstoneClone/AI Test Deck/Apply Comprehensive Deck To Both Players")]
     private static void ApplyComprehensiveDeckToBothPlayers()
     {
@@ -101,6 +153,34 @@ public static class AITestDeckEditorTool
         ApplyDecks(playerDeckData, enemyDeckData, "Fixed Observation Deck");
     }
 
+    [MenuItem("HearthstoneClone/Demo Deck/Create And Apply Demo Decks")]
+    private static void CreateAndApplyDemoDecks()
+    {
+        if (!TryBuildDeck(DemoPlayerDeckCardNames, out List<CardData> playerDeck))
+        {
+            return;
+        }
+
+        if (!TryBuildDeck(DemoEnemyDeckCardNames, out List<CardData> enemyDeck))
+        {
+            return;
+        }
+
+        DeckData playerDeckData = CreateOrUpdateDeckAsset(
+            "demo_player_showcase",
+            "演示玩家套牌",
+            "固定顺序演示冲锋、法术、战吼抽牌、圣盾和亡语。建议演示模式关闭洗牌。",
+            playerDeck);
+        DeckData enemyDeckData = CreateOrUpdateDeckAsset(
+            "demo_enemy_showcase",
+            "演示敌方套牌",
+            "固定顺序提供圣盾、嘲讽、亡语和中后期随从，便于展示目标选择和结算反馈。",
+            enemyDeck);
+        if (playerDeckData == null || enemyDeckData == null) return;
+
+        ApplyDemoDecks(playerDeckData, enemyDeckData);
+    }
+
     private static void ApplyDecks(DeckData playerDeck, DeckData enemyDeck, string presetName)
     {
         GameManager gameManager = FindGameManagerInScene();
@@ -127,9 +207,40 @@ public static class AITestDeckEditorTool
         LogAppliedDeck(presetName, playerDeck, enemyDeck);
     }
 
+    private static void ApplyDemoDecks(DeckData playerDeck, DeckData enemyDeck)
+    {
+        DeckSelectionController deckSelectionController = FindDeckSelectionControllerInScene();
+        if (deckSelectionController == null)
+        {
+            Debug.LogError("Demo Deck: 当前打开的场景里没有找到 DeckSelectionController。");
+            return;
+        }
+
+        SerializedObject serializedController = new SerializedObject(deckSelectionController);
+        bool wrotePlayerDeck = WriteObjectProperty(serializedController, "demoPlayerDeck", playerDeck);
+        bool wroteEnemyDeck = WriteObjectProperty(serializedController, "demoEnemyDeck", enemyDeck);
+        if (!wrotePlayerDeck || !wroteEnemyDeck)
+        {
+            return;
+        }
+
+        SetBoolProperty(serializedController, "demoShuffleDeck", false);
+        serializedController.ApplyModifiedProperties();
+
+        EditorUtility.SetDirty(deckSelectionController);
+        EditorSceneManager.MarkSceneDirty(deckSelectionController.gameObject.scene);
+
+        LogAppliedDemoDecks(playerDeck, enemyDeck);
+    }
+
     private static GameManager FindGameManagerInScene()
     {
         return Object.FindObjectOfType<GameManager>();
+    }
+
+    private static DeckSelectionController FindDeckSelectionControllerInScene()
+    {
+        return Object.FindObjectOfType<DeckSelectionController>();
     }
 
     private static bool TryBuildDeck(DeckEntry[] entries, out List<CardData> deck)
@@ -306,6 +417,16 @@ public static class AITestDeckEditorTool
     private static void LogAppliedDeck(string presetName, DeckData playerDeck, DeckData enemyDeck)
     {
         Debug.Log(BuildAppliedDeckLog(presetName, playerDeck, enemyDeck));
+    }
+
+    private static void LogAppliedDemoDecks(DeckData playerDeck, DeckData enemyDeck)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("Demo Deck: 已创建 / 更新演示套牌，并绑定到 DeckSelectionController。");
+        builder.AppendLine($"Demo Player Deck: {BuildDeckLabel(playerDeck)}");
+        builder.AppendLine($"Demo Enemy Deck: {BuildDeckLabel(enemyDeck)}");
+        builder.Append("Demo Shuffle Deck 已关闭。请在 Inspector 中确认 Demo Battle Button 绑定后手动保存场景。");
+        Debug.Log(builder.ToString());
     }
 
     private static string BuildDeckLabel(DeckData deckData)

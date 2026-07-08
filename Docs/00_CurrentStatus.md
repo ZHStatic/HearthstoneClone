@@ -1,11 +1,11 @@
 # Current Status
 
-最后更新：2026-07-07
+最后更新：2026-07-08
 
 ## 当前阶段
 
 阶段 1、阶段 1.5、阶段 2.1、阶段 2.1.5、阶段 2.2、阶段 2.3、阶段 2.4、阶段 2.4.5、阶段 2.5.0、阶段 2.5.1、阶段 2.6、阶段 2.7、阶段 2.8、阶段 2.9 已完成。
-阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划；阶段 4.1 反馈文本和操作状态整理已完成；阶段 4.2 合法目标高亮和按钮视觉状态已完成代码链路和 Play 模式验证；阶段 4.3 炉石式战斗界面信息层级已完成 Editor 布局调整和 Play 模式验收；阶段 4.4 卡牌和随从显示拆分已完成代码、Prefab 绑定和 Play 模式验收；阶段 4.5 基础动画和音效第一刀已完成基础表现入口和音效资源接入，第二刀已完成英雄按钮和 GameOverText 的具体目标反馈，第三刀已完成随从受击目标脉冲代码和 Play 模式验收。阶段 4.6 View 复用和性能意识已完成：`BoardView` 和 `HandView` 已从全量销毁重建改为轻量复用，并通过 Unity Play 模式验证。阶段 4.7 第一刀已完成：`DeckData` 预制套牌数据、`GameManager` 套牌开局入口和 AI 测试套牌工具改造已通过 Unity 验证。阶段 4.7 第二刀已完成：`DeckSelectionController` 套牌选择 UI 控制器、`DeckOptionView` 单个套牌选项 View、同场景 Panel 切换入口和 Unity 绑定验证已收口。阶段 4.7 第三刀已完成：胜负结算入口、“再来一局”和“回到套牌选择”已通过 Unity 绑定和 Play 模式验证。
+阶段 2.9 战斗日志与代码整理已经收口；阶段 2.10 的核心结构优化已完成。阶段 3 已完成 AI 基础行动、第一版动作选择、策略验证入口、第一版评估函数、快照模拟基础链路、评分优先级动作选择收口、保守度调校入口、出随从模拟补强、亡语伤害模拟、同回合后续攻击预估、具体手牌快照和基于手牌快照的继续出牌模拟。阶段 3.13 英雄技能最小闭环已完成：Core 规则、动作系统、AI 快照模拟链路、玩家 UI 代码入口、Unity 绑定和 Play 模式验证均已收口。阶段 4 UI / 交互 / 表现打磨已完成规划；阶段 4.1 反馈文本和操作状态整理已完成；阶段 4.2 合法目标高亮和按钮视觉状态已完成代码链路和 Play 模式验证；阶段 4.3 炉石式战斗界面信息层级已完成 Editor 布局调整和 Play 模式验收；阶段 4.4 卡牌和随从显示拆分已完成代码、Prefab 绑定和 Play 模式验收；阶段 4.5 基础动画和音效第一刀已完成基础表现入口和音效资源接入，第二刀已完成英雄按钮和 GameOverText 的具体目标反馈，第三刀已完成随从受击目标脉冲代码和 Play 模式验收。阶段 4.6 View 复用和性能意识已完成：`BoardView` 和 `HandView` 已从全量销毁重建改为轻量复用，并通过 Unity Play 模式验证。阶段 4.7 第一刀已完成：`DeckData` 预制套牌数据、`GameManager` 套牌开局入口和 AI 测试套牌工具改造已通过 Unity 验证。阶段 4.7 第二刀已完成：`DeckSelectionController` 套牌选择 UI 控制器、`DeckOptionView` 单个套牌选项 View、同场景 Panel 切换入口和 Unity 绑定验证已收口。阶段 4.7 第三刀已完成：胜负结算入口、“再来一局”和“回到套牌选择”已通过 Unity 绑定和 Play 模式验证。阶段 4.7 第四刀已完成：演示模式入口、演示套牌创建菜单、两套演示 DeckData、Unity 绑定和 Play 模式验证均已收口。
 
 当前停靠点：
 
@@ -23,13 +23,14 @@
 阶段 4.7 第一刀已完成：`DeckData` 和 DeckData 开局入口
 阶段 4.7 第二刀已完成：`DeckSelectionController` 套牌选择 UI 控制器；`DeckOptionView` 单个套牌选项 View 已补充
 阶段 4.7 第三刀已完成：胜负结算后的再来一局 / 回到套牌选择入口
-当前重点：阶段 4.7 主流程与套牌选择已收口，下一步进入阶段 4.7 后续主菜单 / 演示模式，或转入阶段 4.8 移动端 / 性能意识补强
+阶段 4.7 第四刀已完成：演示模式 / 快速开始入口；演示玩家套牌和演示敌方套牌已生成并绑定
+当前重点：阶段 4.7 主流程与演示入口已收口，下一步进入阶段 4.8 移动端 / 性能意识补强，或开始阶段 5 数据配置和测试工具补强
 已完成：FeedbackText / GameOverText 拆分；GameOverText 只显示胜负；FeedbackText 显示普通操作反馈；selectedAttacker、selectedSpellCard、isSelectingHeroSkillTarget 三种 UI 操作状态已集中整理；法术、攻击、英雄技能的主要规则失败反馈已改为读取 Core 返回的 GameActionResult.Message；攻击、法术、英雄技能选目标时会基于 Core 验证结果显示合法/非法目标高亮；英雄、英雄技能和结束回合按钮已有基础视觉状态；`BattlePrototype` 已完成阶段 4.3 Canvas 信息层级布局调整；阶段 4.4 已新增 `CardTextFormatter`，手牌卡牌使用 `TypeText` / `EffectText` 拆分卡牌类型和规则文本，场上随从使用 `StatusText` / `KeywordText` / `DeathrattleText` 拆分 Ready、关键词和亡语；阶段 4.5 第一刀新增 `BattlePresentationController`，`GameUIController` 会在 Core 操作成功后把新产生的 `BattleLogEntry` 交给表现层播放音效和通用脉冲；阶段 4.5 第二刀中攻击英雄、法术打英雄、英雄技能打英雄会优先让目标英雄按钮脉冲，游戏结束会优先让 `GameOverText` 脉冲；阶段 4.5 第三刀中 `BoardView` 记录当前 `Minion` 到 `MinionView` 的映射，`GameUIController` 在随从目标操作结算后先刷新 UI，再查找受击随从 View 播放目标脉冲；阶段 4.6 中 `BoardView.Refresh()` 和 `HandView.Refresh()` 已改为按索引复用 View，不够才创建，多余则清空并隐藏；阶段 4.7 第一刀新增 `DeckData`，`GameManager` 已删除旧版 `playerDeckData` / `enemyDeckData`，改为只通过 `DeckData` 创建牌库；AI 测试套牌工具已改为创建 / 更新 `DeckData.asset` 并应用到 `GameManager.defaultPlayerDeck` / `defaultEnemyDeck`；阶段 4.7 第二刀新增 `DeckSelectionController`，通过 Inspector 配置可选 `DeckData`、默认 AI 套牌、套牌按钮和套牌信息文本，点击开始后调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 并刷新战斗 UI；阶段 4.7 第二刀期间补充 `DeckOptionView`，作为后续可复用的单个套牌选项 View，当前还没有替换 `DeckSelectionController` 的数组绑定流程
 已观察：Play 模式中 AI 连续出牌和连续攻击行为基本合理；玩家和 AI 都能正常使用英雄技能；阶段 4.3 布局验收中出牌、攻击、法术、英雄技能、结束回合和反馈显示均正常；阶段 4.4 中随从牌、法术牌、Ready、关键词和亡语显示已通过 Prefab 绑定和 Play 模式验证；阶段 4.5 第一刀中音频资源已导入并在 Unity 中完成对应字段绑定，基础音效播放链路已确认没问题；阶段 4.5 第二刀中英雄目标反馈已确认没问题，随从攻击英雄时当前设计是英雄按钮脉冲而不是 FeedbackText 脉冲；阶段 4.5 第三刀 Play 模式验收没问题，随从攻击随从、法术打随从和英雄技能打随从时，存活目标随从会播放目标脉冲；阶段 4.6 第一刀 Play 模式验收没问题，`BoardView` 复用后出牌、死亡、目标高亮和随从受击脉冲正常；阶段 4.6 第二刀 Play 模式验收没问题，`HandView` 复用后抽牌、出牌、切换回合和法术选牌正常；阶段 4.7 第一刀 Unity 验证没问题，DeckData 默认套牌开局和 AI 测试套牌工具可用；阶段 4.7 第二刀 Unity 绑定验证没问题，套牌选择界面可以切换选中按钮、显示名称/说明/数量，并用所选玩家套牌和默认 AI 套牌进入战斗；阶段 4.7 第三刀 Unity 绑定验证没问题，游戏结束后能进入结算入口，“再来一局 / 回到套牌选择”逻辑能走通
 已整理：阶段 3 AI v1 回归清单见 `Docs/08_AIReview.md`；圣盾 AI 攻击项未自然覆盖，但不视为失败；阶段 4.3 Editor 布局执行清单、阶段 4.4 Prefab 绑定清单、阶段 4.5 音效表现入口说明、阶段 4.6 轻量复用性能说明和阶段 4.7 第二刀套牌选择 UI / 单个套牌选项 View 说明见 `Docs/03_UIArchitecture.md`
 已规划：阶段 4.1 反馈文本和操作状态 -> 阶段 4.2 合法目标高亮和按钮状态 -> 阶段 4.3 炉石式信息层级 -> 阶段 4.4 卡牌和随从显示拆分 -> 阶段 4.5 基础动画和音效 -> 阶段 4.6 View 复用和性能意识
 后续路线：英雄技能最小闭环 -> UI / 交互 / 表现重点打磨 -> 主流程与套牌选择 -> 移动端 / 性能意识补强 -> 数据配置和测试工具 -> 求职包装
-下一步：阶段 4.7 后续主菜单 / 演示模式，或进入阶段 4.8 移动端 / 性能意识补强；继续不由 Codex 直接改 Scene 或 Prefab
+下一步：阶段 4.8 移动端 / 性能意识补强，或阶段 5 数据配置和测试工具补强；继续不由 Codex 直接改 Scene 或 Prefab
 学习节奏：每个小任务开始前先列必学点和属性清单，确认后再写代码
 ```
 
@@ -568,7 +569,8 @@ CardView 和 MinionView 已复用 KeywordTextFormatter。
 阶段 4.7 第一刀：`DeckData` 预制套牌数据、`GameManager` DeckData 开局入口和 AI 测试套牌工具改造已完成并通过 Unity 验证。
 阶段 4.7 第二刀：`DeckSelectionController` 套牌选择 UI 控制器已完成并通过 Unity 绑定验证。当前用同一场景里的 `DeckSelectionPanel` / `BattlePanel` 切换主流程，这是阶段性简化，不是成熟项目最终的场景流转方案。`DeckOptionView` 已补充为单个套牌选项 View，后续可以用它替换控制器里的按钮 / 文本数组绑定。
 阶段 4.7 第三刀：胜负结算后的“再来一局 / 回到套牌选择”入口已完成。`DeckSelectionController` 已支持 `SettlementPanel`、`SettlementResultText`、`RestartBattleButton`、`BackToDeckSelectionButton`、`ShowSettlement()`、`RestartBattleWithSelectedDeck()` 和 `ReturnToDeckSelection()`；`GameUIController` 会在检测到 `GameManager.IsGameOver` 后通知 `DeckSelectionController.ShowSettlement()`。Unity 绑定和 Play 模式验证已确认逻辑能走通。
-下一步：阶段 4.7 后续主菜单 / 演示模式，或进入阶段 4.8 移动端 / 性能意识补强。
+阶段 4.7 第四刀：演示模式 / 快速开始入口已完成。`GameManager` 新增 `StartNewGame(playerDeck, enemyDeck, shuffleDeck)`，`DeckSelectionController` 新增 `DemoPlayerDeck`、`DemoEnemyDeck`、`DemoShuffleDeck`、`DemoBattleButton` 和 `StartDemoBattle()`；演示入口默认不洗牌，用于录屏或面试时稳定起手。`AITestDeckEditorTool` 新增 `HearthstoneClone/Demo Deck/Create And Apply Demo Decks` 菜单，已创建 / 更新 `demo_player_showcase` 和 `demo_enemy_showcase` 两套 `DeckData`，并绑定到 `DeckSelectionController` 的演示套牌字段。Unity 绑定和 Play 模式验证已确认没问题。
+下一步：阶段 4.8 移动端 / 性能意识补强，或阶段 5 数据配置和测试工具补强。
 
 UI 拆分 / UI 复用刷新：
 从阶段 4.6 开始分刀整理。
