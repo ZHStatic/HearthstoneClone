@@ -11,6 +11,7 @@ public class GameUIController : MonoBehaviour
     // 对局核心入口。UI 通过它读取状态和发起操作。
     [SerializeField] private GameManager gameManager;
     [SerializeField] private BattlePresentationController presentationController;
+    [SerializeField] private DeckSelectionController deckSelectionController;
 
     // 手牌和双方战场视图。
     [SerializeField] private HandView handView;
@@ -60,6 +61,11 @@ public class GameUIController : MonoBehaviour
         if (gameManager == null)
         {
             gameManager = FindObjectOfType<GameManager>();
+        }
+
+        if (deckSelectionController == null)
+        {
+            deckSelectionController = FindObjectOfType<DeckSelectionController>();
         }
 
         if (endTurnButton != null)
@@ -1001,24 +1007,34 @@ public class GameUIController : MonoBehaviour
     /// </summary>
     private void RefreshGameOverText()
     {
-        if (gameOverText == null) return;
-
         if (!gameManager.IsGameOver)
         {
-            gameOverText.text = "";
-            gameOverText.gameObject.SetActive(false);
+            if (gameOverText != null)
+            {
+                gameOverText.text = "";
+                gameOverText.gameObject.SetActive(false);
+            }
+
             return;
         }
 
-        gameOverText.gameObject.SetActive(true);
-
-        if (gameManager.Winner == null)
+        if (gameOverText != null)
         {
-            gameOverText.text = "Game Over: Draw";
-            return;
+            gameOverText.gameObject.SetActive(true);
+            gameOverText.text = gameManager.Winner == null
+                ? "Game Over: Draw"
+                : $"Game Over: {GetPlayerLabel(gameManager.Winner)} wins";
         }
 
-        gameOverText.text = $"Game Over: {GetPlayerLabel(gameManager.Winner)} wins";
+        ShowSettlementIfGameOver();
+    }
+
+    private void ShowSettlementIfGameOver()
+    {
+        if (deckSelectionController == null) return;
+        if (gameManager == null || !gameManager.IsGameOver) return;
+
+        deckSelectionController.ShowSettlement();
     }
 
     /// <summary>

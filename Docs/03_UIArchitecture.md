@@ -17,7 +17,7 @@
 | `DeckOptionView` | `Assets/Scripts/UI/Views/DeckOptionView.cs` | 显示一个套牌选项的名称、说明和卡牌数量，并把点击下标通知给上层 |
 | `GameUIController` | `Assets/Scripts/UI/Controllers/GameUIController.cs` | 连接 UI 和 `GameManager`，处理出牌、法术选目标、英雄技能选目标、攻击、结束回合、普通反馈、胜负提示和刷新 |
 | `BattlePresentationController` | `Assets/Scripts/UI/Controllers/BattlePresentationController.cs` | 根据 Core 结算后的 `BattleLogEntry` 播放基础音效和通用 UI 脉冲表现 |
-| `DeckSelectionController` | `Assets/Scripts/UI/Controllers/DeckSelectionController.cs` | 显示预制套牌选项，记录当前选中套牌，并调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 进入战斗 |
+| `DeckSelectionController` | `Assets/Scripts/UI/Controllers/DeckSelectionController.cs` | 显示预制套牌选项，记录当前选中套牌，调用 `GameManager.StartNewGame(playerDeck, enemyDeck)` 进入战斗，并在胜负后切换到结算入口 |
 | `KeywordTextFormatter` | `Assets/Scripts/UI/Formatters/KeywordTextFormatter.cs` | 把关键词枚举转换成 UI 显示文本，供 `CardView` 和 `MinionView` 复用 |
 
 当前还没有做：
@@ -482,7 +482,7 @@ Assets/Audio/SFX
 洗牌
 修改手牌、法力、英雄血量或战场
 决定 AI 行动
-处理胜负结算
+处理具体战斗规则
 ```
 
 当前流程：
@@ -500,12 +500,31 @@ Assets/Audio/SFX
 -> 隐藏 DeckSelectionPanel，显示 BattlePanel
 ```
 
+阶段 4.7 第三刀后，胜负结算流程为：
+
+```text
+GameManager.CheckGameOver() 标记 IsGameOver
+-> GameUIController.RefreshGameOverText()
+-> DeckSelectionController.ShowSettlement()
+-> 隐藏 DeckSelectionPanel 和 BattlePanel
+-> 显示 SettlementPanel
+-> SettlementResultText 显示“胜利 / 失败 / 平局”
+```
+
+结算按钮：
+
+```text
+再来一局 -> DeckSelectionController.RestartBattleWithSelectedDeck()
+回到套牌选择 -> DeckSelectionController.ReturnToDeckSelection()
+```
+
 代码与 Editor 分工：
 
 | 内容 | 放哪里 | 原因 |
 |------|--------|------|
 | 可选套牌列表、默认 AI 套牌、按钮和文本绑定 | Unity Editor / Inspector | 套牌和 UI 选项属于配置，方便策划或制作者替换 |
 | 选中下标、按钮高亮、开始对战调用 | `DeckSelectionController` | 属于运行时 UI 交互状态 |
+| 结算面板显示、结算文本、再来一局、回到套牌选择 | `DeckSelectionController` | 属于主流程 UI 状态，不属于 Core 规则 |
 | 创建玩家、创建牌库、起手抽牌、进入第一回合 | `GameManager` | 属于 Core 对局规则和初始化 |
 | 套牌选择面板和战斗面板的位置、大小、背景 | Unity Editor / RectTransform | 属于静态视觉布局 |
 
@@ -528,7 +547,12 @@ Default Enemy Deck 绑定 AI 默认 DeckData.asset
 Deck Buttons / Deck Name Texts / Deck Description Texts / Deck Count Texts 按同一顺序绑定
 Selection Panel 绑定 DeckSelectionPanel
 Battle Panel 绑定 BattlePanel
+Settlement Panel 绑定 SettlementPanel
+Settlement Result Text 绑定结算结果 Text
+Restart Battle Button 绑定“再来一局”按钮
+Back To Deck Selection Button 绑定“回到套牌选择”按钮
 开始对战按钮 OnClick 绑定 DeckSelectionController.StartBattleWithSelectedDeck()
+如果 Restart Battle Button / Back To Deck Selection Button 字段已经绑定，不要再在按钮 OnClick 里重复绑定同一个方法
 ```
 
 ## 引用关系
@@ -538,6 +562,7 @@ flowchart TD
     DeckSelectionController --> GameManager
     DeckSelectionController --> GameUIController
     GameUIController --> GameManager
+    GameUIController --> DeckSelectionController
     GameUIController --> BattlePresentationController
     GameUIController --> HandView
     GameUIController --> BoardViewPlayer["PlayerBoardView"]
@@ -558,6 +583,7 @@ flowchart TD
 DeckSelectionController 根据玩家选择的 DeckData 调用 GameManager.StartNewGame(playerDeck, enemyDeck)
 DeckSelectionController 在新对局创建后调用 GameUIController.RefreshAll()
 GameUIController 读取 GameManager 当前状态
+GameUIController 检测到游戏结束后通知 DeckSelectionController.ShowSettlement()
 HandView 根据只读的 Player.Hand 复用并刷新 CardView
 BoardView 根据 Board.GetMinions(...) 复用并刷新 MinionView
 玩家点击 UI 后，GameUIController 调用 GameManager 方法
@@ -566,6 +592,7 @@ GameUIController 使用反馈文本显示费用不足、不能攻击、目标非
 阶段 4.1 中，法术选牌、攻击者选择、法术目标、英雄技能目标和攻击目标的主要规则失败反馈都改为读取 GameActionResult.Message
 阶段 4.5 中，GameUIController 会把成功操作产生的 BattleLogEntry 交给 BattlePresentationController 播放基础音效和 UI 脉冲；英雄目标和游戏结束会优先使用具体 UI 目标
 阶段 4.7 第二刀中，DeckSelectionController 只负责套牌选择 UI 和开局入口，不创建 Player / Board，不处理对局规则
+阶段 4.7 第三刀中，DeckSelectionController 增加结算 Panel 切换、“再来一局”和“回到套牌选择”入口；重开对局仍然通过 GameManager.StartNewGame(...) 完成
 阶段 2.2 / 2.3 中，CardView 和 MinionView 会显示关键词文字，GameUIController 不参与这件事
 阶段 2.4 中，CardView 会显示战吼文字，GameUIController 也不参与这件事
 阶段 2.6 中，CardView 和 MinionView 会显示亡语文字，GameUIController 仍然不参与这件事
@@ -896,6 +923,7 @@ EnemyHeroButton
 阶段 4.5 第二刀已让英雄按钮和 `GameOverText` 支持具体目标脉冲。
 阶段 4.5 第三刀已完成存活随从受击目标脉冲代码和 Unity Play 模式验收。
 阶段 4.7 第二刀已新增 `DeckSelectionController`，用同场景 `DeckSelectionPanel` / `BattlePanel` 切换完成套牌选择到战斗开局。
+阶段 4.7 第三刀已写入 `SettlementPanel` 代码入口，并已完成 Unity 绑定和 Play 模式验收。
 后续仍计划优化刷新复用。
 
 Prefab：

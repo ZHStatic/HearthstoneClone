@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// 套牌选择 UI 控制器。
@@ -37,9 +38,26 @@ public class DeckSelectionController : MonoBehaviour
     // 点击“开始”后显示它；具体战斗内容仍由 GameUIController 刷新。
     [SerializeField] private GameObject battlePanel;
 
+    // 胜负结算区域。
+    // 对局结束后显示它；按钮可以绑定“再来一局”和“回到套牌选择”。
+    [SerializeField] private GameObject settlementPanel;
+
+    // 结算结果文本。
+    // 只显示胜利、失败或平局，不承载普通战斗反馈。
+    [SerializeField] private Text settlementResultText;
+
+    // 结算按钮。
+    // 如果这里绑定了 Button 字段，代码会自动注册点击事件；不要再在 Inspector OnClick 里重复绑定同一个方法。
+    [SerializeField] private Button restartBattleButton;
+    [SerializeField] private Button backToDeckSelectionButton;
+
     // 当前选中的玩家套牌下标。
     // -1 表示还没有选中任何有效套牌。
     private int selectedDeckIndex = -1;
+
+    // 当前是否已经进入结算界面。
+    // 防止 GameUIController 每次刷新 GameOverText 时重复切换 Panel。
+    private bool isShowingSettlement;
 
     /// <summary>
     /// Unity 生命周期方法：脚本启用后自动执行一次。
@@ -59,7 +77,13 @@ public class DeckSelectionController : MonoBehaviour
 
         SetupDeckOptionViews();
         SelectFirstAvailableDeck();
+        RegisterSettlementButtons();
         ShowDeckSelection();
+    }
+
+    private void OnDestroy()
+    {
+        UnregisterSettlementButtons();
     }
 
     /// <summary>
@@ -109,8 +133,7 @@ public class DeckSelectionController : MonoBehaviour
             gameUIController.RefreshAll();
         }
 
-        SetPanelActive(selectionPanel, false);
-        SetPanelActive(battlePanel, true);
+        ShowBattle();
     }
 
     /// <summary>
@@ -120,9 +143,56 @@ public class DeckSelectionController : MonoBehaviour
     /// </summary>
     public void ShowDeckSelection()
     {
+        isShowingSettlement = false;
         RefreshDeckOptions();
         SetPanelActive(selectionPanel, true);
         SetPanelActive(battlePanel, false);
+        SetPanelActive(settlementPanel, false);
+    }
+
+    /// <summary>
+    /// 显示战斗界面。
+    /// 它只切换 Panel，不创建对局；创建对局仍然由 StartBattleWithSelectedDeck() 或 RestartBattleWithSelectedDeck() 完成。
+    /// </summary>
+    public void ShowBattle()
+    {
+        isShowingSettlement = false;
+        SetPanelActive(selectionPanel, false);
+        SetPanelActive(battlePanel, true);
+        SetPanelActive(settlementPanel, false);
+    }
+
+    /// <summary>
+    /// 显示胜负结算界面。
+    /// GameUIController 检测到 GameManager.IsGameOver 后可以调用这个入口。
+    /// </summary>
+    public void ShowSettlement()
+    {
+        if (isShowingSettlement) return;
+
+        isShowingSettlement = true;
+        RefreshSettlementResultText();
+        SetPanelActive(selectionPanel, false);
+        SetPanelActive(battlePanel, false);
+        SetPanelActive(settlementPanel, true);
+    }
+
+    /// <summary>
+    /// 使用当前选中的玩家套牌重新开始一局。
+    /// 这是“再来一局”按钮应该绑定的入口。
+    /// </summary>
+    public void RestartBattleWithSelectedDeck()
+    {
+        StartBattleWithSelectedDeck();
+    }
+
+    /// <summary>
+    /// 回到套牌选择界面。
+    /// 这里只切换 UI，不主动清理当前对局；下一次点击开始时会创建新对局。
+    /// </summary>
+    public void ReturnToDeckSelection()
+    {
+        ShowDeckSelection();
     }
 
     /// <summary>
@@ -176,6 +246,53 @@ public class DeckSelectionController : MonoBehaviour
 
         selectedDeckIndex = -1;
         RefreshDeckOptions();
+    }
+
+    private void RegisterSettlementButtons()
+    {
+        if (restartBattleButton != null)
+        {
+            restartBattleButton.onClick.AddListener(RestartBattleWithSelectedDeck);
+        }
+
+        if (backToDeckSelectionButton != null)
+        {
+            backToDeckSelectionButton.onClick.AddListener(ReturnToDeckSelection);
+        }
+    }
+
+    private void UnregisterSettlementButtons()
+    {
+        if (restartBattleButton != null)
+        {
+            restartBattleButton.onClick.RemoveListener(RestartBattleWithSelectedDeck);
+        }
+
+        if (backToDeckSelectionButton != null)
+        {
+            backToDeckSelectionButton.onClick.RemoveListener(ReturnToDeckSelection);
+        }
+    }
+
+    private void RefreshSettlementResultText()
+    {
+        if (settlementResultText == null) return;
+
+        if (gameManager == null || !gameManager.IsGameOver)
+        {
+            settlementResultText.text = "";
+            return;
+        }
+
+        if (gameManager.Winner == null)
+        {
+            settlementResultText.text = "平局";
+            return;
+        }
+
+        settlementResultText.text = gameManager.Winner == gameManager.Player
+            ? "胜利"
+            : "失败";
     }
 
     private DeckData GetSelectedDeck()
