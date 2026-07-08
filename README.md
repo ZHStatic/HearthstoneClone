@@ -20,8 +20,9 @@ HearthstoneClone 是一个使用 Unity 2020.3 和 C# 实现的炉石类单人卡
 
 当前阶段：
 
-- 阶段 4.7 第一刀已完成：预制套牌数据、`GameManager` 套牌开局入口和 AI 测试套牌工具。
-- 下一步：套牌选择 UI 控制器。
+- 阶段 4.7 已完成：预制套牌、套牌选择、胜负结算和演示模式入口。
+- 阶段 4.8 已完成：轻量复用和横屏比例检查通过，无需额外布局或代码修改。
+- 下一步进入阶段 5：数据配置和测试工具补强。
 
 ## 技术栈
 
@@ -98,6 +99,7 @@ HearthstoneClone/AI Test Deck/Apply Fixed Observation Deck
 - [UI 架构](Docs/03_UIArchitecture.md)
 - [功能流程](Docs/04_FeatureFlows.md)
 - [AI 回归清单](Docs/08_AIReview.md)
+- [性能与移动端巡检](Docs/09_PerformanceMobileReview.md)
 
 ## License
 

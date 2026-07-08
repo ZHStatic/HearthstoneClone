@@ -490,6 +490,7 @@ Unity 协作边界：
 | `Docs/05_InterviewNotes.md` | 面试时怎么讲这个项目 |
 | `Docs/06_Stage2Review.md` | 阶段复盘、演示脚本和架构取舍 |
 | `Docs/08_AIReview.md` | AI 回归清单、演示观察点和阶段性简化 |
+| `Docs/09_PerformanceMobileReview.md` | 阶段 4.8 性能意识、移动端适配检查和优化取舍 |
 | `Docs/Learning/` | C#、Unity 和项目学习笔记 |
 
 ---
