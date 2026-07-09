@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HearthstoneClone 学习资料入口</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #ded7ca;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --accent: #b45309;
+      --ok: #166534;
+      --warn: #92400e;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.72;
+      -webkit-text-size-adjust: 100%;
+    }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 12px;
+      background: rgba(255, 253, 248, .96);
+      border-bottom: 1px solid var(--line);
+      -webkit-overflow-scrolling: touch;
+    }
+    .top a {
+      flex: 0 0 auto;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 14px 56px;
+    }
+    header {
+      padding: 22px 0 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(27px, 8vw, 44px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+    h2 {
+      margin: 34px 0 12px;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      display: block;
+      padding: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgba(31, 41, 51, .06);
+      color: var(--ink);
+    }
+    .card:hover { text-decoration: none; border-color: #b7c6d9; }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 19px;
+      line-height: 1.28;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .tag {
+      display: inline-block;
+      margin: 0 6px 8px 0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: #1e40af;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .note {
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      background: #fff7ed;
+      color: #3b2f22;
+    }
+    .steps {
+      padding-left: 20px;
+    }
+    .steps li { margin: 8px 0; }
+    footer {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 520px) {
+      main { padding: 16px 12px 44px; }
+      .grid { grid-template-columns: 1fr; }
+      .card { padding: 16px; }
+    }
+    @media print {
+      .top { display: none; }
+      body { background: #fff; color: #111; }
+      main { max-width: none; padding: 0; }
+      .card { box-shadow: none; break-inside: avoid; }
+      a { color: #111; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top" aria-label="页面导航">
+    <a href="#docs">文档入口</a>
+    <a href="#how">使用方式</a>
+    <a href="#scope">边界</a>
+    <a href="#refs">来源</a>
+  </nav>
+
+  <main>
+    <header>
+      <h1>HearthstoneClone 学习资料入口</h1>
+      <p class="subtitle">面向手机阅读的 Unity、C# 和项目架构复习资料。当前项目功能已冻结，资料重点是复盘、面试讲解和后续学习。</p>
+    </header>
+
+    <section id="docs">
+      <h2>文档入口</h2>
+      <div class="grid">
+        <a class="card" href="UnityFundamentalsMobile.html">
+          <span class="tag">Unity</span>
+          <h3>Unity 入门与本项目用法</h3>
+          <p>生命周期、GameObject、组件、Prefab、ScriptableObject、UGUI、Inspector 绑定和常见错误。</p>
+        </a>
+
+        <a class="card" href="CSharpInterviewMobile.html">
+          <span class="tag">C#</span>
+          <h3>C# 高频知识点与面试表达</h3>
+          <p>类、对象、属性、集合、委托、事件、封装、守卫语句，以及本项目里的真实代码例子。</p>
+        </a>
+
+        <a class="card" href="../ProjectOverview.html">
+          <span class="tag">Architecture</span>
+          <h3>项目整体架构全景</h3>
+          <p>Core、AI、Snapshot、UI、Editor Tools 的依赖方向、核心流程、亮点和架构妥协。</p>
+        </a>
+      </div>
+    </section>
+
+    <section id="how">
+      <h2>建议阅读顺序</h2>
+      <ol class="steps">
+        <li>先读 Unity 文档，弄清楚场景、对象、组件、生命周期和 Inspector 绑定。</li>
+        <li>再读 C# 文档，理解项目中高频出现的语法和工程写法。</li>
+        <li>最后读项目架构全景，把规则层、UI 层、AI 层和快照模拟串起来。</li>
+        <li>面试前重点看每篇文档里的“面试表达”和“本项目映射”。</li>
+      </ol>
+    </section>
+
+    <section id="scope">
+      <h2>当前定位</h2>
+      <div class="note">
+        这组资料不是替代 Unity 官方手册，也不是 C# 完整教程。它只整理本项目真正用到、面试中高频会被追问、后续学习必须吃透的内容。官方知识以 Unity 文档和 Microsoft Learn 为出处；项目事实以本仓库代码和 Docs 为准。
+      </div>
+    </section>
+
+    <section id="refs">
+      <h2>资料来源</h2>
+      <p>本入口页只负责导航和阅读顺序，具体知识点出处写在各独立文档底部。资料以 Unity 2020.3 官方文档、Microsoft Learn、本项目代码和本地 Docs 为准。</p>
+      <ul>
+        <li><a href="UnityFundamentalsMobile.html">Unity 入门与本项目用法</a></li>
+        <li><a href="CSharpInterviewMobile.html">C# 高频知识点与面试表达</a></li>
+        <li><a href="../ProjectOverview.html">项目整体架构全景</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>HearthstoneClone · 手机友好学习资料 · 2026-07-08</p>
+      <p>可以直接在手机浏览器中打开，也可以用浏览器打印功能导出 PDF。</p>
+    </footer>
+  </main>
+</body>
+</html>

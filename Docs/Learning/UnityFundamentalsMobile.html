@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unity 入门与本项目用法</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #ded7ca;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --accent: #b45309;
+      --good: #166534;
+      --bad: #b42318;
+      --code: #172033;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.75;
+      -webkit-text-size-adjust: 100%;
+    }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 12px;
+      background: rgba(255, 253, 248, .96);
+      border-bottom: 1px solid var(--line);
+      -webkit-overflow-scrolling: touch;
+    }
+    .top a {
+      flex: 0 0 auto;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    main { max-width: 980px; margin: 0 auto; padding: 18px 14px 56px; }
+    h1 {
+      margin: 0;
+      font-size: clamp(27px, 8vw, 44px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+    .subtitle { margin: 12px 0 0; color: var(--muted); font-size: 16px; }
+    h2 { margin: 34px 0 12px; font-size: 23px; line-height: 1.25; }
+    h3 { margin: 22px 0 10px; font-size: 18px; line-height: 1.3; }
+    p { margin: 9px 0; }
+    code {
+      font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+      font-size: .92em;
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      word-break: break-word;
+    }
+    pre {
+      margin: 12px 0;
+      padding: 13px;
+      border-radius: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--code);
+      color: #f8fafc;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .card {
+      margin: 14px 0;
+      padding: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgba(31, 41, 51, .06);
+    }
+    .callout {
+      margin: 14px 0;
+      padding: 13px 15px;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      background: #fff7ed;
+    }
+    .ok { border-left-color: var(--good); background: #f0fdf4; }
+    .bad { border-left-color: var(--bad); background: #fff1f2; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; }
+    table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: #f1f5f9; text-align: left; font-weight: 800; }
+    tr:last-child td { border-bottom: 0; }
+    details {
+      margin: 12px 0;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 13px 15px;
+      font-weight: 800;
+      color: #17324d;
+      background: #f8fafc;
+    }
+    details > div { padding: 0 15px 15px; }
+    .flow {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .step {
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      font-weight: 650;
+    }
+    .step small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .refs li { margin: 7px 0; }
+    footer {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 520px) {
+      main { padding: 16px 12px 44px; }
+      .card { padding: 14px; }
+      table { font-size: 13px; }
+    }
+    @media print {
+      .top { display: none; }
+      body { background: #fff; color: #111; }
+      main { max-width: none; padding: 0; }
+      .card, details { box-shadow: none; break-inside: avoid; }
+      a { color: #111; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top" aria-label="页面导航">
+    <a href="MobileLearningIndex.html">返回入口</a>
+    <a href="#life">生命周期</a>
+    <a href="#object">对象组件</a>
+    <a href="#api">常用接口</a>
+    <a href="#data">数据资源</a>
+    <a href="#ui">UGUI</a>
+    <a href="#project">项目映射</a>
+    <a href="#errors">常见错误</a>
+    <a href="#refs">来源</a>
+  </nav>
+
+  <main>
+    <header>
+      <h1>Unity 入门与本项目用法</h1>
+      <p class="subtitle">只讲本项目真正用到的 Unity 基础。目标是能读懂场景、脚本、Inspector 绑定和运行时流程。</p>
+    </header>
+
+    <section id="life">
+      <h2>1. Unity 启动和脚本生命周期</h2>
+      <div class="card">
+        <p>Unity 脚本通常继承 <code>MonoBehaviour</code>。Unity 不是从你手写的 <code>Main()</code> 进入游戏，而是在场景加载、对象启用、每帧刷新、对象销毁等时间点自动调用特定方法。</p>
+        <div class="flow">
+          <div class="step">场景加载 <small>场景里的 GameObject 和组件被载入。</small></div>
+          <div class="step">Awake <small>脚本实例加载时调用。通常做自身初始化。本项目 <code>GameManager.Awake()</code> 创建新对局。</small></div>
+          <div class="step">OnEnable <small>对象和组件启用时调用。对象 inactive 时不会正常进入启用流程。</small></div>
+          <div class="step">Start <small>第一次帧更新前调用，且晚于 Awake。本项目 <code>GameUIController.Start()</code> 绑定按钮并刷新 UI。</small></div>
+          <div class="step">Update <small>每帧调用一次。本项目不是实时动作游戏，主要依赖按钮点击，所以几乎不用 Update。</small></div>
+          <div class="step">OnDestroy / OnDisable <small>对象销毁或禁用时清理，例如 UI 按钮取消监听。</small></div>
+        </div>
+      </div>
+
+      <div class="callout">
+        面试表达：本项目把对局初始化放在 <code>GameManager.Awake()</code>，因为 Awake 早于其他脚本的 Start。这样 UI 在 Start 里刷新时，<code>Player</code>、<code>Enemy</code> 和 <code>Board</code> 已经准备好。
+      </div>
+    </section>
+
+    <section id="object">
+      <h2>2. GameObject、Component、Transform</h2>
+      <div class="card">
+        <p><code>GameObject</code> 是场景里的对象容器；真正的功能来自挂在它身上的 <code>Component</code>。Unity 官方文档把 GameObject 描述为场景中的基础对象，本身不做太多事，功能由组件实现。</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>概念</th><th>怎么理解</th><th>本项目例子</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>GameObject</td><td>场景里的对象容器。</td><td><code>GameManager</code>、<code>Canvas</code>、<code>EndTurnButton</code></td></tr>
+              <tr><td>Component</td><td>附加到 GameObject 上的功能模块。</td><td><code>Button</code> 负责点击，<code>Text</code> 负责文字，脚本组件负责逻辑。</td></tr>
+              <tr><td>Transform</td><td>所有 GameObject 都有的位置、旋转、缩放组件。</td><td>普通对象的空间信息。</td></tr>
+              <tr><td>RectTransform</td><td>UI 对象使用的矩形布局组件。</td><td>控制手牌区、战场区、按钮的位置、大小和锚点。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <details>
+        <summary>Hierarchy、Project、Inspector、Console 怎么分工</summary>
+        <div>
+          <p><code>Hierarchy</code> 看当前场景对象；<code>Project</code> 看 Assets 资源；<code>Inspector</code> 配组件字段和资源；<code>Console</code> 看错误、警告和日志。</p>
+          <p>本项目里，很多错误不是 C# 语法问题，而是 Inspector 引用没拖、Prefab 字段没绑定、ScriptableObject 数据里有空项。</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="api">
+      <h2>3. 常用接口和方法</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>接口 / 方法</th><th>准确含义</th><th>本项目怎么用</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>MonoBehaviour</code></td><td>Unity 脚本组件的基类，Unity 会调用它的生命周期方法。</td><td><code>GameManager</code>、<code>GameUIController</code>、<code>CardView</code> 等 UI/场景脚本继承它。</td></tr>
+            <tr><td><code>GetComponent&lt;T&gt;()</code></td><td>获取同一个 GameObject 上的某种组件。</td><td><code>MinionView.Awake()</code> 没绑定 Button 时尝试自动获取。</td></tr>
+            <tr><td><code>Instantiate(original, parent)</code></td><td>运行时克隆对象；克隆 GameObject 或 Component 时会连同子对象和组件一起克隆。</td><td><code>HandView</code> 创建 <code>CardView</code>，<code>BoardView</code> 创建 <code>MinionView</code>。</td></tr>
+            <tr><td><code>Destroy(obj)</code></td><td>移除 GameObject、Component 或资源对象。</td><td>早期刷新 UI 会销毁重建；阶段 4.6 后改为轻量复用，减少频繁 Destroy。</td></tr>
+            <tr><td><code>SetActive(false)</code></td><td>禁用 GameObject，让它不显示且不参与启用状态。</td><td>手牌或战场 View 多余时隐藏，而不是销毁。</td></tr>
+            <tr><td><code>AudioSource.PlayOneShot</code></td><td>播放一次 AudioClip，不会取消同一 AudioSource 上已经播放的 OneShot。</td><td><code>BattlePresentationController</code> 播放出牌、攻击、伤害、圣盾和结算音效。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="data">
+      <h2>4. Prefab、ScriptableObject、Inspector 绑定</h2>
+      <div class="card">
+        <h3>Prefab</h3>
+        <p>Prefab 是可重复使用的 GameObject 模板。官方文档把 Prefab 定位为可保存 GameObject、组件和属性的资源模板。本项目的 <code>CardViewPrefab</code> 和 <code>MinionViewPrefab</code> 用来批量生成手牌和战场 UI。</p>
+
+        <h3>ScriptableObject</h3>
+        <p><code>ScriptableObject</code> 是 Unity 的数据资源类型，适合保存可复用的静态配置。本项目用 <code>CardData</code> 保存卡牌模板，用 <code>DeckData</code> 保存预制套牌。</p>
+
+        <div class="callout ok">
+          正确做法：运行时变化放到 <code>Card</code> 和 <code>Minion</code>。不要在对局中直接改 <code>CardData</code>，否则模板资源会被污染。
+        </div>
+
+        <h3><code>[SerializeField] private</code></h3>
+        <p>Unity 官方文档说明，<code>[SerializeField]</code> 可以强制 Unity 序列化 private 字段，让它显示在 Inspector 中。它适合“Inspector 能配置，但其他代码不能随便访问”的字段。</p>
+        <pre><code>[SerializeField] private HandView handView;
+[SerializeField] private CardView cardViewPrefab;</code></pre>
+      </div>
+
+      <details>
+        <summary>.meta 文件协作规则</summary>
+        <div>
+          <p>Unity 用 <code>.meta</code> 保存资源 GUID。Prefab、Scene、ScriptableObject、图片、音频等资源引用依赖 GUID。默认不要手动创建或修改这些文件。</p>
+          <p>本项目协作规则：Codex 新增 C# 脚本只创建 <code>.cs</code>；回到 Unity 后由 Unity 自动导入并生成 <code>.meta</code>。</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="ui">
+      <h2>5. UGUI：Canvas、Button、Text、Layout</h2>
+      <div class="card">
+        <p>UGUI 的所有 UI 元素都应放在 <code>Canvas</code> 下。Unity UI 文档说明，Canvas 是 UI 元素所在区域，UI 元素必须是 Canvas 的子对象。Canvas 还会使用 <code>EventSystem</code> 帮助消息系统处理交互。</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>概念</th><th>用途</th><th>本项目例子</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Canvas</td><td>UI 根区域，控制 UI 渲染模式和层级。</td><td>战斗界面、套牌选择和结算面板都在 Canvas 下。</td></tr>
+              <tr><td>EventSystem</td><td>处理 UI 点击、选择和事件分发。</td><td>没有它，Button 通常无法正常响应点击。</td></tr>
+              <tr><td>Button</td><td>用户点击并释放时触发 OnClick。</td><td>结束回合、英雄、英雄技能、套牌选项。</td></tr>
+              <tr><td>Text / Image</td><td>显示文字和背景、高亮颜色。</td><td>血量、法力、反馈、随从状态、目标高亮。</td></tr>
+              <tr><td>Layout Group</td><td>自动排列子 UI。</td><td>手牌和战场随从横向排列。</td></tr>
+              <tr><td>Anchor</td><td>决定 UI 跟随父物体或屏幕的哪一侧缩放。</td><td>手牌贴底、战场居中、按钮靠右。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="project">
+      <h2>6. 本项目 Unity 映射</h2>
+      <div class="card">
+        <div class="flow">
+          <div class="step"><code>GameManager.Awake()</code><small>开局创建 Player、Enemy、Board，进入第一回合。</small></div>
+          <div class="step"><code>GameUIController.Start()</code><small>绑定按钮点击事件，执行首次刷新。</small></div>
+          <div class="step"><code>DeckSelectionController</code><small>处理套牌选择、演示模式、结算面板切换。</small></div>
+          <div class="step"><code>HandView / BoardView</code><small>用 Prefab 创建或复用 UI View，刷新显示，不判断规则。</small></div>
+          <div class="step"><code>CardData / DeckData</code><small>ScriptableObject 数据资源，保存卡牌模板和套牌模板。</small></div>
+          <div class="step"><code>BattlePresentationController</code><small>根据 Core 结算日志播放音效和目标脉冲，不参与规则结算。</small></div>
+        </div>
+      </div>
+      <div class="callout">
+        面试表达：静态布局、字号、颜色、边距优先放在 Editor 和 Prefab；运行时状态、规则判断、按钮状态和反馈文本由代码控制。
+      </div>
+    </section>
+
+    <section id="errors">
+      <h2>7. 常见错误排查</h2>
+      <details open>
+        <summary>NullReferenceException</summary>
+        <div>
+          <p>含义：代码想使用一个对象，但这个对象是 <code>null</code>。</p>
+          <p>本项目真实例子：牌库列表里有空的 <code>CardData</code>，<code>new Card(data)</code> 后访问 <code>data.Cost</code> 报错。后来在 <code>Player</code> 创建牌库时跳过空项。</p>
+        </div>
+      </details>
+      <details>
+        <summary>按钮没反应</summary>
+        <div>
+          <p>检查场景有没有 <code>EventSystem</code>；检查 Button 是否 interactable；检查 <code>GameUIController.Start()</code> 是否绑定了监听；检查 Inspector 字段是否拖对。</p>
+        </div>
+      </details>
+      <details>
+        <summary>Prefab 字段丢失</summary>
+        <div>
+          <p>检查 Prefab 上脚本是否 Missing；检查 <code>Text</code>、<code>Button</code>、<code>Image</code> 字段是否绑定；检查是否手动移动 Unity 资源导致 GUID 引用异常。</p>
+        </div>
+      </details>
+      <details>
+        <summary>运行时状态写进 ScriptableObject</summary>
+        <div>
+          <p>如果对局中直接修改 <code>CardData</code>，会把模板当成实例用。正确做法是：模板数据在 <code>CardData</code>，运行时费用在 <code>Card</code>，场上生命和攻击权限在 <code>Minion</code>。</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="refs">
+      <h2>资料来源</h2>
+      <ul class="refs">
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/Manual/ExecutionOrder.html">Unity Manual 2020.3: Order of execution for event functions</a></li>
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/Manual/GameObjects.html">Unity Manual 2020.3: GameObjects</a></li>
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/Manual/Components.html">Unity Manual 2020.3: Components</a></li>
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/ScriptReference/MonoBehaviour.html">Unity Scripting API 2020.3: MonoBehaviour</a></li>
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/ScriptReference/Object.Instantiate.html">Unity Scripting API 2020.3: Object.Instantiate</a></li>
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ScriptableObject.html">Unity Scripting API 2020.3: ScriptableObject</a></li>
+        <li><a href="https://docs.unity3d.com/2020.3/Documentation/ScriptReference/SerializeField.html">Unity Scripting API 2020.3: SerializeField</a></li>
+        <li><a href="https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/UICanvas.html">Unity UI package: Canvas</a></li>
+        <li><a href="https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/script-Button.html">Unity UI package: Button</a></li>
+        <li>本项目：<code>Docs/Learning/UnityNotes.md</code>、<code>Docs/03_UIArchitecture.md</code>、<code>Docs/04_FeatureFlows.md</code>、<code>Assets/Scripts</code></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>HearthstoneClone · Unity 入门与本项目用法 · 2026-07-08</p>
+      <p>本页可用浏览器打印导出 PDF。</p>
+    </footer>
+  </main>
+</body>
+</html>

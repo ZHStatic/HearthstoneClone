@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C# 高频知识点与面试表达</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #ded7ca;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --accent: #7c2d12;
+      --good: #166534;
+      --code: #172033;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.75;
+      -webkit-text-size-adjust: 100%;
+    }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 12px;
+      background: rgba(255, 253, 248, .96);
+      border-bottom: 1px solid var(--line);
+      -webkit-overflow-scrolling: touch;
+    }
+    .top a {
+      flex: 0 0 auto;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    main { max-width: 980px; margin: 0 auto; padding: 18px 14px 56px; }
+    h1 { margin: 0; font-size: clamp(27px, 8vw, 44px); line-height: 1.1; letter-spacing: 0; }
+    .subtitle { margin: 12px 0 0; color: var(--muted); font-size: 16px; }
+    h2 { margin: 34px 0 12px; font-size: 23px; line-height: 1.25; }
+    h3 { margin: 22px 0 10px; font-size: 18px; line-height: 1.3; }
+    p { margin: 9px 0; }
+    code {
+      font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+      font-size: .92em;
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      word-break: break-word;
+    }
+    pre {
+      margin: 12px 0;
+      padding: 13px;
+      border-radius: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--code);
+      color: #f8fafc;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .card {
+      margin: 14px 0;
+      padding: 16px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgba(31, 41, 51, .06);
+    }
+    .callout {
+      margin: 14px 0;
+      padding: 13px 15px;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      background: #fff7ed;
+    }
+    .ok { border-left-color: var(--good); background: #f0fdf4; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; }
+    table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: #f1f5f9; text-align: left; font-weight: 800; }
+    tr:last-child td { border-bottom: 0; }
+    details {
+      margin: 12px 0;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 13px 15px;
+      font-weight: 800;
+      color: #17324d;
+      background: #f8fafc;
+    }
+    details > div { padding: 0 15px 15px; }
+    .refs li { margin: 7px 0; }
+    footer {
+      margin-top: 38px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 520px) {
+      main { padding: 16px 12px 44px; }
+      .card { padding: 14px; }
+      table { font-size: 13px; }
+    }
+    @media print {
+      .top { display: none; }
+      body { background: #fff; color: #111; }
+      main { max-width: none; padding: 0; }
+      .card, details { box-shadow: none; break-inside: avoid; }
+      a { color: #111; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top" aria-label="页面导航">
+    <a href="MobileLearningIndex.html">返回入口</a>
+    <a href="#class">类和对象</a>
+    <a href="#encap">封装</a>
+    <a href="#collections">集合</a>
+    <a href="#callbacks">委托事件</a>
+    <a href="#patterns">项目写法</a>
+    <a href="#interview">面试表达</a>
+    <a href="#refs">来源</a>
+  </nav>
+
+  <main>
+    <header>
+      <h1>C# 高频知识点与面试表达</h1>
+      <p class="subtitle">围绕本项目整理 C# 基础、工程写法和面试会被追问的点。重点不是背语法，而是能说清为什么这样写。</p>
+    </header>
+
+    <section id="class">
+      <h2>1. 类、对象、引用类型、构造函数</h2>
+      <div class="card">
+        <p>Microsoft Learn 对 class 的核心描述是：类是引用类型，用来定义对象的蓝图。变量保存的是对象引用，不是对象数据本身。</p>
+        <pre><code>Card card = new Card(cardData);
+Minion minion = new Minion(card.CardData, currentPlayer);</code></pre>
+        <p>这两行的意思不是“复制一个模板文件”，而是在运行时创建新的对象实例。<code>CardData</code> 是模板，<code>Card</code> 是手牌/牌库里的实例，<code>Minion</code> 是场上的实例。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>概念</th><th>本项目例子</th><th>面试怎么讲</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>类</td><td><code>Player</code>、<code>Card</code>、<code>Minion</code></td><td>类定义状态和行为，是代码里的模型。</td></tr>
+            <tr><td>对象</td><td><code>new Player(...)</code></td><td>对象是类在运行时创建出来的实例。</td></tr>
+            <tr><td>构造函数</td><td><code>public Card(CardData data)</code></td><td>创建对象时初始化必要字段。</td></tr>
+            <tr><td>引用类型</td><td><code>Card card</code></td><td>变量保存引用，多个变量可能指向同一个对象，所以状态修改要谨慎。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="encap">
+      <h2>2. 字段、属性、访问控制和封装</h2>
+      <div class="card">
+        <h3>字段 vs 属性</h3>
+        <p>字段是类内部真正存数据的位置；属性提供读写入口。C# 属性从外面看像字段，但可以通过 <code>get</code> / <code>set</code> 控制访问。</p>
+        <pre><code>public int CurrentHealth { get; private set; }</code></pre>
+        <p>这表示外部可以读取血量，但只有类内部能修改血量。</p>
+      </div>
+
+      <div class="callout ok">
+        面试表达：UI 不应该直接写 <code>hero.CurrentHealth = 0</code>。正确入口是 <code>hero.TakeDamage(amount)</code> 或 <code>GameManager</code> 规则方法，因为规则层需要记录日志、触发死亡和检查胜负。
+      </div>
+
+      <details>
+        <summary>为什么 Unity Inspector 字段常用 [SerializeField] private</summary>
+        <div>
+          <p><code>public</code> 代表所有代码都能访问和修改。<code>[SerializeField] private</code> 让 Unity Inspector 可以配置字段，同时保持代码层面的封装。</p>
+          <pre><code>[SerializeField] private Text nameText;
+[SerializeField] private Button button;</code></pre>
+          <p>这就是本项目 UI View、Controller 和 GameManager 配置字段的常见写法。</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="collections">
+      <h2>3. 集合：List、IReadOnlyList、Dictionary、HashSet</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>类型</th><th>特点</th><th>本项目用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>List&lt;T&gt;</code></td><td>有顺序、可增删、可按索引访问。</td><td>手牌、牌库、战场随从、日志列表。</td></tr>
+            <tr><td><code>IReadOnlyList&lt;T&gt;</code></td><td>只暴露数量和索引读取，不暴露 Add/Remove。</td><td><code>Player.Hand</code>、<code>Board.GetMinions()</code> 对外只读。</td></tr>
+            <tr><td><code>Dictionary&lt;TKey,TValue&gt;</code></td><td>用 key 找 value。</td><td><code>GameEventBus</code> 用事件类型找到监听列表；<code>BoardView</code> 可记录 Minion 到 View 的映射。</td></tr>
+            <tr><td><code>HashSet&lt;T&gt;</code></td><td>去重，快速判断是否出现过。</td><td><code>CardData.CleanKeywords()</code> 清理重复关键词。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details open>
+        <summary>为什么删除 List 元素时经常倒序遍历</summary>
+        <div>
+          <p>正序遍历时删除元素会导致后面的元素索引前移，容易跳过元素。倒序删除时，已经检查过的后半部分即使索引变化也不影响后续检查。</p>
+          <pre><code>for (int i = minions.Count - 1; i >= 0; i--)
+{
+    Minion minion = minions[i];
+    if (minion.IsDead)
+    {
+        Board.RemoveMinion(minion);
+    }
+}</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="callbacks">
+      <h2>4. Action、delegate、event 和 GameEventBus</h2>
+      <div class="card">
+        <p><code>Action&lt;T&gt;</code> 可以理解为“保存一个以后要调用的方法”。本项目的 View 常用它把点击事件交给上层。</p>
+        <pre><code>private Action&lt;Card&gt; onClicked;
+
+private void HandleClicked()
+{
+    onClicked?.Invoke(card);
+}</code></pre>
+        <p><code>CardView</code> 不知道点击后是出牌、查看详情还是取消选择。它只把“这张 Card 被点了”通知出去。</p>
+      </div>
+
+      <details>
+        <summary>C# event 和本项目 GameEventBus 的区别</summary>
+        <div>
+          <p><code>event</code> 是 C# 语言机制，限制外部只能订阅和取消订阅，不能随便触发事件。</p>
+          <p><code>GameEventBus</code> 是本项目自己组织出的游戏事件中转站：用 <code>Dictionary&lt;GameEventType, List&lt;Action&lt;GameEvent&gt;&gt;&gt;</code> 管理监听器。</p>
+          <pre><code>EventBus.Subscribe(GameEventType.MinionDied, ResolveDeathrattleOnMinionDied);
+EventBus.Publish(new GameEvent(GameEventType.MinionDied, minion));</code></pre>
+          <p>这样攻击、法术、战吼等不同来源造成死亡时，都能走同一个 <code>MinionDied</code> 入口触发亡语。</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="patterns">
+      <h2>5. 项目高频写法</h2>
+      <details open>
+        <summary>守卫语句</summary>
+        <div>
+          <p>固定读法：如果失败情况成立，方法到此结束；否则继续往下走。</p>
+          <pre><code>if (card == null) return GameActionResult.Failure(...);
+if (!CurrentPlayer.HasCardInHand(card)) return GameActionResult.Failure(...);
+
+// 能走到这里，说明前置条件已经通过。</code></pre>
+        </div>
+      </details>
+
+      <details>
+        <summary>enum 表达有限状态</summary>
+        <div>
+          <p><code>CardType</code>、<code>KeywordType</code>、<code>GameActionType</code>、<code>GameActionFailureReason</code> 都是 enum。它们适合表达“固定的一组选项”。</p>
+          <p>面试表达：用 enum 可以避免到处写魔法字符串，也方便 switch 和 Inspector 配置。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>static class 工具类</summary>
+        <div>
+          <p><code>KeywordTextFormatter</code> 和 <code>CardTextFormatter</code> 是静态工具类。它们不需要保存对象状态，只负责把枚举和数据转换成 UI 文案。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>partial class 的取舍</summary>
+        <div>
+          <p><code>GameManager.BattleLog.cs</code> 是 <code>GameManager</code> 的分部类文件。它让日志相关代码从主文件里分出去，但编译后仍然是同一个类。</p>
+          <p>面试要诚实讲：partial 只是文件组织手段，不是真正职责拆分。真正拆分应该是独立的 <code>DamageResolver</code>、<code>EffectResolver</code> 等系统。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>string.Join 和字符串插值</summary>
+        <div>
+          <p>多行文案先收集到 <code>List&lt;string&gt;</code>，再用 <code>string.Join</code> 组合，比在循环里反复 <code>+=</code> 更清楚。</p>
+          <pre><code>List&lt;string&gt; lines = new List&lt;string&gt;();
+lines.Add("冲锋");
+lines.Add("战吼：抽 1 张牌");
+return string.Join("\n", lines);</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="interview">
+      <h2>6. 面试表达速记</h2>
+      <div class="card">
+        <h3>Core / UI 分层</h3>
+        <p>UI 不直接扣法力、删手牌、改血量。玩家点击后，UI 调用 <code>GameManager</code> 的规则入口，再读取 Core 状态刷新显示。</p>
+
+        <h3>数据模板和运行时实例分离</h3>
+        <p><code>CardData</code> 是 ScriptableObject 模板，<code>Card</code> 是手牌/牌库实例，<code>Minion</code> 是场上实例。这样不会在运行时污染模板数据。</p>
+
+        <h3>动作系统</h3>
+        <p><code>GameAction</code> 描述“想做什么”，<code>GameActionGenerator</code> 枚举“能做什么”，<code>GameManager.ExecuteAction()</code> 负责“真正怎么做”。玩家和 AI 复用同一套执行入口。</p>
+
+        <h3>快照模拟</h3>
+        <p>AI 不直接在真实局面上试错，而是复制 <code>GameStateSnapshot</code>，在快照上模拟动作并评分，最后只把选中的动作交给真实 <code>GameManager</code> 执行。</p>
+
+        <h3>架构妥协</h3>
+        <p>当前 <code>GameManager</code> 偏重，效果系统没有统一，快照模拟和真实规则有重复。这是项目复盘重点，不应该包装成商业级终版。</p>
+      </div>
+    </section>
+
+    <section id="refs">
+      <h2>资料来源</h2>
+      <ul class="refs">
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/classes">Microsoft Learn: C# classes</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/properties">Microsoft Learn: Properties</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/delegates/">Microsoft Learn: Delegates</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/access-modifiers">Microsoft Learn: Access modifiers</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref">Microsoft Learn: ref keyword</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1">Microsoft Learn: IReadOnlyList&lt;T&gt;</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1">Microsoft Learn: List&lt;T&gt;</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2">Microsoft Learn: Dictionary&lt;TKey,TValue&gt;</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.hashset-1">Microsoft Learn: HashSet&lt;T&gt;</a></li>
+        <li>本项目：<code>Docs/Learning/CSharpNotes.md</code>、<code>Docs/02_CoreArchitecture.md</code>、<code>Docs/05_InterviewNotes.md</code>、<code>Assets/Scripts</code></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>HearthstoneClone · C# 高频知识点与面试表达 · 2026-07-08</p>
+      <p>本页可用浏览器打印导出 PDF。</p>
+    </footer>
+  </main>
+</body>
+</html>

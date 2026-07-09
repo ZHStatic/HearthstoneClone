@@ -106,6 +106,10 @@ HearthstoneClone/AI Test Deck/Apply Fixed Observation Deck
 
 ## 文档入口
 
+- [手机学习资料入口](Docs/Learning/MobileLearningIndex.html)
+- [Unity 入门与本项目用法](Docs/Learning/UnityFundamentalsMobile.html)
+- [C# 高频知识点与面试表达](Docs/Learning/CSharpInterviewMobile.html)
+- [项目整体架构全景](Docs/ProjectOverview.html)
 - [当前进度](Docs/00_CurrentStatus.md)
 - [项目计划](Docs/01_ProjectPlan.md)
 - [Core 架构](Docs/02_CoreArchitecture.md)
